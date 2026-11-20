@@ -25,6 +25,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -37,7 +39,8 @@ import (
 )
 
 // statusServer answers each Agent Builder agent get with the next of statuses,
-// repeating the last, each with deployedAt. reads counts the gets.
+// repeating the last, each with deployedAt; a status that is a number is an
+// HTTP error with that code instead. reads counts the gets.
 func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) (client *public.Client, reads func() int) {
 	t.Helper()
 	var mu sync.Mutex
@@ -48,6 +51,11 @@ func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) (clien
 		n++
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
+		if code, err := strconv.Atoi(status); err == nil {
+			w.WriteHeader(code)
+			fmt.Fprintf(w, `{"code":14,"message":"%s"}`, http.StatusText(code))
+			return
+		}
 		fmt.Fprintf(w, `{"agent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_%s","deployedAt":%q}}}`,
 			status, deployedAt.UTC().Format(time.RFC3339Nano))
 	}))
@@ -69,28 +77,38 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 	// after is the server's time of the deploy; the local clock plays no part.
 	after := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
 	before, later := after.Add(-time.Hour), after.Add(time.Minute)
+	const (
+		failedBefore = true
+		upBefore     = false
+	)
 	for _, tc := range []struct {
-		name       string
-		deployedAt time.Time
-		after      time.Time
-		statuses   []string
-		wantErr    string
+		name         string
+		deployedAt   time.Time
+		after        time.Time
+		failedBefore bool
+		statuses     []string
+		wantErr      string
 	}{
-		{"runs after building", before, after, []string{"BUILDING", "STARTING", "RUNNING"}, ""},
-		{"a previous deployment's RUNNING doesn't end the wait", before, after, []string{"RUNNING", "RUNNING", "BUILDING", "RUNNING"}, ""},
-		{"RUNNING with a newer deployedAt ends the wait", later, after, []string{"RUNNING"}, ""},
-		{"without a server time, only a build ends the wait", later, time.Time{}, []string{"RUNNING", "BUILDING", "RUNNING"}, ""},
-		{"SLEEPING after building ends the wait", before, after, []string{"BUILDING", "STARTING", "SLEEPING"}, ""},
-		{"a previous deployment's SLEEPING doesn't end the wait", before, after, []string{"SLEEPING", "BUILDING", "SLEEPING"}, ""},
-		{"a build failure after building fails", before, after, []string{"BUILDING", "BUILD_FAILED"},
+		{"runs after building", before, after, upBefore, []string{"BUILDING", "STARTING", "RUNNING"}, ""},
+		{"a previous deployment's RUNNING doesn't end the wait", before, after, upBefore, []string{"RUNNING", "RUNNING", "BUILDING", "RUNNING"}, ""},
+		{"RUNNING with a newer deployedAt ends the wait", later, after, upBefore, []string{"RUNNING"}, ""},
+		{"without a server time, only a build ends the wait", later, time.Time{}, upBefore, []string{"RUNNING", "BUILDING", "RUNNING"}, ""},
+		{"SLEEPING after building ends the wait", before, after, upBefore, []string{"BUILDING", "STARTING", "SLEEPING"}, ""},
+		{"a previous deployment's SLEEPING doesn't end the wait", before, after, upBefore, []string{"SLEEPING", "BUILDING", "SLEEPING"}, ""},
+		{"a build failure after building fails", before, after, failedBefore, []string{"BUILDING", "BUILD_FAILED"},
 			"deployment of Agent Builder agent ab_1 failed: BUILD_FAILED"},
-		{"a previous deployment's failure doesn't end the wait", before, after, []string{"BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
-		{"a start failure fails", before, after, []string{"STARTING", "FAILED"},
+		{"a start failure fails", before, after, failedBefore, []string{"STARTING", "FAILED"},
 			"deployment of Agent Builder agent ab_1 failed: FAILED"},
+		{"a failure fails when the agent hadn't failed before", before, after, upBefore, []string{"BUILD_FAILED"},
+			"deployment of Agent Builder agent ab_1 failed: BUILD_FAILED"},
+		{"a failure after temporary errors fails when the agent hadn't failed before", before, after, upBefore, []string{"503", "503", "BUILD_FAILED"},
+			"deployment of Agent Builder agent ab_1 failed: BUILD_FAILED"},
+		{"a previous deployment's failure doesn't end the wait", before, after, failedBefore, []string{"BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
+		{"after an earlier failure, a failure after temporary errors waits for a build", before, after, failedBefore, []string{"503", "BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			client, reads := statusServer(t, tc.deployedAt, tc.statuses...)
-			agent, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", tc.after)
+			agent, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", deployBaseline{after: tc.after, failedBefore: tc.failedBefore})
 			if tc.wantErr != "" {
 				assert.EqualError(t, err, tc.wantErr)
 				return
@@ -102,65 +120,47 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 	}
 }
 
-// flakyServer answers the first failures Agent Builder agent gets with status,
-// and every later one with a RUNNING agent deployed after the deploy.
-func flakyServer(t *testing.T, failures, status int) *public.Client {
-	t.Helper()
-	var mu sync.Mutex
-	n := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		n++
-		fail := n <= failures
-		mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		if fail {
-			w.WriteHeader(status)
-			fmt.Fprintf(w, `{"code":14,"message":"%s"}`, http.StatusText(status))
-			return
-		}
-		fmt.Fprint(w, `{"agent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","deployedAt":"2099-01-01T00:00:00Z"}}}`)
-	}))
-	t.Cleanup(srv.Close)
-	client, err := public.New(srv.URL, "st_1")
-	require.NoError(t, err)
-	return client
-}
-
 func TestWaitForBuilderDeploymentEndsEarly(t *testing.T) {
 	prev := builderDeployPoll
 	builderDeployPoll = time.Millisecond
 	t.Cleanup(func() { builderDeployPoll = prev })
 	after := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
 	const following = "The deployment continues; follow it with: lk agent builder get ab_1"
+	// flaky answers failures gets with the HTTP status code, then a RUNNING
+	// agent deployed after the deploy.
+	flaky := func(t *testing.T, failures, code int) *public.Client {
+		statuses := slices.Repeat([]string{strconv.Itoa(code)}, failures)
+		client, _ := statusServer(t, after.Add(time.Minute), append(statuses, "RUNNING")...)
+		return client
+	}
 
 	t.Run("temporary errors are retried", func(t *testing.T) {
-		client := flakyServer(t, builderPollRetries, http.StatusServiceUnavailable)
-		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		client := flaky(t, builderPollRetries, http.StatusServiceUnavailable)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", deployBaseline{after: after})
 		assert.NoError(t, err)
 	})
 	t.Run("too many temporary errors stop the wait", func(t *testing.T) {
-		client := flakyServer(t, builderPollRetries+1, http.StatusServiceUnavailable)
-		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		client := flaky(t, builderPollRetries+1, http.StatusServiceUnavailable)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", deployBaseline{after: after})
 		assert.EqualError(t, err, "Service Unavailable\n"+following)
 	})
 	t.Run("an error that won't pass stops the wait at once", func(t *testing.T) {
-		client := flakyServer(t, 1, http.StatusNotFound)
-		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		client := flaky(t, 1, http.StatusNotFound)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", deployBaseline{after: after})
 		assert.EqualError(t, err, "Not Found\n"+following)
 	})
 	t.Run("cancel isn't the timeout", func(t *testing.T) {
 		client, _ := statusServer(t, after, "BUILDING")
 		ctx, cancel := context.WithCancel(context.Background())
 		time.AfterFunc(20*time.Millisecond, cancel)
-		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", after)
+		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", deployBaseline{after: after})
 		assert.EqualError(t, err, "stopped waiting. "+following)
 	})
 	t.Run("the timeout says how long it waited", func(t *testing.T) {
 		client, _ := statusServer(t, after, "BUILDING")
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
 		defer cancel()
-		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", after)
+		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", deployBaseline{after: after})
 		assert.EqualError(t, err, "stopped waiting after "+buildTimeout.String()+". "+following)
 	})
 }

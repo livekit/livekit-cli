@@ -382,6 +382,15 @@ func deployAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	// With --wait, read the agent first: a failure read later is this
+	// deployment's for sure only if the agent hadn't failed already. An
+	// agent that can't be read counts as failed, the cautious answer.
+	failedBefore := true
+	if cmd.Bool("wait") {
+		if before, err := client.GetAgentBuilderAgent(ctx, projectID, id); err == nil {
+			failedBefore = deploymentFailed(before.Deployment)
+		}
+	}
 	res, err := client.DeployAgentBuilderAgent(ctx, projectID, id, cmd.String("version"))
 	if err != nil {
 		return cloudOnlyAPIError(err)
@@ -397,11 +406,11 @@ func deployAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	out.Statusf("Deploying version %s of Agent Builder agent %s", util.Accented(version), util.Accented(id))
 	// The Date header is truncated to the second, so a deployment that
 	// finished up to a second before it could still read as later.
-	var after time.Time
+	base := deployBaseline{failedBefore: failedBefore}
 	if !res.Date.IsZero() {
-		after = res.Date.Add(time.Second)
+		base.after = res.Date.Add(time.Second)
 	}
-	agent, err := waitForBuilderDeployment(ctx, client, projectID, id, after)
+	agent, err := waitForBuilderDeployment(ctx, client, projectID, id, base)
 	if err != nil {
 		return err
 	}
@@ -415,16 +424,40 @@ func deployAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	return render.AgentBuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
+// deployBaseline is what deploy --wait knows from before the deployment it
+// waits for, to tell that deployment's statuses from the previous one's.
+type deployBaseline struct {
+	// after is a server time, from the deploy response's Date header, so
+	// that comparing a deployedAt with it doesn't depend on the local clock.
+	// The zero time turns that comparison off.
+	after time.Time
+	// failedBefore reports whether the agent's deployment read as failed
+	// before the deploy, or couldn't be read.
+	failedBefore bool
+}
+
+// deploymentFailed reports whether d's status is a failure.
+func deploymentFailed(d *oapi.LivekitPublicapiAgentbuilderV1Deployment) bool {
+	if d == nil {
+		return false
+	}
+	status := util.Deref(d.Status)
+	return status == oapi.DEPLOYMENTSTATUSBUILDFAILED || status == oapi.DEPLOYMENTSTATUSFAILED
+}
+
 // waitForBuilderDeployment reads an Agent Builder agent until a new deployment is up
 // or has failed, printing each status it reads. Up is RUNNING, or SLEEPING:
 // an agent that nothing dispatched scales to zero, and a dispatch starts it.
 //
 // A status read before the new deployment shows can still be the previous
 // one's. So an up status ends the wait only after a BUILDING or STARTING, or
-// when its deployedAt is after after; and a failure only after a BUILDING or
-// STARTING. after is a server time, from the deploy response's Date header,
-// so the check doesn't depend on the local clock; the zero time turns it off.
-func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, after time.Time) (*public.AgentBuilderAgent, error) {
+// when its deployedAt is after base.after. A failure ends it after a BUILDING
+// or STARTING, or when the agent hadn't failed before the deploy, so that a
+// failure whose BUILDING went unseen, such as while reads failed, isn't
+// mistaken for a timeout. After an earlier failure, a failure read without a
+// BUILDING or STARTING may be the old one, and the API has no field that
+// tells them apart, so the wait goes on.
+func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, base deployBaseline) (*public.AgentBuilderAgent, error) {
 	ctx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	// However the wait ends early, the deployment goes on without it.
@@ -470,11 +503,11 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 		case oapi.DEPLOYMENTSTATUSBUILDING, oapi.DEPLOYMENTSTATUSSTARTING:
 			inProgress = true
 		case oapi.DEPLOYMENTSTATUSRUNNING, oapi.DEPLOYMENTSTATUSSLEEPING:
-			if inProgress || (!after.IsZero() && deployedAt.After(after)) {
+			if inProgress || (!base.after.IsZero() && deployedAt.After(base.after)) {
 				return agent, nil
 			}
 		case oapi.DEPLOYMENTSTATUSBUILDFAILED, oapi.DEPLOYMENTSTATUSFAILED:
-			if inProgress {
+			if inProgress || !base.failedBefore {
 				return nil, fmt.Errorf("deployment of Agent Builder agent %s failed: %s", id, render.DeploymentStatus(agent.Deployment))
 			}
 		}
