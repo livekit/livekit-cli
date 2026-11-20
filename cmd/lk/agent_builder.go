@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -595,39 +596,42 @@ func requireEmptyDir(dir string) error {
 
 // unzipAgentBuilderAgentCode unpacks the agent code zip data into dir, an empty
 // directory or one that doesn't exist yet, and returns the number of files.
-// Every path stays inside dir (os.Root refuses the rest), and an entry that
-// isn't a file or a directory is an error. Files and directories are readable
-// only by the user, because the code holds the configuration's header values.
-// On an error it leaves dir as it found it, so that the user can run the
-// download again.
+// Every path stays inside dir: a path that isn't local is an error, and
+// os.Root refuses the rest. An entry that isn't a file or a directory is an
+// error too. Files and directories are readable only by the user, because the
+// code holds the configuration's header values.
+//
+// On an error it removes what it made, and only that: the download takes a
+// while after the emptiness check, and something else may have written to
+// dir meanwhile. A file it would overwrite is an error, since files are
+// created exclusively.
 func unzipAgentBuilderAgentCode(data []byte, dir string) (_ int, err error) {
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return 0, fmt.Errorf("the agent code isn't a zip: %w", err)
 	}
-	_, statErr := os.Stat(dir)
-	created := errors.Is(statErr, os.ErrNotExist)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return 0, err
-	}
+	u := &unpack{}
 	defer func() {
 		if err != nil {
-			emptyUnzipDir(dir, created)
+			u.undo()
 		}
 	}()
-	root, err := os.OpenRoot(dir)
-	if err != nil {
+	if err := u.mkdirOutside(dir); err != nil {
 		return 0, err
 	}
-	defer root.Close()
+	if u.root, err = os.OpenRoot(dir); err != nil {
+		return 0, err
+	}
 	files := 0
 	for _, entry := range zr.File {
 		name := path.Clean(entry.Name)
 		switch mode := entry.Mode(); {
+		case !fs.ValidPath(name):
+			err = fmt.Errorf("%s is not a path inside the directory", entry.Name)
 		case mode.IsDir():
-			err = root.MkdirAll(name, 0o700)
+			err = u.mkdirAll(name)
 		case mode.IsRegular():
-			err = unzipFile(root, name, entry)
+			err = u.writeFile(name, entry)
 			files++
 		default:
 			err = fmt.Errorf("%s is not a file or a directory", entry.Name)
@@ -636,40 +640,88 @@ func unzipAgentBuilderAgentCode(data []byte, dir string) (_ int, err error) {
 			return 0, fmt.Errorf("unpack agent code: %w", err)
 		}
 	}
-	return files, nil
+	return files, u.root.Close()
 }
 
-// emptyUnzipDir undoes a failed unpack into dir: it removes dir when the
-// unpack created it, and otherwise everything in it, since it was empty.
-func emptyUnzipDir(dir string, created bool) {
-	if created {
-		_ = os.RemoveAll(dir)
-		return
-	}
-	entries, _ := os.ReadDir(dir)
-	for _, e := range entries {
-		_ = os.RemoveAll(filepath.Join(dir, e.Name()))
-	}
+// unpack records what an unpack made, so that undo removes that and nothing
+// else.
+type unpack struct {
+	root *os.Root
+	// outside are the directories it made up to and including the unpack
+	// directory, deepest first.
+	outside []string
+	// inside are the files and directories it made in root, in the order
+	// it made them.
+	inside []string
 }
 
-func unzipFile(root *os.Root, name string, entry *zip.File) error {
-	if dir := path.Dir(name); dir != "." {
-		if err := root.MkdirAll(dir, 0o700); err != nil {
-			return err
+// mkdirOutside makes dir and any parents it lacks.
+func (u *unpack) mkdirOutside(dir string) error {
+	for p := filepath.Clean(dir); ; p = filepath.Dir(p) {
+		if _, err := os.Lstat(p); !errors.Is(err, fs.ErrNotExist) {
+			break
 		}
+		u.outside = append(u.outside, p)
+		if filepath.Dir(p) == p {
+			break
+		}
+	}
+	return os.MkdirAll(dir, 0o700)
+}
+
+// mkdirAll makes the directory name in root and any parents it lacks.
+func (u *unpack) mkdirAll(name string) error {
+	if name == "." {
+		return nil
+	}
+	if err := u.mkdirAll(path.Dir(name)); err != nil {
+		return err
+	}
+	err := u.root.Mkdir(name, 0o700)
+	if errors.Is(err, fs.ErrExist) {
+		if info, statErr := u.root.Lstat(name); statErr == nil && info.IsDir() {
+			return nil
+		}
+	}
+	if err == nil {
+		u.inside = append(u.inside, name)
+	}
+	return err
+}
+
+// writeFile writes the zip entry to the new file name in root.
+func (u *unpack) writeFile(name string, entry *zip.File) error {
+	if err := u.mkdirAll(path.Dir(name)); err != nil {
+		return err
 	}
 	src, err := entry.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
-	dst, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	dst, err := u.root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		return err
 	}
+	u.inside = append(u.inside, name)
 	if _, err := io.Copy(dst, src); err != nil {
 		dst.Close()
 		return err
 	}
 	return dst.Close()
+}
+
+// undo removes what the unpack made, newest first. It removes each file and
+// directory on its own, never a tree, and a directory only while it's empty,
+// so whatever else is in the unpack directory stays.
+func (u *unpack) undo() {
+	if u.root != nil {
+		for i := len(u.inside) - 1; i >= 0; i-- {
+			_ = u.root.Remove(u.inside[i])
+		}
+		_ = u.root.Close()
+	}
+	for _, dir := range u.outside {
+		_ = os.Remove(dir)
+	}
 }

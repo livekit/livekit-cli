@@ -246,6 +246,52 @@ func TestUnzipAgentBuilderAgentCodeCleansUp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, entries, "a directory that was there stays, empty")
 	assert.NoError(t, requireEmptyDir(existing))
+
+	parents := filepath.Join(t.TempDir(), "a", "b", "code")
+	_, err = unzipAgentBuilderAgentCode(bad, parents)
+	require.Error(t, err)
+	_, statErr = os.Stat(filepath.Dir(filepath.Dir(parents)))
+	assert.ErrorIs(t, statErr, fs.ErrNotExist, "parents the unpack made are removed too")
+}
+
+// TestUnzipAgentBuilderAgentCodeKeepsOthersFiles checks that an unpack that
+// fails removes only what it made. Something else can write to the directory
+// after download checks that it's empty, while the zip downloads.
+func TestUnzipAgentBuilderAgentCodeKeepsOthersFiles(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		entries []string
+		wantErr string
+	}{
+		{"a later entry fails", []string{"src/", "src/agent.py", "pyproject.toml", "link@"},
+			"unpack agent code: link is not a file or a directory"},
+		{"an entry is a file that's already there", []string{"src/", "pyproject.toml", "src/theirs.py"},
+			"unpack agent code: openat src/theirs.py: file exists"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := filepath.Join(t.TempDir(), "code")
+			require.NoError(t, requireEmptyDir(dir))
+			// What another process writes between the check and the unpack.
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "src", "theirs.py"), []byte("theirs"), 0o644))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("theirs"), 0o644))
+
+			_, err := unzipAgentBuilderAgentCode(zipOf(t, tc.entries...), dir)
+			if runtime.GOOS == "windows" {
+				require.Error(t, err)
+			} else {
+				require.EqualError(t, err, tc.wantErr)
+			}
+
+			for _, name := range []string{"notes.txt", filepath.Join("src", "theirs.py")} {
+				got, err := os.ReadFile(filepath.Join(dir, name))
+				require.NoError(t, err, name)
+				assert.Equal(t, "theirs", string(got), name)
+			}
+			_, statErr := os.Stat(filepath.Join(dir, "pyproject.toml"))
+			assert.ErrorIs(t, statErr, fs.ErrNotExist, "the unpack's own file is removed")
+		})
+	}
 }
 
 func TestRequireEmptyDir(t *testing.T) {
