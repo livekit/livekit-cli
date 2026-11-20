@@ -227,6 +227,27 @@ func TestUnzipBuilderAgentCode(t *testing.T) {
 	}
 }
 
+// TestUnzipBuilderAgentCodeCleansUp checks that an unpack that fails partway
+// leaves the directory as it was, so a second try isn't refused as "not
+// empty".
+func TestUnzipBuilderAgentCodeCleansUp(t *testing.T) {
+	bad := zipOf(t, "src/", "src/agent.py", "pyproject.toml", "link@")
+
+	created := filepath.Join(t.TempDir(), "code")
+	_, err := unzipBuilderAgentCode(bad, created)
+	require.EqualError(t, err, "unpack agent code: link is not a file or a directory")
+	_, statErr := os.Stat(created)
+	assert.ErrorIs(t, statErr, fs.ErrNotExist, "a directory the unpack made is removed")
+
+	existing := t.TempDir()
+	_, err = unzipBuilderAgentCode(bad, existing)
+	require.Error(t, err)
+	entries, err := os.ReadDir(existing)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "a directory that was there stays, empty")
+	assert.NoError(t, requireEmptyDir(existing))
+}
+
 func TestRequireEmptyDir(t *testing.T) {
 	dir := t.TempDir()
 	assert.NoError(t, requireEmptyDir(dir))

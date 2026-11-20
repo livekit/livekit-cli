@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -589,19 +590,28 @@ func requireEmptyDir(dir string) error {
 	return nil
 }
 
-// unzipBuilderAgentCode unpacks the agent code zip data into dir, creating
-// it, and returns the number of files. Every path stays inside dir (os.Root
-// refuses the rest), and an entry that isn't a file or a directory is an
-// error. Files and directories are readable only by the user, because the
-// code holds the configuration's header values.
-func unzipBuilderAgentCode(data []byte, dir string) (int, error) {
+// unzipBuilderAgentCode unpacks the agent code zip data into dir, an empty
+// directory or one that doesn't exist yet, and returns the number of files.
+// Every path stays inside dir (os.Root refuses the rest), and an entry that
+// isn't a file or a directory is an error. Files and directories are readable
+// only by the user, because the code holds the configuration's header values.
+// On an error it leaves dir as it found it, so that the user can run the
+// download again.
+func unzipBuilderAgentCode(data []byte, dir string) (_ int, err error) {
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return 0, fmt.Errorf("the agent code isn't a zip: %w", err)
 	}
+	_, statErr := os.Stat(dir)
+	created := errors.Is(statErr, os.ErrNotExist)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return 0, err
 	}
+	defer func() {
+		if err != nil {
+			emptyUnzipDir(dir, created)
+		}
+	}()
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		return 0, err
@@ -624,6 +634,19 @@ func unzipBuilderAgentCode(data []byte, dir string) (int, error) {
 		}
 	}
 	return files, nil
+}
+
+// emptyUnzipDir undoes a failed unpack into dir: it removes dir when the
+// unpack created it, and otherwise everything in it, since it was empty.
+func emptyUnzipDir(dir string, created bool) {
+	if created {
+		_ = os.RemoveAll(dir)
+		return
+	}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		_ = os.RemoveAll(filepath.Join(dir, e.Name()))
+	}
 }
 
 func unzipFile(root *os.Root, name string, entry *zip.File) error {
