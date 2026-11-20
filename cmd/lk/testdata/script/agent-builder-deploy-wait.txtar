@@ -1,0 +1,37 @@
+# deploy --wait reads the agent once before the deploy, so that it can tell
+# a failure of this deployment from an earlier one, then reads it until the
+# new deployment is up. A RUNNING whose deployedAt is after the deploy
+# response's Date header is the new deployment. (The order of statuses
+# across reads, failures and SLEEPING are TestWaitForBuilderDeployment's
+# job.)
+respond POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1:deploy 200 '{"versionId":"abv_2","status":"DEPLOYMENT_STATUS_BUILDING"}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 200 '{"agent":{"id":"ab_1","name":"greeter","versionId":"abv_2","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","versionId":"abv_2","deployedAt":"2099-01-01T00:00:00Z"}}}'
+exec lk --user-auth agent builder deploy ab_1 --wait
+stdout 'ab_1.*greeter.*RUNNING.*abv_2.*abv_2'
+cmp stderr want-stderr
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Deploying version abv_2 of Agent Builder agent ab_1
+Status: RUNNING
+Agent Builder agent ab_1 runs version abv_2
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1:deploy bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 bearer=st_1 project=p_1

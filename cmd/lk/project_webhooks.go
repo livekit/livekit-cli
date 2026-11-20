@@ -155,7 +155,7 @@ func listProjectWebhooks(ctx context.Context, cmd *cli.Command) error {
 	}
 	webhooks, err := client.ListWebhooks(ctx, projectID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.Webhooks(out, cmd.Bool("json"), webhooks)
 }
@@ -180,7 +180,7 @@ func createProjectWebhook(ctx context.Context, cmd *cli.Command) error {
 		FilterParams: webhookFilter(cmd),
 	})
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
 		out.Statusf("Created webhook %s", util.Accented(util.Deref(webhook.Id)))
@@ -220,7 +220,7 @@ func updateProjectWebhook(ctx context.Context, cmd *cli.Command) error {
 	}
 	webhook, err := client.UpdateWebhook(ctx, projectID, webhookID, body)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
 		out.Statusf("Updated webhook %s", util.Accented(webhookID))
@@ -245,7 +245,7 @@ func deleteProjectWebhook(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("aborted")
 	}
 	if err := client.DeleteWebhook(ctx, projectID, webhookID); err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "webhookId", webhookID, "deleted", fmt.Sprintf("Deleted webhook %s", util.Accented(webhookID)))
 }
@@ -266,7 +266,7 @@ func testProjectWebhook(ctx context.Context, cmd *cli.Command) error {
 	event := cmd.String("event")
 	result, err := client.SendTestWebhook(ctx, projectID, webhookID, event)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		util.PrintJSON(result)
@@ -301,7 +301,7 @@ func listProjectWebhookEvents(ctx context.Context, cmd *cli.Command) error {
 	}
 	events, err := client.ListWebhookEvents(ctx, projectID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		if events == nil {

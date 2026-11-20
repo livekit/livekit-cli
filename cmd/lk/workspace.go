@@ -293,7 +293,7 @@ func listWorkspaces(ctx context.Context, cmd *cli.Command) error {
 	}
 	workspaces, nextCursor, err := client.ListWorkspaces(ctx, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.WorkspacesPage(out, cmd.Bool("json"), workspaces, nextCursor)
 }
@@ -305,7 +305,7 @@ func getWorkspace(ctx context.Context, cmd *cli.Command) error {
 	}
 	w, err := client.GetWorkspace(ctx, id)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.Workspace(out, cmd.Bool("json"), *w)
 }
@@ -321,7 +321,7 @@ func createWorkspace(ctx context.Context, cmd *cli.Command) error {
 	}
 	w, err := client.CreateWorkspace(ctx, name, cmd.String("organization"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	out.Statusf("Created workspace %s", util.Accented(util.DashString(w.Name)))
 	return render.Workspace(out, cmd.Bool("json"), *w)
@@ -334,7 +334,7 @@ func updateWorkspace(ctx context.Context, cmd *cli.Command) error {
 	}
 	w, err := client.UpdateWorkspace(ctx, id, cmd.String("name"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	out.Statusf("Updated workspace %s", util.Accented(util.DashString(w.Id)))
 	return render.Workspace(out, cmd.Bool("json"), *w)
@@ -349,7 +349,7 @@ func deleteWorkspace(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("aborted")
 	}
 	if err := client.DeleteWorkspace(ctx, id); err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "id", id, "deleted", fmt.Sprintf("Deleted workspace %s", util.Accented(id)))
 }
@@ -361,7 +361,7 @@ func listWorkspaceProjects(ctx context.Context, cmd *cli.Command) error {
 	}
 	projects, nextCursor, err := client.ListWorkspaceProjects(ctx, wsID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return renderProjects(cmd, projects, nextCursor)
 }
@@ -377,7 +377,7 @@ func getWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	}
 	p, err := client.GetWorkspaceProject(ctx, wsID, projectID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return renderProject(cmd, *p)
 }
@@ -398,7 +398,7 @@ func createWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	settings.Name = &name
 	p, err := client.CreateWorkspaceProject(ctx, wsID, settings)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	out.Statusf("Created project %s", util.Accented(util.DashString(p.Name)))
 	return renderProject(cmd, *p)
@@ -419,7 +419,7 @@ func updateWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	}
 	p, err := client.UpdateWorkspaceProject(ctx, wsID, projectID, settings)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	out.Statusf("Updated project %s", util.Accented(util.DashString(p.Id)))
 	return renderProject(cmd, *p)
@@ -438,7 +438,7 @@ func deleteWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("aborted")
 	}
 	if err := client.DeleteWorkspaceProject(ctx, wsID, projectID); err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "id", projectID, "deleted", fmt.Sprintf("Deleted project %s", util.Accented(projectID)))
 }
@@ -450,7 +450,7 @@ func listWorkspaceMembers(ctx context.Context, cmd *cli.Command) error {
 	}
 	members, err := client.ListWorkspaceMembers(ctx, wsID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.WorkspaceMembers(out, cmd.Bool("json"), members)
 }
@@ -466,7 +466,7 @@ func getWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	}
 	member, err := client.GetWorkspaceMember(ctx, wsID, userID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.WorkspaceMember(out, cmd.Bool("json"), *member)
 }
@@ -486,7 +486,7 @@ func updateWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	}
 	member, err := client.UpdateWorkspaceMember(ctx, wsID, userID, role)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	out.Statusf("Updated member %s", util.Accented(userID))
 	return render.WorkspaceMember(out, cmd.Bool("json"), *member)
@@ -505,7 +505,7 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 		return client.DeleteWorkspaceMember(ctx, wsID, userID, confirmedNumKeys)
 	})
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return renderMemberRemoved(cmd, userID, numKeys)
 }
@@ -517,7 +517,7 @@ func listWorkspaceInvites(ctx context.Context, cmd *cli.Command) error {
 	}
 	invites, err := client.ListWorkspaceInvites(ctx, wsID)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.WorkspaceInvites(out, cmd.Bool("json"), invites)
 }
@@ -533,7 +533,7 @@ func getWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 	}
 	invite, err := client.GetWorkspaceInvite(ctx, token)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.WorkspaceInvite(out, cmd.Bool("json"), *invite)
 }
@@ -553,7 +553,7 @@ func createWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 	}
 	resp, err := client.CreateWorkspaceInvite(ctx, wsID, email, role)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		util.PrintJSON(resp)
@@ -574,7 +574,7 @@ func deleteWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if err := client.DeleteWorkspaceInvite(ctx, wsID, email); err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "email", email, "deleted", fmt.Sprintf("Revoked invite for %s", util.Accented(email)))
 }
@@ -591,7 +591,7 @@ func answerWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 	accept := !cmd.Bool("decline")
 	member, err := client.AnswerWorkspaceInvite(ctx, token, accept)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if !accept {
 		out.Status("Declined invite.")

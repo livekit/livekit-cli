@@ -75,7 +75,7 @@ func listUsers(ctx context.Context, cmd *cli.Command) error {
 	}
 	users, nextCursor, err := client.ListUsers(ctx, projectID, workspaceID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.UsersPage(out, cmd.Bool("json"), users, nextCursor)
 }
@@ -91,7 +91,7 @@ func getUser(ctx context.Context, cmd *cli.Command) error {
 	}
 	u, err := client.GetUser(ctx, id)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.User(out, cmd.Bool("json"), *u)
 }
@@ -105,7 +105,7 @@ func cloudWhoami(ctx context.Context, cmd *cli.Command) error {
 	}
 	u, err := client.GetCurrentUser(ctx)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.User(out, cmd.Bool("json"), *u)
 }

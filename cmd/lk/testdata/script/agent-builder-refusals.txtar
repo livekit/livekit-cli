@@ -1,0 +1,59 @@
+# The builder commands exist only under --user-auth: Agent Builder agents are a
+# LiveKit Cloud feature that no API key reaches.
+! exec lk agent builder list
+stderr 'only available under --user-auth'
+
+# lk checks the configuration file before it calls the API.
+! exec lk --user-auth agent builder create --name helper --config-file list.json
+stderr '^--config-file list.json: the configuration must be a JSON object$'
+! exec lk --user-auth agent builder create --name helper --config-file trailing-comma.json
+stderr '^--config-file trailing-comma.json: line 3, column 1: invalid character ''}'' looking for beginning of object key string$'
+! exec lk --user-auth agent builder create --name helper --config-file empty.json
+stderr '^--config-file empty.json: line 1, column 1: unexpected end of JSON input$'
+! exec lk --user-auth agent builder create --name helper --config-file missing.json
+stderr '^--config-file missing.json: the file doesn''t exist$'
+
+# The API ignores properties it doesn't know, so a whole Agent Builder agent, such
+# as get --json prints, would reset the configuration. lk refuses it.
+! exec lk --user-auth agent builder update ab_1 --config-file agent.json
+stderr '^--config-file agent.json holds an Agent Builder agent, not a configuration: pass its "config" object$'
+
+! exec lk --user-auth agent builder update ab_1
+stderr '^nothing to update: pass --config-file, --name or both$'
+
+! exec lk --user-auth agent builder get
+stderr '^Agent Builder agent ID is required$'
+
+requests
+! stdout .
+
+# A refusal for the user's role doesn't suggest the API-key path, which
+# Agent Builder agents don't have.
+respond PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 403 '{"code":7,"message":"this needs agent:manage on the project"}'
+! exec lk --user-auth agent builder update ab_1 --name renamed
+! stdout .
+stderr '^this needs agent:manage on the project — your account doesn''t have access to this project or action$'
+! stderr 'without'
+
+-- trailing-comma.json --
+{
+  "instructions": "Be brief.",
+}
+-- empty.json --
+-- list.json --
+[{"instructions": "Be brief."}]
+-- agent.json --
+{"id": "ab_1", "name": "greeter", "config": {"instructions": "Be brief."}}
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
