@@ -90,7 +90,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           # --experimental-strip-types (used to run the .ts entrypoint) needs >= 22.6.
-          node-version: "24"
+          node-version: "26"
 
       - name: Install Node echo agent deps
         if: matrix.lang == 'node'
