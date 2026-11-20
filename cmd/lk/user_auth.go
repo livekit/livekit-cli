@@ -245,6 +245,16 @@ func cloudAPIError(err error) error {
 	}
 }
 
+// cloudOnlyAPIError is cloudAPIError for a command that has no API-key
+// implementation: a permission denial says the account lacks access, without
+// pointing at an API-key path that doesn't exist for it.
+func cloudOnlyAPIError(err error) error {
+	if public.IsPermissionDenied(err) && len(public.FieldViolations(err)) == 0 {
+		return fmt.Errorf("%w — your account doesn't have access to this project or action", err)
+	}
+	return cloudAPIError(err)
+}
+
 // requireUserSession loads the CLI config and resolves the signed-in user with
 // a valid (unexpired) session, for commands running under --user-auth:
 // the --user flag if given, otherwise the default user (see resolveSessionUser).

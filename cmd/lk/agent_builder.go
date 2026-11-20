@@ -236,7 +236,7 @@ func listBuilderAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 	agents, next, err := client.ListBuilderAgents(ctx, projectID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return render.BuilderAgentsPage(out, cmd.Bool("json"), agents, next)
 }
@@ -252,7 +252,7 @@ func getBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	agent, err := client.GetBuilderAgent(ctx, projectID, id)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		warnHiddenHeaderValues(agent.Config)
@@ -271,7 +271,7 @@ func createBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	agent, err := client.CreateBuilderAgent(ctx, projectID, cmd.String("name"), config)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
 		out.Statusf("Created builder agent %s. Deploy it with: lk agent builder deploy %s", util.Accented(util.Deref(agent.Name)), util.Deref(agent.Id))
@@ -299,7 +299,7 @@ func updateBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	agent, err := client.UpdateBuilderAgent(ctx, projectID, id, name, config)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
 		out.Statusf("Updated builder agent %s. The running agent changes when you deploy: lk agent builder deploy %s", util.Accented(id), id)
@@ -320,7 +320,7 @@ func deleteBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("aborted")
 	}
 	if err := client.DeleteBuilderAgent(ctx, projectID, id); err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "builderAgentId", id, "deleted", fmt.Sprintf("Deleted builder agent %s", util.Accented(id)))
 }
@@ -336,7 +336,7 @@ func listBuilderAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	}
 	versions, next, err := client.ListBuilderAgentVersions(ctx, projectID, id, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		configs := make([]json.RawMessage, len(versions))
@@ -364,7 +364,7 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	started := time.Now()
 	res, err := client.DeployBuilderAgent(ctx, projectID, id, cmd.String("version"))
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	version := util.Deref(res.VersionId)
 	if !cmd.Bool("wait") {
@@ -402,7 +402,7 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 			if ctx.Err() != nil {
 				return nil, fmt.Errorf("stopped waiting after %s: %s", buildTimeout, following)
 			}
-			return nil, cloudAPIError(err)
+			return nil, cloudOnlyAPIError(err)
 		}
 		var status oapi.LivekitPublicapiAgentsV1DeploymentStatus
 		var deployedAt time.Time
@@ -458,7 +458,7 @@ func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
 	}
 	code, err := client.GetBuilderAgentCodeURL(ctx, projectID, id, cmd.String("version"), builderCodeURLExpiry)
 	if err != nil {
-		return cloudAPIError(err)
+		return cloudOnlyAPIError(err)
 	}
 	version := util.Deref(code.VersionId)
 	data, filename, err := public.DownloadBuilderAgentCode(ctx, *code.Url)

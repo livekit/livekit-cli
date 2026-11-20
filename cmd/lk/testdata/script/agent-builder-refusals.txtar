@@ -23,6 +23,14 @@ stderr '^builder agent ID is required$'
 requests
 ! stdout .
 
+# A refusal for the user's role doesn't suggest the API-key path, which
+# builder agents don't have.
+respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 403 '{"code":7,"message":"this needs agent:manage on the project"}'
+! exec lk --user-auth agent builder update ab_1 --name renamed
+! stdout .
+stderr '^this needs agent:manage on the project — your account doesn''t have access to this project or action$'
+! stderr 'without'
+
 -- list.json --
 [{"instructions": "Be brief."}]
 -- agent.json --
