@@ -36,7 +36,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 )
 
-// statusServer answers each builder agent get with the next of statuses,
+// statusServer answers each Agent Builder agent get with the next of statuses,
 // repeating the last, each with deployedAt. reads counts the gets.
 func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) (client *public.Client, reads func() int) {
 	t.Helper()
@@ -48,7 +48,7 @@ func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) (clien
 		n++
 		mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"builderAgent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_%s","deployedAt":%q}}}`,
+		fmt.Fprintf(w, `{"agent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_%s","deployedAt":%q}}}`,
 			status, deployedAt.UTC().Format(time.RFC3339Nano))
 	}))
 	t.Cleanup(srv.Close)
@@ -83,10 +83,10 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 		{"SLEEPING after building ends the wait", before, after, []string{"BUILDING", "STARTING", "SLEEPING"}, ""},
 		{"a previous deployment's SLEEPING doesn't end the wait", before, after, []string{"SLEEPING", "BUILDING", "SLEEPING"}, ""},
 		{"a build failure after building fails", before, after, []string{"BUILDING", "BUILD_FAILED"},
-			"deployment of builder agent ab_1 failed: BUILD_FAILED"},
+			"deployment of Agent Builder agent ab_1 failed: BUILD_FAILED"},
 		{"a previous deployment's failure doesn't end the wait", before, after, []string{"BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
 		{"a start failure fails", before, after, []string{"STARTING", "FAILED"},
-			"deployment of builder agent ab_1 failed: FAILED"},
+			"deployment of Agent Builder agent ab_1 failed: FAILED"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			client, reads := statusServer(t, tc.deployedAt, tc.statuses...)
@@ -102,7 +102,7 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 	}
 }
 
-// flakyServer answers the first failures builder agent gets with status,
+// flakyServer answers the first failures Agent Builder agent gets with status,
 // and every later one with a RUNNING agent deployed after the deploy.
 func flakyServer(t *testing.T, failures, status int) *public.Client {
 	t.Helper()
@@ -119,7 +119,7 @@ func flakyServer(t *testing.T, failures, status int) *public.Client {
 			fmt.Fprintf(w, `{"code":14,"message":"%s"}`, http.StatusText(status))
 			return
 		}
-		fmt.Fprint(w, `{"builderAgent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","deployedAt":"2099-01-01T00:00:00Z"}}}`)
+		fmt.Fprint(w, `{"agent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","deployedAt":"2099-01-01T00:00:00Z"}}}`)
 	}))
 	t.Cleanup(srv.Close)
 	client, err := public.New(srv.URL, "st_1")
@@ -192,9 +192,9 @@ func zipOf(t *testing.T, names ...string) []byte {
 	return buf.Bytes()
 }
 
-func TestUnzipBuilderAgentCode(t *testing.T) {
+func TestUnzipAgentBuilderAgentCode(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "code")
-	n, err := unzipBuilderAgentCode(zipOf(t, "src/", "src/agent.py", "pyproject.toml", "docs/a/b.md"), dir)
+	n, err := unzipAgentBuilderAgentCode(zipOf(t, "src/", "src/agent.py", "pyproject.toml", "docs/a/b.md"), dir)
 	require.NoError(t, err)
 	assert.Equal(t, 3, n)
 	got, err := os.ReadFile(filepath.Join(dir, "src", "agent.py"))
@@ -219,7 +219,7 @@ func TestUnzipBuilderAgentCode(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			parent := t.TempDir()
-			_, err := unzipBuilderAgentCode(zipOf(t, tc.entry), filepath.Join(parent, "code"))
+			_, err := unzipAgentBuilderAgentCode(zipOf(t, tc.entry), filepath.Join(parent, "code"))
 			require.Error(t, err)
 			_, statErr := os.Stat(filepath.Join(parent, "evil.py"))
 			assert.ErrorIs(t, statErr, fs.ErrNotExist)
@@ -227,20 +227,20 @@ func TestUnzipBuilderAgentCode(t *testing.T) {
 	}
 }
 
-// TestUnzipBuilderAgentCodeCleansUp checks that an unpack that fails partway
+// TestUnzipAgentBuilderAgentCodeCleansUp checks that an unpack that fails partway
 // leaves the directory as it was, so a second try isn't refused as "not
 // empty".
-func TestUnzipBuilderAgentCodeCleansUp(t *testing.T) {
+func TestUnzipAgentBuilderAgentCodeCleansUp(t *testing.T) {
 	bad := zipOf(t, "src/", "src/agent.py", "pyproject.toml", "link@")
 
 	created := filepath.Join(t.TempDir(), "code")
-	_, err := unzipBuilderAgentCode(bad, created)
+	_, err := unzipAgentBuilderAgentCode(bad, created)
 	require.EqualError(t, err, "unpack agent code: link is not a file or a directory")
 	_, statErr := os.Stat(created)
 	assert.ErrorIs(t, statErr, fs.ErrNotExist, "a directory the unpack made is removed")
 
 	existing := t.TempDir()
-	_, err = unzipBuilderAgentCode(bad, existing)
+	_, err = unzipAgentBuilderAgentCode(bad, existing)
 	require.Error(t, err)
 	entries, err := os.ReadDir(existing)
 	require.NoError(t, err)

@@ -2,8 +2,8 @@
 # whose deployedAt is after the deploy response's Date header is the new
 # deployment. (The order of statuses across reads, and SLEEPING, are
 # TestWaitForBuilderDeployment's job.)
-respond POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_1:deploy 200 '{"versionId":"abv_2","status":"DEPLOYMENT_STATUS_BUILDING"}'
-respond GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 200 '{"builderAgent":{"id":"ab_1","name":"greeter","versionId":"abv_2","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","versionId":"abv_2","deployedAt":"2099-01-01T00:00:00Z"}}}'
+respond POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1:deploy 200 '{"versionId":"abv_2","status":"DEPLOYMENT_STATUS_BUILDING"}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 200 '{"agent":{"id":"ab_1","name":"greeter","versionId":"abv_2","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","versionId":"abv_2","deployedAt":"2099-01-01T00:00:00Z"}}}'
 exec lk --user-auth agent builder deploy ab_1 --wait
 stdout 'ab_1.*greeter.*RUNNING.*abv_2.*abv_2'
 cmp stderr want-stderr
@@ -26,9 +26,9 @@ users:
         url: ws://one.test
 -- want-stderr --
 Using user [dev@example.com] on [http://publicapi.test]
-Deploying version abv_2 of builder agent ab_1
+Deploying version abv_2 of Agent Builder agent ab_1
 Status: RUNNING
-Builder agent ab_1 runs version abv_2
+Agent Builder agent ab_1 runs version abv_2
 -- want-requests --
-POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_1:deploy bearer=st_1 project=p_1
-GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1:deploy bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 bearer=st_1 project=p_1

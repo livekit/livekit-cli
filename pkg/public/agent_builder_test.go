@@ -47,16 +47,16 @@ func recordingServer(t *testing.T, status int, body string) (*Client, *http.Requ
 	return c, &got, &gotBody
 }
 
-// TestBuilderAgentKeepsUnknownConfig checks that a configuration property
+// TestAgentBuilderAgentKeepsUnknownConfig checks that a configuration property
 // this client's generated types don't have survives a read, and goes back
 // on a write as the caller wrote it.
-func TestBuilderAgentKeepsUnknownConfig(t *testing.T) {
-	const agent = `{"builderAgent":{"id":"AB_1","name":"a","config":{"instructions":"hi","stateTools":[{"name":"x"}]}}}`
+func TestAgentBuilderAgentKeepsUnknownConfig(t *testing.T) {
+	const agent = `{"agent":{"id":"AB_1","name":"a","config":{"instructions":"hi","stateTools":[{"name":"x"}]}}}`
 	c, req, _ := recordingServer(t, http.StatusOK, agent)
 
-	got, err := c.GetBuilderAgent(context.Background(), "p_1", "AB_1")
+	got, err := c.GetAgentBuilderAgent(context.Background(), "p_1", "AB_1")
 	require.NoError(t, err)
-	assert.Equal(t, "/v0/projects/p_1/agents/builder/AB_1", req.URL.Path)
+	assert.Equal(t, "/v0/projects/p_1/agent-builder/agents/AB_1", req.URL.Path)
 	assert.Equal(t, "AB_1", *got.Id)
 	assert.JSONEq(t, `{"instructions":"hi","stateTools":[{"name":"x"}]}`, string(got.Config))
 
@@ -65,47 +65,47 @@ func TestBuilderAgentKeepsUnknownConfig(t *testing.T) {
 	assert.JSONEq(t, `{"id":"AB_1","name":"a","config":{"instructions":"hi","stateTools":[{"name":"x"}]}}`, string(out))
 
 	c, req, body := recordingServer(t, http.StatusOK, agent)
-	_, err = c.UpdateBuilderAgent(context.Background(), "p_1", "AB_1", nil, got.Config)
+	_, err = c.UpdateAgentBuilderAgent(context.Background(), "p_1", "AB_1", nil, got.Config)
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodPatch, req.Method)
 	assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
 	assert.JSONEq(t, `{"config":{"instructions":"hi","stateTools":[{"name":"x"}]}}`, *body)
 }
 
-func TestCreateBuilderAgentBody(t *testing.T) {
-	c, req, body := recordingServer(t, http.StatusOK, `{"builderAgent":{"id":"AB_1","name":"a"}}`)
-	got, err := c.CreateBuilderAgent(context.Background(), "p_1", "a", nil)
+func TestCreateAgentBuilderAgentBody(t *testing.T) {
+	c, req, body := recordingServer(t, http.StatusOK, `{"agent":{"id":"AB_1","name":"a"}}`)
+	got, err := c.CreateAgentBuilderAgent(context.Background(), "p_1", "a", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.MethodPost, req.Method)
-	assert.Equal(t, "/v0/projects/p_1/agents/builder", req.URL.Path)
+	assert.Equal(t, "/v0/projects/p_1/agent-builder/agents", req.URL.Path)
 	assert.JSONEq(t, `{"name":"a"}`, *body, "no config takes the default")
 	assert.Nil(t, got.Config)
 }
 
-func TestUpdateBuilderAgentRenameOnly(t *testing.T) {
-	c, _, body := recordingServer(t, http.StatusOK, `{"builderAgent":{"id":"AB_1","name":"b"}}`)
+func TestUpdateAgentBuilderAgentRenameOnly(t *testing.T) {
+	c, _, body := recordingServer(t, http.StatusOK, `{"agent":{"id":"AB_1","name":"b"}}`)
 	name := "b"
-	_, err := c.UpdateBuilderAgent(context.Background(), "p_1", "AB_1", &name, nil)
+	_, err := c.UpdateAgentBuilderAgent(context.Background(), "p_1", "AB_1", &name, nil)
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"name":"b"}`, *body)
 }
 
-func TestBuilderAgentErrors(t *testing.T) {
-	c, _, _ := recordingServer(t, http.StatusNotFound, `{"code":5,"message":"builder agent not found"}`)
-	_, err := c.GetBuilderAgent(context.Background(), "p_1", "AB_1")
+func TestAgentBuilderAgentErrors(t *testing.T) {
+	c, _, _ := recordingServer(t, http.StatusNotFound, `{"code":5,"message":"Agent Builder agent not found"}`)
+	_, err := c.GetAgentBuilderAgent(context.Background(), "p_1", "AB_1")
 	assert.True(t, IsNotFound(err))
-	assert.EqualError(t, err, "builder agent not found")
+	assert.EqualError(t, err, "Agent Builder agent not found")
 
 	c, _, _ = recordingServer(t, http.StatusOK, `{}`)
-	_, err = c.GetBuilderAgent(context.Background(), "p_1", "AB_1")
-	assert.EqualError(t, err, "unexpected response from server: missing builder agent")
+	_, err = c.GetAgentBuilderAgent(context.Background(), "p_1", "AB_1")
+	assert.EqualError(t, err, "unexpected response from server: missing Agent Builder agent")
 }
 
-func TestDeployBuilderAgent(t *testing.T) {
+func TestDeployAgentBuilderAgent(t *testing.T) {
 	c, req, body := recordingServer(t, http.StatusOK, `{"versionId":"ABV_2","status":"DEPLOYMENT_STATUS_BUILDING"}`)
-	res, err := c.DeployBuilderAgent(context.Background(), "p_1", "AB_1", "ABV_2")
+	res, err := c.DeployAgentBuilderAgent(context.Background(), "p_1", "AB_1", "ABV_2")
 	require.NoError(t, err)
-	assert.Equal(t, "/v0/projects/p_1/agents/builder/AB_1:deploy", req.URL.Path)
+	assert.Equal(t, "/v0/projects/p_1/agent-builder/agents/AB_1:deploy", req.URL.Path)
 	assert.JSONEq(t, `{"versionId":"ABV_2"}`, *body)
 	assert.Equal(t, "ABV_2", *res.VersionId)
 	assert.WithinDuration(t, time.Now(), res.Date, 2*time.Second, "the server's Date header")
@@ -113,16 +113,16 @@ func TestDeployBuilderAgent(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"versionId":"ABV_2","status":"DEPLOYMENT_STATUS_BUILDING"}`, string(out))
 
-	_, err = c.DeployBuilderAgent(context.Background(), "p_1", "AB_1", "")
+	_, err = c.DeployAgentBuilderAgent(context.Background(), "p_1", "AB_1", "")
 	require.NoError(t, err)
 	assert.JSONEq(t, `{}`, *body, "no version deploys the current configuration")
 }
 
-func TestListBuilderAgentVersions(t *testing.T) {
+func TestListAgentBuilderAgentVersions(t *testing.T) {
 	c, req, _ := recordingServer(t, http.StatusOK, `{"items":[{"id":"ABV_2","config":{"futureField":true}}],"pageInfo":{"nextCursor":"c2","hasMore":true}}`)
-	versions, next, err := c.ListBuilderAgentVersions(context.Background(), "p_1", "AB_1", 1, "c1")
+	versions, next, err := c.ListAgentBuilderAgentVersions(context.Background(), "p_1", "AB_1", 1, "c1")
 	require.NoError(t, err)
-	assert.Equal(t, "/v0/projects/p_1/agents/builder/AB_1/versions", req.URL.Path)
+	assert.Equal(t, "/v0/projects/p_1/agent-builder/agents/AB_1/versions", req.URL.Path)
 	assert.Equal(t, "c1", req.URL.Query().Get("page.cursor"))
 	assert.Equal(t, "1", req.URL.Query().Get("page.pageSize"))
 	assert.Equal(t, "c2", next)
@@ -131,17 +131,17 @@ func TestListBuilderAgentVersions(t *testing.T) {
 	assert.JSONEq(t, `{"futureField":true}`, string(versions[0].Config))
 }
 
-func TestGetBuilderAgentCodeURL(t *testing.T) {
+func TestGetAgentBuilderAgentCodeURL(t *testing.T) {
 	c, req, _ := recordingServer(t, http.StatusOK, `{"url":"https://example.test/code?sig=x","versionId":"ABV_1"}`)
-	res, err := c.GetBuilderAgentCodeURL(context.Background(), "p_1", "AB_1", "ABV_1", 60)
+	res, err := c.GetAgentBuilderAgentCodeURL(context.Background(), "p_1", "AB_1", "ABV_1", 60)
 	require.NoError(t, err)
-	assert.Equal(t, "/v0/projects/p_1/agents/builder/AB_1/code-url", req.URL.Path)
+	assert.Equal(t, "/v0/projects/p_1/agent-builder/agents/AB_1/code-url", req.URL.Path)
 	assert.Equal(t, "ABV_1", req.URL.Query().Get("versionId"))
 	assert.Equal(t, "60", req.URL.Query().Get("expirySeconds"))
 	assert.Equal(t, "ABV_1", *res.VersionId)
 
 	c, _, _ = recordingServer(t, http.StatusOK, `{"versionId":"ABV_1"}`)
-	_, err = c.GetBuilderAgentCodeURL(context.Background(), "p_1", "AB_1", "", 0)
+	_, err = c.GetAgentBuilderAgentCodeURL(context.Background(), "p_1", "AB_1", "", 0)
 	assert.EqualError(t, err, "unexpected response from server: missing url")
 }
 
@@ -161,7 +161,7 @@ func TestHasHiddenHeaderValues(t *testing.T) {
 	}
 }
 
-func TestDownloadBuilderAgentCode(t *testing.T) {
+func TestDownloadAgentBuilderAgentCode(t *testing.T) {
 	var auth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth = r.Header.Get("Authorization")
@@ -170,21 +170,21 @@ func TestDownloadBuilderAgentCode(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	data, filename, err := DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
+	data, filename, err := DownloadAgentBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
 	require.NoError(t, err)
 	assert.Equal(t, "zip", string(data))
 	assert.Equal(t, "greeter.zip", filename, "only the base name of the suggestion")
 	assert.Empty(t, auth, "the signed URL is the credential")
 }
 
-func TestDownloadBuilderAgentCodeErrors(t *testing.T) {
+func TestDownloadAgentBuilderAgentCodeErrors(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"code":7,"message":"this code URL expired; call GetBuilderAgentCodeURL for a new one"}`))
+		_, _ = w.Write([]byte(`{"code":7,"message":"this code URL expired; call GetAgentBuilderAgentCodeURL for a new one"}`))
 	}))
 	t.Cleanup(srv.Close)
-	_, _, err := DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
-	assert.EqualError(t, err, "this code URL expired; call GetBuilderAgentCodeURL for a new one")
+	_, _, err := DownloadAgentBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
+	assert.EqualError(t, err, "this code URL expired; call GetAgentBuilderAgentCodeURL for a new one")
 
 	// A body that echoes the URL doesn't print its signature.
 	const sig = "0123456789abcdef0123"
@@ -193,14 +193,14 @@ func TestDownloadBuilderAgentCodeErrors(t *testing.T) {
 		_, _ = w.Write([]byte("bad gateway for " + r.URL.String()))
 	}))
 	t.Cleanup(echo.Close)
-	_, _, err = DownloadBuilderAgentCode(context.Background(), echo.URL+"/code?signature="+sig)
+	_, _, err = DownloadAgentBuilderAgentCode(context.Background(), echo.URL+"/code?signature="+sig)
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), sig)
 
 	// A transport error doesn't quote the URL's signature, which is the
 	// credential.
 	srv.Close()
-	_, _, err = DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=secret")
+	_, _, err = DownloadAgentBuilderAgentCode(context.Background(), srv.URL+"/code?signature=secret")
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "secret")
 	assert.Contains(t, err.Error(), "download agent code: ")

@@ -1,14 +1,14 @@
-# Under --user-auth, `lk agent builder` manages the project's builder agents
+# Under --user-auth, `lk agent builder` manages the project's Agent Builder agents
 # through the Public API's BuilderAgentService. Lists print one page, with the
 # command that reads the next.
-respond GET 'http://publicapi.test/v0/projects/p_1/agents/builder?page.pageSize=1' 200 '{"items":[{"id":"ab_1","name":"greeter","agentId":"CA_1","versionId":"abv_2","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","versionId":"abv_1"}}],"pageInfo":{"nextCursor":"c2","hasMore":true}}'
+respond GET 'http://publicapi.test/v0/projects/p_1/agent-builder/agents?page.pageSize=1' 200 '{"items":[{"id":"ab_1","name":"greeter","cloudAgentId":"CA_1","versionId":"abv_2","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","versionId":"abv_1"}}],"pageInfo":{"nextCursor":"c2","hasMore":true}}'
 exec lk --user-auth agent builder list --limit 1
 stdout 'ab_1.*greeter.*CA_1.*RUNNING.*abv_2'
 ! stdout 'abv_1'
 stderr '^More results available — next page: lk --user-auth agent builder list --limit 1 --cursor c2$'
 
 # get prints the agent's row; --json adds its configuration.
-respond GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 200 '{"builderAgent":{"id":"ab_1","name":"greeter","agentId":"CA_1","versionId":"abv_2","config":{"instructions":"Be brief."},"deployment":{"status":"DEPLOYMENT_STATUS_RUNNING"}}}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 200 '{"agent":{"id":"ab_1","name":"greeter","cloudAgentId":"CA_1","versionId":"abv_2","config":{"instructions":"Be brief."},"deployment":{"status":"DEPLOYMENT_STATUS_RUNNING"}}}'
 exec lk --user-auth agent builder get ab_1
 stdout 'ab_1.*greeter.*CA_1.*RUNNING.*abv_2'
 ! stdout 'Be brief'
@@ -19,38 +19,38 @@ cmp stdout want-get-json
 # create and update send the configuration file, or stdin with -, as
 # written: stateTools, which this lk's generated types don't have, reaches
 # the API.
-respond POST http://publicapi.test/v0/projects/p_1/agents/builder 200 '{"builderAgent":{"id":"ab_2","name":"helper","versionId":"abv_3","deployment":{"status":"DEPLOYMENT_STATUS_NOT_DEPLOYED"}}}'
+respond POST http://publicapi.test/v0/projects/p_1/agent-builder/agents 200 '{"agent":{"id":"ab_2","name":"helper","versionId":"abv_3","deployment":{"status":"DEPLOYMENT_STATUS_NOT_DEPLOYED"}}}'
 exec lk --user-auth agent builder create --name helper --config-file config.json
 stdout 'ab_2.*helper.*NOT_DEPLOYED.*abv_3'
-stderr '^Created builder agent helper. Deploy it with: lk agent builder deploy ab_2$'
-body POST http://publicapi.test/v0/projects/p_1/agents/builder
+stderr '^Created Agent Builder agent helper. Deploy it with: lk agent builder deploy ab_2$'
+body POST http://publicapi.test/v0/projects/p_1/agent-builder/agents
 cmp stdout want-create-body
 
-respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_2 200 '{"builderAgent":{"id":"ab_2","name":"helper-2","versionId":"abv_4"}}'
+respond PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2 200 '{"agent":{"id":"ab_2","name":"helper-2","versionId":"abv_4"}}'
 stdin config.json
 exec lk --user-auth agent builder update ab_2 --name helper-2 --config-file -
 stdout 'ab_2.*helper-2.*abv_4'
-stderr '^Updated builder agent ab_2. The running agent changes when you deploy: lk agent builder deploy ab_2$'
-body PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_2
+stderr '^Updated Agent Builder agent ab_2. The running agent changes when you deploy: lk agent builder deploy ab_2$'
+body PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2
 cmp stdout want-update-body
 
 # deploy starts a build and returns.
-respond POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_2:deploy 200 '{"versionId":"abv_3","status":"DEPLOYMENT_STATUS_BUILDING"}'
+respond POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2:deploy 200 '{"versionId":"abv_3","status":"DEPLOYMENT_STATUS_BUILDING"}'
 exec lk --user-auth agent builder deploy ab_2 --version abv_3
-stderr '^Deploying version abv_3 of builder agent ab_2. Follow it with: lk agent builder get ab_2$'
+stderr '^Deploying version abv_3 of Agent Builder agent ab_2. Follow it with: lk agent builder get ab_2$'
 exec lk --user-auth agent builder deploy ab_2 --json
 cmp stdout want-deploy-json
 
-respond GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_2/versions 200 '{"items":[{"id":"abv_4","ownerId":"u_1","createdAt":"2026-11-19T10:00:00Z","config":{"instructions":"Be brief."}},{"id":"abv_3","ownerId":"u_1","createdAt":"2026-11-18T10:00:00Z","deployedAt":"2026-11-18T10:05:00Z"}],"pageInfo":{}}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2/versions 200 '{"items":[{"id":"abv_4","ownerId":"u_1","createdAt":"2026-11-19T10:00:00Z","config":{"instructions":"Be brief."}},{"id":"abv_3","ownerId":"u_1","createdAt":"2026-11-18T10:00:00Z","deployedAt":"2026-11-18T10:05:00Z"}],"pageInfo":{}}'
 exec lk --user-auth agent builder versions ab_2
 stdout 'abv_4.*u_1'
 stdout 'abv_3.*u_1'
 ! stderr 'More results'
 
 # delete asks first; --yes (or no terminal) answers yes.
-respond DELETE http://publicapi.test/v0/projects/p_1/agents/builder/ab_2 200 '{}'
+respond DELETE http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2 200 '{}'
 exec lk --user-auth agent builder delete ab_2 --yes
-stderr '^Deleted builder agent ab_2$'
+stderr '^Deleted Agent Builder agent ab_2$'
 
 requests
 cmp stdout want-requests
@@ -79,7 +79,7 @@ users:
         url: ws://one.test
 -- want-get-json --
 {
-  "agentId": "CA_1",
+  "cloudAgentId": "CA_1",
   "deployment": {
     "status": "DEPLOYMENT_STATUS_RUNNING"
   },
@@ -96,12 +96,12 @@ users:
   "versionId": "abv_3"
 }
 -- want-requests --
-GET http://publicapi.test/v0/projects/p_1/agents/builder bearer=st_1 project=p_1
-GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 bearer=st_1 project=p_1
-GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 bearer=st_1 project=p_1
-POST http://publicapi.test/v0/projects/p_1/agents/builder bearer=st_1 project=p_1
-PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_2 bearer=st_1 project=p_1
-POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_2:deploy bearer=st_1 project=p_1
-POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_2:deploy bearer=st_1 project=p_1
-GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_2/versions bearer=st_1 project=p_1
-DELETE http://publicapi.test/v0/projects/p_1/agents/builder/ab_2 bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agent-builder/agents bearer=st_1 project=p_1
+PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2 bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2:deploy bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2:deploy bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2/versions bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_2 bearer=st_1 project=p_1

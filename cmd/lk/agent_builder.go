@@ -48,7 +48,7 @@ var (
 	}
 )
 
-// init appends `lk agent builder` to `lk agent`. Builder agents exist only on
+// init appends `lk agent builder` to `lk agent`. Agent Builder agents exist only on
 // LiveKit Cloud, and only the Public API serves them, so every builder
 // command requires --user-auth and calls pkg/public directly; there is no
 // API-key implementation. Like the other Public-API-only groups, it is Hidden
@@ -62,35 +62,38 @@ func init() {
 		Description: `Agent Builder agents run on LiveKit Cloud from a configuration, with no code
 to write. They are the agents of Agent Builder in the dashboard.
 
+AGENT_ID is the AB_ ID that list prints and the dashboard shows, not the
+cloud agent ID (CA_) that the other lk agent commands take.
+
 A configuration is a JSON object. To change one, save it from get, edit it, and
 pass it to update:
 
-  lk agent builder get BUILDER_AGENT_ID --json | jq .config > config.json
-  lk agent builder update BUILDER_AGENT_ID --config-file config.json
+  lk agent builder get AGENT_ID --json | jq .config > config.json
+  lk agent builder update AGENT_ID --config-file config.json
 
 Each update makes a new version. The running agent changes only when you
 deploy. To roll back, deploy an earlier version.`,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
-				Usage:     "List the builder agents of a project",
+				Usage:     "List the Agent Builder agents of a project",
 				UsageText: "lk agent builder list [--limit N] [--cursor CURSOR] --project PROJECT --user-auth",
-				Action:    listBuilderAgents,
+				Action:    listAgentBuilderAgents,
 				Flags:     []cli.Flag{limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
-				Usage:     "Get a builder agent, with its configuration in --json",
-				UsageText: "lk agent builder get BUILDER_AGENT_ID --project PROJECT --user-auth",
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    getBuilderAgent,
+				Usage:     "Get an Agent Builder agent, with its configuration in --json",
+				UsageText: "lk agent builder get AGENT_ID --project PROJECT --user-auth",
+				ArgsUsage: "AGENT_ID",
+				Action:    getAgentBuilderAgent,
 				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "create",
-				Usage:     "Create a builder agent. It doesn't run until you deploy it",
+				Usage:     "Create an Agent Builder agent. It doesn't run until you deploy it",
 				UsageText: "lk agent builder create --name NAME [--config-file FILE] --project PROJECT --user-auth",
-				Action:    createBuilderAgent,
+				Action:    createAgentBuilderAgent,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "name",
@@ -103,10 +106,10 @@ deploy. To roll back, deploy an earlier version.`,
 			},
 			{
 				Name:      "update",
-				Usage:     "Replace a builder agent's configuration, rename it, or both",
-				UsageText: "lk agent builder update BUILDER_AGENT_ID [--config-file FILE] [--name NAME] --project PROJECT --user-auth",
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    updateBuilderAgent,
+				Usage:     "Replace an Agent Builder agent's configuration, rename it, or both",
+				UsageText: "lk agent builder update AGENT_ID [--config-file FILE] [--name NAME] --project PROJECT --user-auth",
+				ArgsUsage: "AGENT_ID",
+				Action:    updateAgentBuilderAgent,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:  "name",
@@ -118,10 +121,10 @@ deploy. To roll back, deploy an earlier version.`,
 			},
 			{
 				Name:      "deploy",
-				Usage:     "Deploy a builder agent's current configuration, or an earlier version to roll back",
-				UsageText: "lk agent builder deploy BUILDER_AGENT_ID [--version VERSION_ID] [--wait] --project PROJECT --user-auth",
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    deployBuilderAgent,
+				Usage:     "Deploy an Agent Builder agent's current configuration, or an earlier version to roll back",
+				UsageText: "lk agent builder deploy AGENT_ID [--version VERSION_ID] [--wait] --project PROJECT --user-auth",
+				ArgsUsage: "AGENT_ID",
+				Action:    deployAgentBuilderAgent,
 				Flags: []cli.Flag{
 					builderVersionFlag,
 					&cli.BoolFlag{
@@ -133,15 +136,15 @@ deploy. To roll back, deploy an earlier version.`,
 			},
 			{
 				Name:      "download",
-				Usage:     "Download the agent code that LiveKit generates from a builder agent version",
-				UsageText: "lk agent builder download BUILDER_AGENT_ID [--version VERSION_ID] [--output FILE | --unzip DIR] --project PROJECT --user-auth",
+				Usage:     "Download the agent code that LiveKit generates from an Agent Builder agent version",
+				UsageText: "lk agent builder download AGENT_ID [--version VERSION_ID] [--output FILE | --unzip DIR] --project PROJECT --user-auth",
 				Description: `Downloads a zip with src/agent.py, pyproject.toml, .env.example, a
 Dockerfile and the project docs, so that you can run and change the agent
 yourself. The code holds every header value of the configuration, so it
 needs the role that can update the agent, and lk writes it readable only
 by you.`,
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    downloadBuilderAgentCode,
+				ArgsUsage: "AGENT_ID",
+				Action:    downloadAgentBuilderAgentCode,
 				Flags: []cli.Flag{
 					builderVersionFlag,
 					&cli.StringFlag{
@@ -156,18 +159,18 @@ by you.`,
 			},
 			{
 				Name:      "delete",
-				Usage:     "Delete a builder agent, its versions and its deployment",
-				UsageText: "lk agent builder delete BUILDER_AGENT_ID --project PROJECT --user-auth",
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    deleteBuilderAgent,
+				Usage:     "Delete an Agent Builder agent, its versions and its deployment",
+				UsageText: "lk agent builder delete AGENT_ID --project PROJECT --user-auth",
+				ArgsUsage: "AGENT_ID",
+				Action:    deleteAgentBuilderAgent,
 				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "versions",
-				Usage:     "List the versions of a builder agent, newest first",
-				UsageText: "lk agent builder versions BUILDER_AGENT_ID [--limit N] [--cursor CURSOR] --project PROJECT --user-auth",
-				ArgsUsage: "BUILDER_AGENT_ID",
-				Action:    listBuilderAgentVersions,
+				Usage:     "List the versions of an Agent Builder agent, newest first",
+				UsageText: "lk agent builder versions AGENT_ID [--limit N] [--cursor CURSOR] --project PROJECT --user-auth",
+				ArgsUsage: "AGENT_ID",
+				Action:    listAgentBuilderAgentVersions,
 				Flags:     []cli.Flag{limitFlag, cursorFlag, jsonFlag},
 			},
 		},
@@ -218,10 +221,10 @@ func readBuilderConfig(cmd *cli.Command) (json.RawMessage, error) {
 	if err != nil || object == nil {
 		return nil, fmt.Errorf("--config-file %s: the configuration must be a JSON object", path)
 	}
-	// The API ignores properties it doesn't know, so a whole builder agent
+	// The API ignores properties it doesn't know, so a whole Agent Builder agent
 	// sent as its configuration would reset the configuration to defaults.
 	if _, ok := object["config"]; ok {
-		return nil, fmt.Errorf("--config-file %s holds a builder agent, not a configuration: pass its \"config\" object", path)
+		return nil, fmt.Errorf("--config-file %s holds an Agent Builder agent, not a configuration: pass its \"config\" object", path)
 	}
 	return bytes.TrimSpace(data), nil
 }
@@ -246,20 +249,20 @@ func warnHiddenHeaderValues(configs ...json.RawMessage) {
 	}
 }
 
-func listBuilderAgents(ctx context.Context, cmd *cli.Command) error {
+func listAgentBuilderAgents(ctx context.Context, cmd *cli.Command) error {
 	client, projectID, err := builderProject(ctx, cmd)
 	if err != nil {
 		return err
 	}
-	agents, next, err := client.ListBuilderAgents(ctx, projectID, int32(cmd.Int("limit")), cmd.String("cursor"))
+	agents, next, err := client.ListAgentBuilderAgents(ctx, projectID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
-	return render.BuilderAgentsPage(out, cmd.Bool("json"), agents, next)
+	return render.AgentBuilderAgentsPage(out, cmd.Bool("json"), agents, next)
 }
 
-func getBuilderAgent(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func getAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -267,17 +270,17 @@ func getBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	agent, err := client.GetBuilderAgent(ctx, projectID, id)
+	agent, err := client.GetAgentBuilderAgent(ctx, projectID, id)
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
 	if cmd.Bool("json") {
 		warnHiddenHeaderValues(agent.Config)
 	}
-	return render.BuilderAgent(out, cmd.Bool("json"), *agent)
+	return render.AgentBuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
-func createBuilderAgent(ctx context.Context, cmd *cli.Command) error {
+func createAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	config, err := readBuilderConfig(cmd)
 	if err != nil {
 		return err
@@ -286,18 +289,18 @@ func createBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	agent, err := client.CreateBuilderAgent(ctx, projectID, cmd.String("name"), config)
+	agent, err := client.CreateAgentBuilderAgent(ctx, projectID, cmd.String("name"), config)
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
-		out.Statusf("Created builder agent %s. Deploy it with: lk agent builder deploy %s", util.Accented(util.Deref(agent.Name)), util.Deref(agent.Id))
+		out.Statusf("Created Agent Builder agent %s. Deploy it with: lk agent builder deploy %s", util.Accented(util.Deref(agent.Name)), util.Deref(agent.Id))
 	}
-	return render.BuilderAgent(out, cmd.Bool("json"), *agent)
+	return render.AgentBuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
-func updateBuilderAgent(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func updateAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -314,18 +317,18 @@ func updateBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	agent, err := client.UpdateBuilderAgent(ctx, projectID, id, name, config)
+	agent, err := client.UpdateAgentBuilderAgent(ctx, projectID, id, name, config)
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
 	if !cmd.Bool("json") {
-		out.Statusf("Updated builder agent %s. The running agent changes when you deploy: lk agent builder deploy %s", util.Accented(id), id)
+		out.Statusf("Updated Agent Builder agent %s. The running agent changes when you deploy: lk agent builder deploy %s", util.Accented(id), id)
 	}
-	return render.BuilderAgent(out, cmd.Bool("json"), *agent)
+	return render.AgentBuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
-func deleteBuilderAgent(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func deleteAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -333,17 +336,17 @@ func deleteBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if !confirmDestroy(ctx, cmd, fmt.Sprintf("Delete builder agent %s, with its versions and its deployment?", id)) {
+	if !confirmDestroy(ctx, cmd, fmt.Sprintf("Delete Agent Builder agent %s, with its versions and its deployment?", id)) {
 		return errors.New("aborted")
 	}
-	if err := client.DeleteBuilderAgent(ctx, projectID, id); err != nil {
+	if err := client.DeleteAgentBuilderAgent(ctx, projectID, id); err != nil {
 		return cloudOnlyAPIError(err)
 	}
-	return util.RenderAction(out, cmd.Bool("json"), "builderAgentId", id, "deleted", fmt.Sprintf("Deleted builder agent %s", util.Accented(id)))
+	return util.RenderAction(out, cmd.Bool("json"), "agentId", id, "deleted", fmt.Sprintf("Deleted Agent Builder agent %s", util.Accented(id)))
 }
 
-func listBuilderAgentVersions(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func listAgentBuilderAgentVersions(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -351,7 +354,7 @@ func listBuilderAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	versions, next, err := client.ListBuilderAgentVersions(ctx, projectID, id, int32(cmd.Int("limit")), cmd.String("cursor"))
+	versions, next, err := client.ListAgentBuilderAgentVersions(ctx, projectID, id, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
@@ -362,15 +365,15 @@ func listBuilderAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		}
 		warnHiddenHeaderValues(configs...)
 	}
-	return render.BuilderAgentVersionsPage(out, cmd.Bool("json"), versions, next)
+	return render.AgentBuilderAgentVersionsPage(out, cmd.Bool("json"), versions, next)
 }
 
 // builderDeployPoll is how often deploy --wait reads the deployment status.
 // Tests shorten it.
 var builderDeployPoll = 3 * time.Second
 
-func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func deployAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -378,7 +381,7 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.DeployBuilderAgent(ctx, projectID, id, cmd.String("version"))
+	res, err := client.DeployAgentBuilderAgent(ctx, projectID, id, cmd.String("version"))
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
@@ -387,10 +390,10 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 		if cmd.Bool("json") {
 			return util.PrintJSONTo(out.ResultWriter(), res)
 		}
-		out.Statusf("Deploying version %s of builder agent %s. Follow it with: lk agent builder get %s", util.Accented(version), util.Accented(id), id)
+		out.Statusf("Deploying version %s of Agent Builder agent %s. Follow it with: lk agent builder get %s", util.Accented(version), util.Accented(id), id)
 		return nil
 	}
-	out.Statusf("Deploying version %s of builder agent %s", util.Accented(version), util.Accented(id))
+	out.Statusf("Deploying version %s of Agent Builder agent %s", util.Accented(version), util.Accented(id))
 	// The Date header is truncated to the second, so a deployment that
 	// finished up to a second before it could still read as later.
 	var after time.Time
@@ -403,15 +406,15 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	if !cmd.Bool("json") {
 		if util.Deref(agent.Deployment.Status) == oapi.DEPLOYMENTSTATUSSLEEPING {
-			out.Statusf("Builder agent %s deployed version %s, and sleeps until a dispatch starts it", util.Accented(id), util.Accented(version))
+			out.Statusf("Agent Builder agent %s deployed version %s, and sleeps until a dispatch starts it", util.Accented(id), util.Accented(version))
 		} else {
-			out.Statusf("Builder agent %s runs version %s", util.Accented(id), util.Accented(version))
+			out.Statusf("Agent Builder agent %s runs version %s", util.Accented(id), util.Accented(version))
 		}
 	}
-	return render.BuilderAgent(out, cmd.Bool("json"), *agent)
+	return render.AgentBuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
-// waitForBuilderDeployment reads a builder agent until a new deployment is up
+// waitForBuilderDeployment reads an Agent Builder agent until a new deployment is up
 // or has failed, printing each status it reads. Up is RUNNING, or SLEEPING:
 // an agent that nothing dispatched scales to zero, and a dispatch starts it.
 //
@@ -420,7 +423,7 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 // when its deployedAt is after after; and a failure only after a BUILDING or
 // STARTING. after is a server time, from the deploy response's Date header,
 // so the check doesn't depend on the local clock; the zero time turns it off.
-func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, after time.Time) (*public.BuilderAgent, error) {
+func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, after time.Time) (*public.AgentBuilderAgent, error) {
 	ctx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	// However the wait ends early, the deployment goes on without it.
@@ -431,11 +434,11 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 		}
 		return fmt.Errorf("stopped waiting. %s", following)
 	}
-	var last oapi.LivekitPublicapiAgentsV1DeploymentStatus
+	var last oapi.LivekitPublicapiAgentbuilderV1DeploymentStatus
 	inProgress := false
 	failures := 0
 	for {
-		agent, err := client.GetBuilderAgent(ctx, projectID, id)
+		agent, err := client.GetAgentBuilderAgent(ctx, projectID, id)
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil, stopped()
@@ -453,7 +456,7 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 			continue
 		}
 		failures = 0
-		var status oapi.LivekitPublicapiAgentsV1DeploymentStatus
+		var status oapi.LivekitPublicapiAgentbuilderV1DeploymentStatus
 		var deployedAt time.Time
 		if d := agent.Deployment; d != nil {
 			status, deployedAt = util.Deref(d.Status), util.Deref(d.DeployedAt)
@@ -471,7 +474,7 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 			}
 		case oapi.DEPLOYMENTSTATUSBUILDFAILED, oapi.DEPLOYMENTSTATUSFAILED:
 			if inProgress {
-				return nil, fmt.Errorf("deployment of builder agent %s failed: %s", id, render.DeploymentStatus(agent.Deployment))
+				return nil, fmt.Errorf("deployment of Agent Builder agent %s failed: %s", id, render.DeploymentStatus(agent.Deployment))
 			}
 		}
 		select {
@@ -501,8 +504,8 @@ func temporaryPollError(err error) bool {
 // credential, so it asks for far less than the API's 15 minutes.
 const builderCodeURLExpiry = 60
 
-func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
-	id, err := requireArg(cmd, "builder agent ID")
+func downloadAgentBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "Agent Builder agent ID")
 	if err != nil {
 		return err
 	}
@@ -519,21 +522,21 @@ func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	code, err := client.GetBuilderAgentCodeURL(ctx, projectID, id, cmd.String("version"), builderCodeURLExpiry)
+	code, err := client.GetAgentBuilderAgentCodeURL(ctx, projectID, id, cmd.String("version"), builderCodeURLExpiry)
 	if err != nil {
 		return cloudOnlyAPIError(err)
 	}
 	version := util.Deref(code.VersionId)
-	data, filename, err := public.DownloadBuilderAgentCode(ctx, *code.Url)
+	data, filename, err := public.DownloadAgentBuilderAgentCode(ctx, *code.Url)
 	if err != nil {
 		return err
 	}
 	if dir != "" {
-		n, err := unzipBuilderAgentCode(data, dir)
+		n, err := unzipAgentBuilderAgentCode(data, dir)
 		if err != nil {
 			return err
 		}
-		out.Statusf("Unpacked %d files of version %s of builder agent %s into %s", n, util.Accented(version), util.Accented(id), dir)
+		out.Statusf("Unpacked %d files of version %s of Agent Builder agent %s into %s", n, util.Accented(version), util.Accented(id), dir)
 		return nil
 	}
 	overwrite := output != ""
@@ -546,7 +549,7 @@ func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
 		}
 		return err
 	}
-	out.Statusf("Downloaded version %s of builder agent %s to %s", util.Accented(version), util.Accented(id), output)
+	out.Statusf("Downloaded version %s of Agent Builder agent %s to %s", util.Accented(version), util.Accented(id), output)
 	return nil
 }
 
@@ -590,14 +593,14 @@ func requireEmptyDir(dir string) error {
 	return nil
 }
 
-// unzipBuilderAgentCode unpacks the agent code zip data into dir, an empty
+// unzipAgentBuilderAgentCode unpacks the agent code zip data into dir, an empty
 // directory or one that doesn't exist yet, and returns the number of files.
 // Every path stays inside dir (os.Root refuses the rest), and an entry that
 // isn't a file or a directory is an error. Files and directories are readable
 // only by the user, because the code holds the configuration's header values.
 // On an error it leaves dir as it found it, so that the user can run the
 // download again.
-func unzipBuilderAgentCode(data []byte, dir string) (_ int, err error) {
+func unzipAgentBuilderAgentCode(data []byte, dir string) (_ int, err error) {
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return 0, fmt.Errorf("the agent code isn't a zip: %w", err)

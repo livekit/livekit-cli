@@ -1,4 +1,4 @@
-# The builder commands exist only under --user-auth: builder agents are a
+# The builder commands exist only under --user-auth: Agent Builder agents are a
 # LiveKit Cloud feature that no API key reaches.
 ! exec lk agent builder list
 stderr 'only available under --user-auth'
@@ -13,23 +13,23 @@ stderr '^--config-file empty.json: line 1, column 1: unexpected end of JSON inpu
 ! exec lk --user-auth agent builder create --name helper --config-file missing.json
 stderr 'missing.json: no such file or directory'
 
-# The API ignores properties it doesn't know, so a whole builder agent, such
+# The API ignores properties it doesn't know, so a whole Agent Builder agent, such
 # as get --json prints, would reset the configuration. lk refuses it.
 ! exec lk --user-auth agent builder update ab_1 --config-file agent.json
-stderr '^--config-file agent.json holds a builder agent, not a configuration: pass its "config" object$'
+stderr '^--config-file agent.json holds an Agent Builder agent, not a configuration: pass its "config" object$'
 
 ! exec lk --user-auth agent builder update ab_1
 stderr '^nothing to update: pass --config-file, --name or both$'
 
 ! exec lk --user-auth agent builder get
-stderr '^builder agent ID is required$'
+stderr '^Agent Builder agent ID is required$'
 
 requests
 ! stdout .
 
 # A refusal for the user's role doesn't suggest the API-key path, which
-# builder agents don't have.
-respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 403 '{"code":7,"message":"this needs agent:manage on the project"}'
+# Agent Builder agents don't have.
+respond PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 403 '{"code":7,"message":"this needs agent:manage on the project"}'
 ! exec lk --user-auth agent builder update ab_1 --name renamed
 ! stdout .
 stderr '^this needs agent:manage on the project — your account doesn''t have access to this project or action$'

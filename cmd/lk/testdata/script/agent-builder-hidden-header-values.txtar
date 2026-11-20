@@ -1,7 +1,7 @@
-# A member who can read a builder agent but not change it reads ******** in
+# A member who can read an Agent Builder agent but not change it reads ******** in
 # place of each header value. lk says that a write of that configuration is
 # refused, and the API's refusal lists each field it names.
-respond GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 200 '{"builderAgent":{"id":"ab_1","name":"greeter","config":{"httpTools":[{"name":"lookup","description":"Looks up an order.","url":"https://example.com/orders","headers":[{"name":"Authorization","value":"********"}]}]}}}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 200 '{"agent":{"id":"ab_1","name":"greeter","config":{"httpTools":[{"name":"lookup","description":"Looks up an order.","url":"https://example.com/orders","headers":[{"name":"Authorization","value":"********"}]}]}}}'
 exec lk --user-auth agent builder get ab_1 --json
 stdout '"value": "\*\*\*\*\*\*\*\*"'
 stderr 'Header values show as \*\*\*\*\*\*\*\* because your role can''t read them. Create and update refuse \*\*\*\*\*\*\*\*'
@@ -10,11 +10,11 @@ stderr 'Header values show as \*\*\*\*\*\*\*\* because your role can''t read the
 exec lk --user-auth agent builder get ab_1
 ! stderr 'Header values'
 
-respond GET http://publicapi.test/v0/projects/p_1/agents/builder/ab_1/versions 200 '{"items":[{"id":"abv_2"},{"id":"abv_1","config":{"mcpServers":[{"name":"docs","url":"https://example.com/mcp","headers":[{"name":"X-Key","value":"********"}]}]}}],"pageInfo":{}}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions 200 '{"items":[{"id":"abv_2"},{"id":"abv_1","config":{"mcpServers":[{"name":"docs","url":"https://example.com/mcp","headers":[{"name":"X-Key","value":"********"}]}]}}],"pageInfo":{}}'
 exec lk --user-auth agent builder versions ab_1 --json
 stderr 'Header values show as'
 
-respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 400 '{"code":3,"message":"config is invalid; this error''s details name each field that is wrong","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"config.httpTools[0].headers[0].value","description":"\"********\" hides a header value; send the value itself"},{"field":"config.instructions","description":"got number, want string"}]}]}'
+respond PATCH http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1 400 '{"code":3,"message":"config is invalid; this error''s details name each field that is wrong","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"config.httpTools[0].headers[0].value","description":"\"********\" hides a header value; send the value itself"},{"field":"config.instructions","description":"got number, want string"}]}]}'
 ! exec lk --user-auth agent builder update ab_1 --config-file config.json
 ! stdout .
 cmp stderr want-update-stderr
