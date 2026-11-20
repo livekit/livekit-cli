@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"time"
@@ -421,17 +422,36 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, after time.Time) (*public.BuilderAgent, error) {
 	ctx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
-	following := fmt.Sprintf("the deployment continues; follow it with: lk agent builder get %s", id)
+	// However the wait ends early, the deployment goes on without it.
+	following := fmt.Sprintf("The deployment continues; follow it with: lk agent builder get %s", id)
+	stopped := func() error {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return fmt.Errorf("stopped waiting after %s. %s", buildTimeout, following)
+		}
+		return fmt.Errorf("stopped waiting. %s", following)
+	}
 	var last oapi.LivekitPublicapiAgentsV1DeploymentStatus
 	inProgress := false
+	failures := 0
 	for {
 		agent, err := client.GetBuilderAgent(ctx, projectID, id)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, fmt.Errorf("stopped waiting after %s: %s", buildTimeout, following)
+				return nil, stopped()
 			}
-			return nil, cloudOnlyAPIError(err)
+			failures++
+			if !temporaryPollError(err) || failures > builderPollRetries {
+				return nil, fmt.Errorf("%w\n%s", cloudOnlyAPIError(err), following)
+			}
+			out.Statusf("Reading the status failed (%v); trying again", err)
+			select {
+			case <-ctx.Done():
+				return nil, stopped()
+			case <-time.After(builderDeployPoll << failures):
+			}
+			continue
 		}
+		failures = 0
 		var status oapi.LivekitPublicapiAgentsV1DeploymentStatus
 		var deployedAt time.Time
 		if d := agent.Deployment; d != nil {
@@ -455,10 +475,24 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 		}
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("stopped waiting after %s: %s", buildTimeout, following)
+			return nil, stopped()
 		case <-time.After(builderDeployPoll):
 		}
 	}
+}
+
+// builderPollRetries is how many reads in a row deploy --wait retries after
+// a temporary error, waiting twice as long before each.
+const builderPollRetries = 3
+
+// temporaryPollError reports whether a failed status read may succeed when
+// tried again: a network error, a rate limit, or a server error.
+func temporaryPollError(err error) bool {
+	var apiErr *public.APIError
+	if !errors.As(err, &apiErr) {
+		return true
+	}
+	return apiErr.Status == http.StatusTooManyRequests || apiErr.Status >= http.StatusInternalServerError
 }
 
 // builderCodeURLExpiry is how long, in seconds, the code URL that download

@@ -102,6 +102,69 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 	}
 }
 
+// flakyServer answers the first failures builder agent gets with status,
+// and every later one with a RUNNING agent deployed after the deploy.
+func flakyServer(t *testing.T, failures, status int) *public.Client {
+	t.Helper()
+	var mu sync.Mutex
+	n := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		n++
+		fail := n <= failures
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if fail {
+			w.WriteHeader(status)
+			fmt.Fprintf(w, `{"code":14,"message":"%s"}`, http.StatusText(status))
+			return
+		}
+		fmt.Fprint(w, `{"builderAgent":{"id":"ab_1","deployment":{"status":"DEPLOYMENT_STATUS_RUNNING","deployedAt":"2099-01-01T00:00:00Z"}}}`)
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "st_1")
+	require.NoError(t, err)
+	return client
+}
+
+func TestWaitForBuilderDeploymentEndsEarly(t *testing.T) {
+	prev := builderDeployPoll
+	builderDeployPoll = time.Millisecond
+	t.Cleanup(func() { builderDeployPoll = prev })
+	after := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
+	const following = "The deployment continues; follow it with: lk agent builder get ab_1"
+
+	t.Run("temporary errors are retried", func(t *testing.T) {
+		client := flakyServer(t, builderPollRetries, http.StatusServiceUnavailable)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		assert.NoError(t, err)
+	})
+	t.Run("too many temporary errors stop the wait", func(t *testing.T) {
+		client := flakyServer(t, builderPollRetries+1, http.StatusServiceUnavailable)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		assert.EqualError(t, err, "Service Unavailable\n"+following)
+	})
+	t.Run("an error that won't pass stops the wait at once", func(t *testing.T) {
+		client := flakyServer(t, 1, http.StatusNotFound)
+		_, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", after)
+		assert.EqualError(t, err, "Not Found\n"+following)
+	})
+	t.Run("cancel isn't the timeout", func(t *testing.T) {
+		client, _ := statusServer(t, after, "BUILDING")
+		ctx, cancel := context.WithCancel(context.Background())
+		time.AfterFunc(20*time.Millisecond, cancel)
+		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", after)
+		assert.EqualError(t, err, "stopped waiting. "+following)
+	})
+	t.Run("the timeout says how long it waited", func(t *testing.T) {
+		client, _ := statusServer(t, after, "BUILDING")
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+		defer cancel()
+		_, err := waitForBuilderDeployment(ctx, client, "p_1", "ab_1", after)
+		assert.EqualError(t, err, "stopped waiting after "+buildTimeout.String()+". "+following)
+	})
+}
+
 // zipOf builds a zip with the given entries: a name ending in / is a
 // directory, a name ending in @ a symbolic link, and any other a file.
 func zipOf(t *testing.T, names ...string) []byte {
