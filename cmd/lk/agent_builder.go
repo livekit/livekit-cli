@@ -208,8 +208,11 @@ func readBuilderConfig(cmd *cli.Command) (json.RawMessage, error) {
 	} else {
 		data, err = os.ReadFile(path)
 	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("--config-file %s: the file doesn't exist", path)
+	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("--config-file %s: %w", path, err)
 	}
 	var object map[string]json.RawMessage
 	err = json.Unmarshal(data, &object)

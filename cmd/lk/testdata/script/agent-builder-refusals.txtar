@@ -11,7 +11,7 @@ stderr '^--config-file trailing-comma.json: line 3, column 1: invalid character 
 ! exec lk --user-auth agent builder create --name helper --config-file empty.json
 stderr '^--config-file empty.json: line 1, column 1: unexpected end of JSON input$'
 ! exec lk --user-auth agent builder create --name helper --config-file missing.json
-stderr 'missing.json: no such file or directory'
+stderr '^--config-file missing.json: the file doesn''t exist$'
 
 # The API ignores properties it doesn't know, so a whole Agent Builder agent, such
 # as get --json prints, would reset the configuration. lk refuses it.
