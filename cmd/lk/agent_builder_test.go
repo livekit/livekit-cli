@@ -37,8 +37,8 @@ import (
 )
 
 // statusServer answers each builder agent get with the next of statuses,
-// repeating the last, each with deployedAt.
-func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) *public.Client {
+// repeating the last, each with deployedAt. reads counts the gets.
+func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) (client *public.Client, reads func() int) {
 	t.Helper()
 	var mu sync.Mutex
 	n := 0
@@ -54,7 +54,11 @@ func statusServer(t *testing.T, deployedAt time.Time, statuses ...string) *publi
 	t.Cleanup(srv.Close)
 	client, err := public.New(srv.URL, "st_1")
 	require.NoError(t, err)
-	return client
+	return client, func() int {
+		mu.Lock()
+		defer mu.Unlock()
+		return n
+	}
 }
 
 func TestWaitForBuilderDeployment(t *testing.T) {
@@ -62,32 +66,38 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 	builderDeployPoll = time.Millisecond
 	t.Cleanup(func() { builderDeployPoll = prev })
 
-	started := time.Now()
-	before, after := started.Add(-time.Hour), started.Add(time.Second)
+	// after is the server's time of the deploy; the local clock plays no part.
+	after := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
+	before, later := after.Add(-time.Hour), after.Add(time.Minute)
 	for _, tc := range []struct {
 		name       string
 		deployedAt time.Time
+		after      time.Time
 		statuses   []string
 		wantErr    string
 	}{
-		{"runs after building", before, []string{"BUILDING", "STARTING", "RUNNING"}, ""},
-		{"a previous deployment's RUNNING doesn't end the wait", before, []string{"RUNNING", "RUNNING", "BUILDING", "RUNNING"}, ""},
-		{"RUNNING with a newer deployedAt ends the wait", after, []string{"RUNNING"}, ""},
-		{"a build failure after building fails", before, []string{"BUILDING", "BUILD_FAILED"},
+		{"runs after building", before, after, []string{"BUILDING", "STARTING", "RUNNING"}, ""},
+		{"a previous deployment's RUNNING doesn't end the wait", before, after, []string{"RUNNING", "RUNNING", "BUILDING", "RUNNING"}, ""},
+		{"RUNNING with a newer deployedAt ends the wait", later, after, []string{"RUNNING"}, ""},
+		{"without a server time, only a build ends the wait", later, time.Time{}, []string{"RUNNING", "BUILDING", "RUNNING"}, ""},
+		{"SLEEPING after building ends the wait", before, after, []string{"BUILDING", "STARTING", "SLEEPING"}, ""},
+		{"a previous deployment's SLEEPING doesn't end the wait", before, after, []string{"SLEEPING", "BUILDING", "SLEEPING"}, ""},
+		{"a build failure after building fails", before, after, []string{"BUILDING", "BUILD_FAILED"},
 			"deployment of builder agent ab_1 failed: BUILD_FAILED"},
-		{"a previous deployment's failure doesn't end the wait", before, []string{"BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
-		{"a start failure fails", before, []string{"STARTING", "FAILED"},
+		{"a previous deployment's failure doesn't end the wait", before, after, []string{"BUILD_FAILED", "BUILDING", "RUNNING"}, ""},
+		{"a start failure fails", before, after, []string{"STARTING", "FAILED"},
 			"deployment of builder agent ab_1 failed: FAILED"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			client := statusServer(t, tc.deployedAt, tc.statuses...)
-			agent, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", started)
+			client, reads := statusServer(t, tc.deployedAt, tc.statuses...)
+			agent, err := waitForBuilderDeployment(context.Background(), client, "p_1", "ab_1", tc.after)
 			if tc.wantErr != "" {
 				assert.EqualError(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
 			assert.Equal(t, "ab_1", *agent.Id)
+			assert.Equal(t, len(tc.statuses), reads(), "the wait ends on the last status")
 		})
 	}
 }

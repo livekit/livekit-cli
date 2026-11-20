@@ -376,7 +376,6 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	started := time.Now()
 	res, err := client.DeployBuilderAgent(ctx, projectID, id, cmd.String("version"))
 	if err != nil {
 		return cloudOnlyAPIError(err)
@@ -390,22 +389,36 @@ func deployBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 	out.Statusf("Deploying version %s of builder agent %s", util.Accented(version), util.Accented(id))
-	agent, err := waitForBuilderDeployment(ctx, client, projectID, id, started)
+	// The Date header is truncated to the second, so a deployment that
+	// finished up to a second before it could still read as later.
+	var after time.Time
+	if !res.Date.IsZero() {
+		after = res.Date.Add(time.Second)
+	}
+	agent, err := waitForBuilderDeployment(ctx, client, projectID, id, after)
 	if err != nil {
 		return err
 	}
 	if !cmd.Bool("json") {
-		out.Statusf("Builder agent %s runs version %s", util.Accented(id), util.Accented(version))
+		if util.Deref(agent.Deployment.Status) == oapi.DEPLOYMENTSTATUSSLEEPING {
+			out.Statusf("Builder agent %s deployed version %s, and sleeps until a dispatch starts it", util.Accented(id), util.Accented(version))
+		} else {
+			out.Statusf("Builder agent %s runs version %s", util.Accented(id), util.Accented(version))
+		}
 	}
 	return render.BuilderAgent(out, cmd.Bool("json"), *agent)
 }
 
-// waitForBuilderDeployment reads a builder agent until the deployment that
-// started at started runs or fails, printing each status it reads. A status
-// read before the new deployment shows can still be the previous one's, so
-// RUNNING ends the wait only after a BUILDING or STARTING, or with a
-// deployedAt after started, and a failure only after a BUILDING or STARTING.
-func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, started time.Time) (*public.BuilderAgent, error) {
+// waitForBuilderDeployment reads a builder agent until a new deployment is up
+// or has failed, printing each status it reads. Up is RUNNING, or SLEEPING:
+// an agent that nothing dispatched scales to zero, and a dispatch starts it.
+//
+// A status read before the new deployment shows can still be the previous
+// one's. So an up status ends the wait only after a BUILDING or STARTING, or
+// when its deployedAt is after after; and a failure only after a BUILDING or
+// STARTING. after is a server time, from the deploy response's Date header,
+// so the check doesn't depend on the local clock; the zero time turns it off.
+func waitForBuilderDeployment(ctx context.Context, client *public.Client, projectID, id string, after time.Time) (*public.BuilderAgent, error) {
 	ctx, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	following := fmt.Sprintf("the deployment continues; follow it with: lk agent builder get %s", id)
@@ -431,8 +444,8 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 		switch status {
 		case oapi.DEPLOYMENTSTATUSBUILDING, oapi.DEPLOYMENTSTATUSSTARTING:
 			inProgress = true
-		case oapi.DEPLOYMENTSTATUSRUNNING:
-			if inProgress || deployedAt.After(started) {
+		case oapi.DEPLOYMENTSTATUSRUNNING, oapi.DEPLOYMENTSTATUSSLEEPING:
+			if inProgress || (!after.IsZero() && deployedAt.After(after)) {
 				return agent, nil
 			}
 		case oapi.DEPLOYMENTSTATUSBUILDFAILED, oapi.DEPLOYMENTSTATUSFAILED:

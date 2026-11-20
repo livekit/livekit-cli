@@ -24,6 +24,7 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
@@ -115,10 +116,21 @@ func (c *Client) UpdateBuilderAgent(ctx context.Context, projectID, builderAgent
 	return decodeBuilderAgent(resp.StatusCode(), resp.Body)
 }
 
+// BuilderAgentDeploy is the answer to a builder agent deploy: the version the
+// deployment builds and its status, which the API sends, and the server's
+// time of the answer.
+type BuilderAgentDeploy struct {
+	oapi.LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
+	// Date is the time in the response's Date header, to the second, or the
+	// zero time without one. It lets a caller tell a deployment that started
+	// after the deploy from an earlier one by server clocks alone.
+	Date time.Time `json:"-"`
+}
+
 // DeployBuilderAgent starts a deployment of a builder agent's version, or of
 // its current configuration when versionID is "". It returns once the build
 // starts.
-func (c *Client) DeployBuilderAgent(ctx context.Context, projectID, builderAgentID, versionID string) (*oapi.LivekitPublicapiAgentsV1BuilderAgentsDeployResponse, error) {
+func (c *Client) DeployBuilderAgent(ctx context.Context, projectID, builderAgentID, versionID string) (*BuilderAgentDeploy, error) {
 	body := oapi.BuilderAgentServiceDeployBuilderAgentJSONRequestBody{}
 	if versionID != "" {
 		body.VersionId = &versionID
@@ -130,7 +142,8 @@ func (c *Client) DeployBuilderAgent(ctx context.Context, projectID, builderAgent
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200, nil
+	date, _ := http.ParseTime(resp.HTTPResponse.Header.Get("Date"))
+	return &BuilderAgentDeploy{LivekitPublicapiAgentsV1BuilderAgentsDeployResponse: *resp.JSON200, Date: date}, nil
 }
 
 // DeleteBuilderAgent deletes a builder agent, its versions and its deployment.

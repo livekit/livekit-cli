@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,6 +108,10 @@ func TestDeployBuilderAgent(t *testing.T) {
 	assert.Equal(t, "/v0/projects/p_1/agents/builder/AB_1:deploy", req.URL.Path)
 	assert.JSONEq(t, `{"versionId":"ABV_2"}`, *body)
 	assert.Equal(t, "ABV_2", *res.VersionId)
+	assert.WithinDuration(t, time.Now(), res.Date, 2*time.Second, "the server's Date header")
+	out, err := json.Marshal(res)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"versionId":"ABV_2","status":"DEPLOYMENT_STATUS_BUILDING"}`, string(out))
 
 	_, err = c.DeployBuilderAgent(context.Background(), "p_1", "AB_1", "")
 	require.NoError(t, err)
