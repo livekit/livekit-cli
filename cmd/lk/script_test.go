@@ -44,6 +44,9 @@ package main
 //		credential it carried (a session token as bearer=, or as apikey= the
 //		API key that issued an access token, read from its claims without
 //		checking the signature) and the project it named.
+//	body METHOD URL
+//		Print the body of the last METHOD request to URL, a URL without a
+//		query, as lk sent it.
 //
 // To regenerate expected output after an intended change, run
 //
@@ -53,6 +56,7 @@ package main
 // rewritten with what the run produced; regexp checks (stdout, stderr) are not.
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,6 +92,7 @@ func TestScripts(t *testing.T) {
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"respond":  cmdRespond,
 			"requests": cmdRequests,
+			"body":     cmdBody,
 			"mint":     cmdMint,
 		},
 		UpdateScripts:       os.Getenv("UPDATE_LK_SCRIPTS") != "",
@@ -132,6 +137,7 @@ type fakeCloud struct {
 	mu        sync.Mutex
 	responses map[string]cannedResponse // by "METHOD URL", with the query only if respond had one
 	log       []string
+	bodies    map[string]string // the last request body, by "METHOD URL" without the query
 
 	// mint makes the fake answer a Public API token request it has no canned
 	// response for as the Public API does: with an access token carrying the
@@ -151,7 +157,7 @@ type cannedResponse struct {
 }
 
 func newFakeCloud() *fakeCloud {
-	f := &fakeCloud{responses: map[string]cannedResponse{}, secrets: map[string]string{}, sessions: map[string]bool{}}
+	f := &fakeCloud{responses: map[string]cannedResponse{}, bodies: map[string]string{}, secrets: map[string]string{}, sessions: map[string]bool{}}
 	f.Server = httptest.NewServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -181,6 +187,10 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	target := r.Method + " " + r.URL.Scheme + "://" + r.URL.Host + r.URL.Path
+	if body, err := io.ReadAll(r.Body); err == nil {
+		f.bodies[target] = string(body)
+		r.Body = io.NopCloser(bytes.NewReader(body))
+	}
 	line := target
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
 		if v, err := auth.ParseAPIToken(token); err == nil {
@@ -276,6 +286,21 @@ func cmdMint(ts *testscript.TestScript, neg bool, args []string) {
 	for _, token := range args {
 		f.sessions[token] = true
 	}
+}
+
+// cmdBody implements `body METHOD URL`.
+func cmdBody(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 2 {
+		ts.Fatalf("usage: body METHOD URL")
+	}
+	f := ts.Value(fakeCloudKey{}).(*fakeCloud)
+	f.mu.Lock()
+	body, ok := f.bodies[args[0]+" "+args[1]]
+	f.mu.Unlock()
+	if !ok {
+		ts.Fatalf("no %s request to %s", args[0], args[1])
+	}
+	fmt.Fprintln(ts.Stdout(), body)
 }
 
 // cmdRequests implements `requests`.

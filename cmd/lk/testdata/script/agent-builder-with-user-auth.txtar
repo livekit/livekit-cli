@@ -16,17 +16,23 @@ exec lk --user-auth agent builder get ab_1 --json
 cmp stdout want-get-json
 ! stderr 'Header values'
 
-# create and update send the configuration file, or stdin with -.
+# create and update send the configuration file, or stdin with -, as
+# written: stateTools, which this lk's generated types don't have, reaches
+# the API.
 respond POST http://publicapi.test/v0/projects/p_1/agents/builder 200 '{"builderAgent":{"id":"ab_2","name":"helper","versionId":"abv_3","deployment":{"status":"DEPLOYMENT_STATUS_NOT_DEPLOYED"}}}'
 exec lk --user-auth agent builder create --name helper --config-file config.json
 stdout 'ab_2.*helper.*NOT_DEPLOYED.*abv_3'
 stderr '^Created builder agent helper. Deploy it with: lk agent builder deploy ab_2$'
+body POST http://publicapi.test/v0/projects/p_1/agents/builder
+cmp stdout want-create-body
 
 respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_2 200 '{"builderAgent":{"id":"ab_2","name":"helper-2","versionId":"abv_4"}}'
 stdin config.json
 exec lk --user-auth agent builder update ab_2 --name helper-2 --config-file -
 stdout 'ab_2.*helper-2.*abv_4'
 stderr '^Updated builder agent ab_2. The running agent changes when you deploy: lk agent builder deploy ab_2$'
+body PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_2
+cmp stdout want-update-body
 
 # deploy starts a build and returns.
 respond POST http://publicapi.test/v0/projects/p_1/agents/builder/ab_2:deploy 200 '{"versionId":"abv_3","status":"DEPLOYMENT_STATUS_BUILDING"}'
@@ -50,7 +56,14 @@ requests
 cmp stdout want-requests
 
 -- config.json --
-{"instructions": "Be brief.", "aFieldThisLkDoesNotKnow": true}
+{
+  "instructions": "Be brief.",
+  "stateTools": [{"name": "remember_order", "description": "Remembers the order number."}]
+}
+-- want-create-body --
+{"name":"helper","config":{"instructions":"Be brief.","stateTools":[{"name":"remember_order","description":"Remembers the order number."}]}}
+-- want-update-body --
+{"name":"helper-2","config":{"instructions":"Be brief.","stateTools":[{"name":"remember_order","description":"Remembers the order number."}]}}
 -- home/.livekit/cli-config.yaml --
 default_user: u_1
 users:
