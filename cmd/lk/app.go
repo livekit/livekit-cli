@@ -42,6 +42,7 @@ var (
 	template        *bootstrap.Template
 	templateName    string
 	templateURL     string
+	templateBranch  string
 	appName         string
 	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
 	destinationFile string
@@ -62,6 +63,7 @@ var (
 					Flags: []cli.Flag{
 						templateFlag,
 						templateURLFlag,
+						templateBranchFlag,
 						installFlag,
 					},
 				},
@@ -481,11 +483,11 @@ func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) e
 	defer cleanup()
 
 	err := out.Await(
-		"Cloning template from "+url,
+		cloneMessage(url),
 		ctx,
 		func(ctx context.Context) error {
 			var cmdErr error
-			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
+			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, templateBranch, tempName)
 			return cmdErr
 		},
 	)
@@ -503,10 +505,24 @@ func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) e
 	}
 
 	if err != nil {
+		// git's own message ("Remote branch x not found", "repository not
+		// found") says more than its exit status.
+		if msg := strings.TrimSpace(stderr); msg != "" && !cmd.Bool("verbose") {
+			lines := strings.Split(msg, "\n")
+			last := strings.TrimPrefix(strings.TrimSpace(lines[len(lines)-1]), "fatal: ")
+			return fmt.Errorf("could not clone template: %s", last)
+		}
 		return err
 	}
 
 	return relocate()
+}
+
+func cloneMessage(url string) string {
+	if templateBranch != "" {
+		return "Cloning template from " + url + " (" + templateBranch + ")"
+	}
+	return "Cloning template from " + url
 }
 
 func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) error {
