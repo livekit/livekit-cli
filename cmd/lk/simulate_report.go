@@ -78,6 +78,12 @@ func (l *simLog) ConfigWarning(msg string) {
 	fmt.Fprintf(l.out, "⚠ %s\n", msg)
 }
 
+// ObservabilityDisabled is an annotation rather than a setup line: GitHub
+// collapses the setup group, and the notice carries the link to act on.
+func (l *simLog) ObservabilityDisabled(notice string) {
+	fmt.Fprintf(l.out, "::warning::%s\n", notice)
+}
+
 func (l *simLog) QuotaExceeded(desc string, suggested int) {
 	l.quotaNote = fmt.Sprintf(
 		"This run hit the project's %s (inference 429s). Try re-running with --concurrency %d.",
@@ -242,7 +248,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 			msg = run.Error
 		}
 		fmt.Fprintln(w)
-		fmt.Fprintln(w, "⚠ "+msg)
+		fmt.Fprintln(w, "::warning::"+msg)
 	}
 }
 

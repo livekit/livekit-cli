@@ -112,18 +112,21 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 
 	start := time.Now()
-	var presigned *livekit.PresignedPostRequest
-	runID, presigned, err = createSimulationRun(ctx, config)
+	created, err := createSimulationRun(ctx, config)
 	if err != nil {
 		report.SetupFailed(err)
 		report.EndSetup()
 		return err
 	}
+	runID = created.SimulationRunId
 	report.SimulationCreated(time.Since(start))
+	if created.ObservabilityDisabled {
+		report.ObservabilityDisabled(observabilityNotice(config.pc.ProjectId))
+	}
 
 	if config.mode == modeGenerateFromSource {
 		start = time.Now()
-		if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
+		if err := uploadSource(ctx, config.client, runID, created.PresignedPostRequest, config.projectDir, config.entrypoint); err != nil {
 			report.SetupFailed(err)
 			report.EndSetup()
 			return err

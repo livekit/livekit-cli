@@ -262,6 +262,9 @@ type simulateModel struct {
 	confirmQuit    bool
 	confirmQuitSel int
 
+	// the project's Agent Observability is off, as the run's create response said
+	observabilityOff bool
+
 	// inference-quota (429) dialog; shows at most once per run
 	quotaWarning   *quotaInfo
 	quotaDismissed bool
@@ -427,10 +430,9 @@ type agentReadyMsg struct {
 }
 
 type simulationCreatedMsg struct {
-	runID     string
-	presigned *livekit.PresignedPostRequest
-	elapsed   time.Duration
-	err       error
+	resp    *livekit.SimulationRun_Create_Response
+	elapsed time.Duration
+	err     error
 }
 
 type sourceUploadedMsg struct {
@@ -565,8 +567,8 @@ func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
 func (m *simulateModel) createSimulationCmd() tea.Cmd {
 	return func() tea.Msg {
 		start := time.Now()
-		runID, presigned, err := createSimulationRun(m.setupCtx, m.config)
-		return simulationCreatedMsg{runID: runID, presigned: presigned, elapsed: time.Since(start), err: err}
+		resp, err := createSimulationRun(m.setupCtx, m.config)
+		return simulationCreatedMsg{resp: resp, elapsed: time.Since(start), err: err}
 	}
 }
 
@@ -670,11 +672,15 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
-		m.runID = msg.runID
+		m.runID = msg.resp.SimulationRunId
 		m.reporter.SimulationCreated(msg.elapsed)
+		if msg.resp.ObservabilityDisabled {
+			m.observabilityOff = true
+			m.reporter.ObservabilityDisabled(observabilityNotice(m.config.pc.ProjectId))
+		}
 		if m.config.mode == modeGenerateFromSource {
 			m.advanceSetupStep(msg.elapsed)
-			return m, m.uploadSourceCmd(msg.presigned)
+			return m, m.uploadSourceCmd(msg.resp.PresignedPostRequest)
 		}
 		m.completeSetup(msg.elapsed)
 		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
@@ -1234,6 +1240,9 @@ func (m *simulateModel) viewSetup() string {
 	for _, w := range m.config.warnings {
 		writeWrappedLines(&b, yellowStyle(), "  ", "⚠ "+w, m.width)
 	}
+	if m.observabilityOff {
+		writeWrappedLines(&b, yellowStyle(), "  ", "⚠ "+observabilityNotice(m.config.pc.ProjectId), m.width)
+	}
 
 	// in file mode the scenarios are already known, nothing is generated
 	if m.setupDone && m.err == nil && m.config.mode == modeGenerateFromSource {
@@ -1424,7 +1433,14 @@ func (m *simulateModel) viewRunning() string {
 			if m.run.Error != "" {
 				msg = m.run.Error
 			}
-			fmt.Fprintf(&b, "\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render(msg))
+			b.WriteString("\n")
+			writeWrappedLines(&b, yellowStyle(), "  ", "⚠ "+msg, m.width)
+			if url := observabilitySettingsURL(m.config.pc.ProjectId); m.observabilityOff && url != "" {
+				fmt.Fprintf(&b, "  %s\n", dimStyle.Render("Turn on Agent Observability: "+url))
+			}
+		} else if m.observabilityOff {
+			b.WriteString("\n")
+			writeWrappedLines(&b, yellowStyle(), "  ", "⚠ "+observabilityNotice(m.config.pc.ProjectId), m.width)
 		}
 	}
 
