@@ -35,6 +35,11 @@ func ensureScenarioIDs(cmd *cli.Command, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read scenarios file: %w", err)
 	}
+	// a file of nodes alone is one other files include: an id would break it
+	var keys map[string]yaml.Node
+	if err := yaml.Unmarshal(data, &keys); err == nil && keys["scenarios"].Kind == 0 {
+		return fmt.Errorf("%s has no `scenarios`: pass the scenarios file, not a file it includes", path)
+	}
 	fixed, added, err := insertScenarioIDs(data)
 	if err != nil {
 		return fmt.Errorf("failed to parse scenarios file: %w", err)

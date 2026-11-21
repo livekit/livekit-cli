@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -416,12 +417,21 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
 // and JSON-encoded into the proto's string field. Each `nodes` entry is a
-// SimulatorNode in protojson form (see simulate_flow.go).
+// SimulatorNode in protojson form (see simulate_flow.go). `include` names files
+// whose nodes join this file's (see simulate_include.go).
 type scenariosFile struct {
 	ID        string               `yaml:"id"`
 	Name      string               `yaml:"name"`
+	Include   []string             `yaml:"include,omitempty"`
 	Nodes     map[string]yaml.Node `yaml:"nodes,omitempty"`
 	Scenarios []yamlScenario       `yaml:"scenarios"`
+}
+
+func (f *scenariosFile) usesFlows() bool {
+	if len(f.Nodes) > 0 || len(f.Include) > 0 {
+		return true
+	}
+	return slices.ContainsFunc(f.Scenarios, func(s yamlScenario) bool { return s.Start != "" })
 }
 
 type yamlScenario struct {
@@ -497,16 +507,38 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	if err := yaml.Unmarshal(data, &f); err != nil {
 		return nil, fmt.Errorf("failed to parse scenarios file: %w", err)
 	}
+	// only in a file with flows, where a misspelled `include` or `nodes` loses
+	// nodes; other files may carry keys of their own
+	if f.usesFlows() {
+		if err := onlyKeys(data, "a scenarios file", "id", "name", "include", "nodes", "scenarios"); err != nil {
+			return nil, err
+		}
+	}
 
 	if f.ID == "" {
 		return nil, fmt.Errorf("scenarios file has no id")
 	}
 	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
-	nodes, err := decodeNodes(f.Nodes)
+	nodes, err := resolveNodes(path, f.Nodes, f.Include)
 	if err != nil {
 		return nil, err
 	}
-	group.Nodes = nodes
+	names := make([]string, 0, len(nodes))
+	for name := range nodes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		value := nodes[name].value
+		node, err := decodeNode(name, &value)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", nodes[name].file, err)
+		}
+		if group.Nodes == nil {
+			group.Nodes = map[string]*livekit.SimulatorNode{}
+		}
+		group.Nodes[name] = node
+	}
 	seen := map[string]bool{}
 	for _, s := range f.Scenarios {
 		if s.ID == "" {

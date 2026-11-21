@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -38,28 +37,6 @@ const builtinNodePrefix = "livekit/"
 
 // maxNodeTimeout is the documented limit of SimulatorNode.Timeout.after.
 const maxNodeTimeout = 20 * time.Second
-
-// decodeNodes reads the `nodes` of a scenarios.yaml.
-func decodeNodes(nodes map[string]yaml.Node) (map[string]*livekit.SimulatorNode, error) {
-	if len(nodes) == 0 {
-		return nil, nil
-	}
-	names := make([]string, 0, len(nodes))
-	for name := range nodes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	out := make(map[string]*livekit.SimulatorNode, len(nodes))
-	for _, name := range names {
-		value := nodes[name]
-		node, err := decodeNode(name, &value)
-		if err != nil {
-			return nil, err
-		}
-		out[name] = node
-	}
-	return out, nil
-}
 
 // decodeNode reads one entry of a scenarios.yaml's `nodes`.
 func decodeNode(name string, value *yaml.Node) (*livekit.SimulatorNode, error) {
