@@ -380,11 +380,22 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	if f.ID == "" {
 		f.ID = utils.NewGuid(utils.ScenarioGroupPrefix)
 	}
+	for name, node := range group.GetNodes() {
+		v, err := protoToYAML(node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode node %q: %w", name, err)
+		}
+		if f.Nodes == nil {
+			f.Nodes = map[string]yaml.Node{}
+		}
+		f.Nodes[name] = v
+	}
 	for _, s := range group.GetScenarios() {
 		ys := yamlScenario{
 			ID:                s.GetId(),
 			Label:             s.GetLabel(),
 			Instructions:      s.GetInstructions(),
+			Start:             s.GetStart(),
 			AgentExpectations: s.GetAgentExpectations(),
 			Tags:              s.GetTags(),
 		}
@@ -404,17 +415,20 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 }
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
-// and JSON-encoded into the proto's string field.
+// and JSON-encoded into the proto's string field. Each `nodes` entry is a
+// SimulatorNode in protojson form (see simulate_flow.go).
 type scenariosFile struct {
-	ID        string         `yaml:"id"`
-	Name      string         `yaml:"name"`
-	Scenarios []yamlScenario `yaml:"scenarios"`
+	ID        string               `yaml:"id"`
+	Name      string               `yaml:"name"`
+	Nodes     map[string]yaml.Node `yaml:"nodes,omitempty"`
+	Scenarios []yamlScenario       `yaml:"scenarios"`
 }
 
 type yamlScenario struct {
 	ID                string            `yaml:"id"`
 	Label             string            `yaml:"label"`
-	Instructions      string            `yaml:"instructions"`
+	Instructions      string            `yaml:"instructions,omitempty"`
+	Start             string            `yaml:"start,omitempty"`
 	AgentExpectations string            `yaml:"agent_expectations"`
 	Tags              map[string]string `yaml:"tags"`
 	Userdata          map[string]any    `yaml:"userdata"`
@@ -488,6 +502,11 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		return nil, fmt.Errorf("scenarios file has no id")
 	}
 	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
+	nodes, err := decodeNodes(f.Nodes)
+	if err != nil {
+		return nil, err
+	}
+	group.Nodes = nodes
 	seen := map[string]bool{}
 	for _, s := range f.Scenarios {
 		if s.ID == "" {
@@ -497,6 +516,13 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			return nil, fmt.Errorf("duplicate scenario id %q", s.ID)
 		}
 		seen[s.ID] = true
+		if s.Start != "" && s.Instructions != "" {
+			return nil, fmt.Errorf("scenario %q: set `start` or `instructions`, not both", s.Label)
+		}
+		// with nodes in the file, a scenario with neither is most likely a misspelled `start`
+		if s.Start == "" && s.Instructions == "" && len(group.Nodes) > 0 {
+			return nil, fmt.Errorf("scenario %q: set `start` or `instructions`", s.Label)
+		}
 		var userdata string
 		if len(s.Userdata) > 0 {
 			b, err := json.Marshal(s.Userdata)
@@ -509,10 +535,14 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			Id:                s.ID,
 			Label:             s.Label,
 			Instructions:      s.Instructions,
+			Start:             s.Start,
 			AgentExpectations: s.AgentExpectations,
 			Tags:              s.Tags,
 			Userdata:          userdata,
 		})
+	}
+	if err := checkFlows(group); err != nil {
+		return nil, err
 	}
 	return group, nil
 }
