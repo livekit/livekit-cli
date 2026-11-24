@@ -33,7 +33,7 @@ require (
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pion/rtcp v1.2.20
-	github.com/pion/rtp v1.10.6
+	github.com/pion/rtp/v2 v2.0.0
 	github.com/pion/webrtc/v4 v4.2.24
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.12.1
@@ -266,6 +266,8 @@ require (
 	pgregory.net/rapid v1.2.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
+
+require github.com/pion/rtp v1.10.6
 
 // TEMP (local dev): use local protocol with the WorkerInfo dev message.
 // Drop once github.com/livekit/protocol publishes it.
