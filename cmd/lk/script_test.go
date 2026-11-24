@@ -41,11 +41,13 @@ package main
 //		see checkPublicAPIBody. A Twirp method's 200 body (a /twirp path) is
 //		its response message as protojson, or empty for an empty message,
 //		and goes to a protobuf client as protobuf: see twirpResponse.
-//	requests
+//	requests [-v]
 //		Print every request the fake received, in order, with the
 //		credential it carried (a session token as bearer=, or as apikey= the
 //		API key that issued an access token, read from its claims without
-//		checking the signature) and the project it named.
+//		checking the signature) and the project it named. With -v, each URL
+//		has its query, and a JSON body follows its request on a line of its
+//		own, with the value of each secret replaced (see loggedBody).
 //
 // To regenerate expected output after an intended change, run
 //
@@ -55,6 +57,7 @@ package main
 // rewritten with what the run produced; regexp checks (stdout, stderr) are not.
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -137,7 +140,7 @@ type fakeCloud struct {
 
 	mu        sync.Mutex
 	responses map[string]cannedResponse // by "METHOD URL", with the query only if respond had one
-	log       []string
+	log       []loggedRequest
 
 	// mint makes the fake answer a Public API token request it has no canned
 	// response for as the Public API does: with an access token carrying the
@@ -149,6 +152,14 @@ type fakeCloud struct {
 	// access token is signed by a known key with the wrong secret is logged
 	// with badsig.
 	secrets map[string]string
+}
+
+// loggedRequest is a request the fake received, as `requests` prints it.
+type loggedRequest struct {
+	target string // METHOD URL, without the query
+	query  string
+	suffix string // the credential and the project
+	body   string // see loggedBody
 }
 
 type cannedResponse struct {
@@ -181,29 +192,35 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	// lk reaches a .test host through the proxy as plain HTTP. An https URL
 	// arrives as a CONNECT tunnel, which the fake never opens.
 	if r.Method == http.MethodConnect || !strings.HasSuffix(r.URL.Hostname(), ".test") {
-		f.log = append(f.log, fmt.Sprintf("%s %s refused: not a fake host", r.Method, r.Host))
+		f.log = append(f.log, loggedRequest{target: fmt.Sprintf("%s %s refused: not a fake host", r.Method, r.Host)})
 		http.Error(w, "fake cloud: lk tried to reach "+r.Host, http.StatusForbidden)
 		return
 	}
 
 	target := r.Method + " " + r.URL.Scheme + "://" + r.URL.Host + r.URL.Path
-	line := target
+	suffix := ""
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
 		if v, err := auth.ParseAPIToken(token); err == nil {
-			line += " apikey=" + v.APIKey()
+			suffix += " apikey=" + v.APIKey()
 			if secret, known := f.secrets[v.APIKey()]; known {
 				if _, _, err := v.Verify(secret); err != nil {
-					line += " badsig"
+					suffix += " badsig"
 				}
 			}
 		} else {
-			line += " bearer=" + token
+			suffix += " bearer=" + token
 		}
 	}
 	if m := projectInPath.FindStringSubmatch(r.URL.Path); m != nil {
-		line += " project=" + m[1]
+		suffix += " project=" + m[1]
 	}
-	f.log = append(f.log, line)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "fake cloud: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	f.log = append(f.log, loggedRequest{target: target, query: r.URL.RawQuery, suffix: suffix, body: loggedBody(r.Header.Get("Content-Type"), body)})
 
 	res, ok := f.responses[target+"?"+r.URL.Query().Encode()]
 	if !ok {
@@ -327,16 +344,67 @@ func cmdMint(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
-// cmdRequests implements `requests`.
+// cmdRequests implements `requests [-v]`.
 func cmdRequests(ts *testscript.TestScript, neg bool, args []string) {
-	if neg || len(args) != 0 {
-		ts.Fatalf("usage: requests")
+	verbose := len(args) == 1 && args[0] == "-v"
+	if neg || (len(args) != 0 && !verbose) {
+		ts.Fatalf("usage: requests [-v]")
 	}
 	// Taking Stdout even with nothing to print replaces the last command's
 	// stdout, so `! stdout .` checks that no request arrived.
 	stdout := ts.Stdout()
-	for _, line := range ts.Value(fakeCloudKey{}).(*fakeCloud).requests() {
-		fmt.Fprintln(stdout, line)
+	for _, r := range ts.Value(fakeCloudKey{}).(*fakeCloud).loggedRequests() {
+		if !verbose {
+			fmt.Fprintln(stdout, r.target+r.suffix)
+			continue
+		}
+		target := r.target
+		if r.query != "" {
+			target += "?" + r.query
+		}
+		fmt.Fprintln(stdout, target+r.suffix)
+		if r.body != "" {
+			fmt.Fprintln(stdout, "  "+r.body)
+		}
+	}
+}
+
+// loggedBody is body, a request body of contentType, as `requests -v`
+// prints it: a JSON body compacted, with its keys sorted and the value of
+// each secret (every field named value) replaced by "REDACTED", so that no
+// script prints a secret. It is "" for a body that isn't JSON.
+func loggedBody(contentType string, body []byte) string {
+	if !strings.HasPrefix(contentType, "application/json") || len(bytes.TrimSpace(body)) == 0 {
+		return ""
+	}
+	var v any
+	if err := json.Unmarshal(body, &v); err != nil {
+		return "invalid JSON: " + err.Error()
+	}
+	redactValues(v)
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "unprintable JSON: " + err.Error()
+	}
+	return string(b)
+}
+
+// redactValues replaces the value of every field named value in v, a
+// decoded JSON value, by "REDACTED".
+func redactValues(v any) {
+	switch v := v.(type) {
+	case map[string]any:
+		for k, e := range v {
+			if k == "value" {
+				v[k] = "REDACTED"
+				continue
+			}
+			redactValues(e)
+		}
+	case []any:
+		for _, e := range v {
+			redactValues(e)
+		}
 	}
 }
 
@@ -478,8 +546,18 @@ func checkPublicAPIBody(method, path string, status int, body string) error {
 	return nil
 }
 
-// requests returns the log of every request the fake received.
+// requests returns the log of every request the fake received, as
+// `requests` prints it.
 func (f *fakeCloud) requests() []string {
+	var lines []string
+	for _, r := range f.loggedRequests() {
+		lines = append(lines, r.target+r.suffix)
+	}
+	return lines
+}
+
+// loggedRequests returns every request the fake received.
+func (f *fakeCloud) loggedRequests() []loggedRequest {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return slices.Clone(f.log)

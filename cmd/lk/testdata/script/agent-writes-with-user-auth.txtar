@@ -2,7 +2,8 @@
 # update-secrets change the agent through the Public API's AgentService, and
 # say what they say with an API key. They ask for no token: here the Public
 # API would refuse one, as it refuses a member below admin. Only
-# update-secrets --overwrite still goes through the token bridge.
+# update-secrets --overwrite still goes through the token bridge. The
+# requests at the end show that each flag reaches the Public API.
 env LK_AGENTS_URL=http://agents.test
 respond POST http://publicapi.test/v0/projects/p_1/tokens 403 '{"code":7,"message":"this needs ADMIN on the project"}'
 
@@ -38,7 +39,8 @@ stderr '^Deleted agent agent \[CA_1\]$'
 exec lk --user-auth agent delete --id CA_1 --yes
 stderr '^Deleted agent agent \[CA_1\]$'
 
-# update-secrets merges. TestUserAuthUpdateAgentSecrets checks what it sends.
+# update-secrets merges. The requests show the names of the secrets it
+# sends; TestUserAuthUpdateAgentSecrets checks their values.
 respond POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgentSecrets 200 '{"success":true}'
 respond PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 200 '{}'
 exec lk agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t
@@ -65,7 +67,7 @@ cd ..
 ! exec lk --user-auth agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t --overwrite --yes
 stderr '^unable to update agent secrets: signed in with --user-auth, this command needs a project admin\. A project API key works meanwhile: re-run without --user-auth$'
 
-requests
+requests -v
 cmp stdout want-requests
 
 -- agent/livekit.toml --
@@ -98,16 +100,21 @@ POST http://agents.test/twirp/livekit.CloudAgent/RestartAgent apikey=APIone
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:restart bearer=st_1 project=p_1
 POST http://agents.test/twirp/livekit.CloudAgent/RollbackAgent apikey=APIone
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:rollback bearer=st_1 project=p_1
+  {"version":"v1"}
 POST http://agents.test/twirp/livekit.CloudAgent/PromoteAgent apikey=APIone
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:promote bearer=st_1 project=p_1
+  {"deployment":"staging"}
 POST http://agents.test/twirp/livekit.CloudAgent/DeleteAgent apikey=APIone
-DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1?deployment=staging bearer=st_1 project=p_1
 POST http://agents.test/twirp/livekit.CloudAgent/DeleteAgent apikey=APIone
 DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgentSecrets apikey=APIone
 PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
+  {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}
 POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgent apikey=APIone
 PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
+  {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}
 POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgent apikey=APIone
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:restart bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+  {"grants":{"agent":{"admin":true}},"ttlSeconds":600}
