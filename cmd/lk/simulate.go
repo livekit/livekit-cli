@@ -875,7 +875,7 @@ func ciFromEnv() *livekit.SimulationRun_CI {
 	}
 }
 
-func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
+func createSimulationRun(ctx context.Context, c *simulateConfig) (*livekit.SimulationRun_Create_Response, error) {
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:            c.agentName,
 		Deployment:           c.deployment,
@@ -902,9 +902,28 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create simulation: %w", err)
+		return nil, fmt.Errorf("failed to create simulation: %w", err)
 	}
-	return resp.SimulationRunId, resp.PresignedPostRequest, nil
+	return resp, nil
+}
+
+// observabilitySettingsURL is where a project's Agent Observability is turned
+// on, or "" when the project ID is unknown.
+func observabilitySettingsURL(projectID string) string {
+	if projectID == "" {
+		return ""
+	}
+	return dashboardBaseURL() + "/projects/" + projectID + "/settings/observability"
+}
+
+// observabilityNotice explains a run created while the project's Agent
+// Observability is off, and where to turn it on.
+func observabilityNotice(projectID string) string {
+	where := "in the project's Observability settings on the LiveKit Cloud dashboard"
+	if url := observabilitySettingsURL(projectID); url != "" {
+		where = "at " + url
+	}
+	return "Agent Observability is off for this project, so this run gets no summary and its sessions aren't recorded. Turn it on " + where
 }
 
 func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runID string, presigned *livekit.PresignedPostRequest, projectDir, entrypoint string) error {
