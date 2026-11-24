@@ -1,0 +1,63 @@
+# Under --user-auth, AgentService's refusals of an agent write read as lk's
+# own: a member whose role is too low hears which role the command needs, not
+# that they lack access to the project; invalid secrets get a line each, by
+# name; and an Agent Builder agent points at Agent Builder.
+env LK_AGENTS_URL=http://agents.test
+
+# A READ member can't restart; a WRITE member can't delete or change secrets.
+respond POST http://publicapi.test/v0/projects/p_1/agents/CA_1:restart 403 '{"code":7,"message":"this needs WRITE on the project"}'
+! exec lk --user-auth agent restart --id CA_1
+stderr '^signed in with --user-auth, this command needs write access to the project \(this needs WRITE on the project\)\. A project API key also works: re-run without --user-auth$'
+! stderr 'access to this project'
+
+respond DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+! exec lk --user-auth agent delete --id CA_1 --yes
+stderr '^unable to delete agent: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key also works: re-run without --user-auth$'
+
+respond PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+! exec lk --user-auth agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t
+stderr '^unable to update agent secrets: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key also works: re-run without --user-auth$'
+
+# A reserved name. cloud agents drops it without an error; the Public API
+# refuses it.
+respond PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 400 '{"code":3,"message":"secrets are invalid; this error''s details name each field that is wrong","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"is reserved: LiveKit Cloud sets the LIVEKIT_ variables of each agent"}]}]}'
+! exec lk --user-auth agent update-secrets --id CA_1 --secrets LIVEKIT_AGENT_NAME=support
+cmp stderr want-invalid-secrets
+
+# An Agent Builder agent.
+respond POST http://publicapi.test/v0/projects/p_1/agents/CA_1:rollback 400 '{"code":9,"message":"agent is an Agent Builder agent; deploy one of its versions with AgentBuilderService.DeployAgent"}'
+! exec lk --user-auth agent rollback --id CA_1 --version v1
+stderr '^unable to rollback agent: agent CA_1 is an Agent Builder agent: roll it back, promote it or delete it in Agent Builder, in the LiveKit Cloud dashboard \(agent is an Agent Builder agent; deploy one of its versions with AgentBuilderService\.DeployAgent\)$'
+
+# Any other refusal is as the Public API words it.
+respond POST http://publicapi.test/v0/projects/p_1/agents/CA_1:rollback 404 '{"code":5,"message":"version not found"}'
+! exec lk --user-auth agent rollback --id CA_1 --version v9
+stderr '^unable to rollback agent: version not found$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-invalid-secrets --
+Using user [dev@example.com] on [http://publicapi.test]
+Using agent [CA_1]
+unable to update agent secrets: invalid secrets:
+  secret LIVEKIT_AGENT_NAME: name is reserved: LiveKit Cloud sets the LIVEKIT_ variables of each agent
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/agents/CA_1:restart bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
+PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agents/CA_1:rollback bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/agents/CA_1:rollback bearer=st_1 project=p_1

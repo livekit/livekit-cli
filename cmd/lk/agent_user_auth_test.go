@@ -212,3 +212,125 @@ func TestAgentServiceError(t *testing.T) {
 
 	require.NoError(t, agentServiceError(nil, projectAdmin))
 }
+
+// recordingPublicAPI is a Public API that answers every request with 200
+// {}, and records the method, path and body of each.
+func recordingPublicAPI(t *testing.T) (*public.Client, *[]string) {
+	t.Helper()
+	var mu sync.Mutex
+	var got []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		got = append(got, r.Method+" "+r.URL.Path+" "+string(b))
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{}`)
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "st_1")
+	require.NoError(t, err)
+	return client, &got
+}
+
+// update-secrets and update send the secrets lk read, with their values and
+// kinds, and remove what lk asks to remove. update with no secrets restarts
+// the agent, as cloud agents' UpdateAgent does.
+func TestUserAuthUpdateAgentSecrets(t *testing.T) {
+	client, got := recordingPublicAPI(t)
+	a := &userAuthAgentAPI{client: client, projectID: "p_1"}
+	ctx := context.Background()
+	secrets := []*livekit.AgentSecret{
+		{Name: "API_TOKEN", Value: []byte("s3cr3t"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT},
+		{Name: "creds.json", Value: []byte("{}"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_FILE},
+	}
+
+	res, err := a.UpdateAgentSecrets(ctx, &livekit.UpdateAgentSecretsRequest{AgentId: "CA_1", Secrets: secrets, Remove: []string{"OLD"}})
+	require.NoError(t, err)
+	require.True(t, res.Success)
+	updated, err := a.UpdateAgent(ctx, &livekit.UpdateAgentRequest{AgentId: "CA_1", Secrets: secrets[:1]})
+	require.NoError(t, err)
+	require.True(t, updated.Success)
+	updated, err = a.UpdateAgent(ctx, &livekit.UpdateAgentRequest{AgentId: "CA_1"})
+	require.NoError(t, err)
+	require.True(t, updated.Success)
+
+	require.Equal(t, []string{
+		`PATCH /v0/projects/p_1/agents/CA_1/secrets {"remove":["OLD"],"set":[` +
+			`{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"czNjcjN0"},` +
+			`{"kind":"AGENT_SECRET_KIND_FILE","name":"creds.json","value":"e30="}]}`,
+		`PATCH /v0/projects/p_1/agents/CA_1/secrets {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"czNjcjN0"}]}`,
+		`POST /v0/projects/p_1/agents/CA_1:restart `,
+	}, *got)
+}
+
+// The Public API only merges secrets, so an overwrite goes through the
+// token bridge, which needs a project admin.
+func TestUserAuthUpdateAgentSecretsOverwriteUsesBridge(t *testing.T) {
+	client, got := recordingPublicAPI(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = io.WriteString(w, `{"code":7,"message":"this needs ADMIN on the project"}`)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("LK_AGENTS_URL", srv.URL)
+	tokens, err := public.New(srv.URL, "st_1")
+	require.NoError(t, err)
+	pc := &config.ProjectConfig{ProjectId: "p_1", URL: srv.URL, APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret}
+	sessionTokenSources[pc.ProjectId] = tokenauth.NewCachingTokenSource(&publicAPITokenSource{client: tokens, projectID: pc.ProjectId})
+	t.Cleanup(func() { delete(sessionTokenSources, pc.ProjectId) })
+	bridge, err := newAgentsClient(pc)
+	require.NoError(t, err)
+	a := &userAuthAgentAPI{client: client, projectID: pc.ProjectId, bridge: bridge}
+
+	_, err = a.UpdateAgentSecrets(context.Background(), &livekit.UpdateAgentSecretsRequest{
+		AgentId: "CA_1", Overwrite: true,
+		Secrets: []*livekit.AgentSecret{{Name: "API_TOKEN", Value: []byte("v")}},
+	})
+	require.EqualError(t, err, wantAdminRefusal)
+	require.Empty(t, *got, "nothing reached AgentService")
+}
+
+// Each field violation names the secret, not its index in the request.
+func TestSecretsError(t *testing.T) {
+	set := []*livekit.AgentSecret{{Name: "LIVEKIT_X"}, {Name: "EMPTY"}}
+	remove := []string{"API_TOKEN"}
+	refusal := &public.APIError{Status: http.StatusBadRequest, Message: "secrets are invalid"}
+	err := secretsError(refusal, []public.FieldViolation{
+		{Field: "set[0].name", Description: "is reserved"},
+		{Field: "set[1].value", Description: "is required"},
+		{Field: "remove[0]", Description: "names a secret that set names"},
+		{Field: "set[7].name", Description: "is required"},
+		{Field: "set[0]", Description: "is odd"},
+		{Field: "remove[0].name", Description: "is odd"},
+		{Field: "agent_id", Description: "is required"},
+	}, set, remove)
+	require.EqualError(t, err, "invalid secrets:\n"+
+		"  secret LIVEKIT_X: name is reserved\n"+
+		"  secret EMPTY: value is required\n"+
+		"  secret API_TOKEN to remove: name names a secret that set names\n"+
+		"  set[7].name: is required\n"+
+		"  set[0]: is odd\n"+
+		"  remove[0].name: is odd\n"+
+		"  agent_id: is required")
+	require.ErrorIs(t, err, refusal)
+}
+
+// A rollback, promote or delete of an Agent Builder agent points at Agent
+// Builder. Other errors read as agentServiceError words them.
+func TestAgentWriteError(t *testing.T) {
+	builder := &public.APIError{Status: http.StatusBadRequest, Message: "agent is an Agent Builder agent; delete it with AgentBuilderService.DeleteAgent"}
+	err := agentWriteError(builder, "CA_1", projectAdmin)
+	require.EqualError(t, err, "agent CA_1 is an Agent Builder agent: roll it back, promote it or delete it in Agent Builder, "+
+		"in the LiveKit Cloud dashboard (agent is an Agent Builder agent; delete it with AgentBuilderService.DeleteAgent)")
+	require.ErrorIs(t, err, builder)
+
+	lacksRole := &public.APIError{Status: http.StatusForbidden, Message: "this needs WRITE on the project"}
+	require.EqualError(t, agentWriteError(lacksRole, "CA_1", projectWriter),
+		"signed in with --user-auth, this command needs write access to the project (this needs WRITE on the project). "+
+			"A project API key also works: re-run without --user-auth")
+
+	failed := &public.APIError{Status: http.StatusBadRequest, Message: "version is not available: its build failed or did not finish"}
+	require.Equal(t, failed, agentWriteError(failed, "CA_1", projectWriter))
+}

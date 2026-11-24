@@ -21,6 +21,8 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,10 +43,12 @@ import (
 // commands do (see telephony_user_auth.go): the SDK client implements it with
 // an API key, and userAuthAgentAPI under --user-auth. userAuthAgentAPI calls
 // the Public API's AgentService, which checks the user's role on the project
-// itself, for the reads it serves: the agents, their versions, secret names
-// and build logs, and the project's client settings. It sends every other
-// call through the bridge for now. A method moves to AgentService by calling
-// a.client in place of a.bridge.
+// itself, for the reads and writes it serves: the agents, their versions,
+// secret names and build logs, the project's client settings, and restart,
+// rollback, promote, delete and secret updates. It sends every other call,
+// such as create, deploy, a runtime log and private links, through the
+// bridge for now. A method moves to AgentService by calling a.client in
+// place of a.bridge.
 
 // agentAPI is what the cloud agent commands call.
 type agentAPI interface {
@@ -201,33 +205,145 @@ func (a *userAuthAgentAPI) ListAgentSecrets(ctx context.Context, req *livekit.Li
 	return &livekit.ListAgentSecretsResponse{Secrets: secrets}, nil
 }
 
+// UpdateAgentSecrets sets req.Secrets and removes req.Remove through
+// AgentService, which lets only a project admin change secrets. AgentService
+// only merges, so an update with req.Overwrite, which replaces every secret,
+// goes through the bridge, which also needs a project admin.
 func (a *userAuthAgentAPI) UpdateAgentSecrets(ctx context.Context, req *livekit.UpdateAgentSecretsRequest) (*livekit.UpdateAgentSecretsResponse, error) {
-	res, err := a.bridge.UpdateAgentSecrets(ctx, req)
-	return res, bridgeError(err)
+	if req.GetOverwrite() {
+		res, err := a.bridge.UpdateAgentSecrets(ctx, req)
+		return res, bridgeError(err)
+	}
+	if err := a.updateSecrets(ctx, req.GetAgentId(), req.GetSecrets(), req.GetRemove()); err != nil {
+		return nil, err
+	}
+	return &livekit.UpdateAgentSecretsResponse{Success: true}, nil
 }
 
+// UpdateAgent sets req.Secrets through AgentService, which, as cloud agents'
+// UpdateAgent, merges them and restarts the agent. With no secrets, cloud
+// agents' UpdateAgent only restarts the agent, and so does UpdateAgent. lk
+// sends no regions, which cloud agents ignores.
 func (a *userAuthAgentAPI) UpdateAgent(ctx context.Context, req *livekit.UpdateAgentRequest) (*livekit.UpdateAgentResponse, error) {
-	res, err := a.bridge.UpdateAgent(ctx, req)
-	return res, bridgeError(err)
+	if len(req.GetSecrets()) == 0 {
+		if _, err := a.RestartAgent(ctx, &livekit.RestartAgentRequest{AgentId: req.GetAgentId()}); err != nil {
+			return nil, err
+		}
+		return &livekit.UpdateAgentResponse{Success: true}, nil
+	}
+	if err := a.updateSecrets(ctx, req.GetAgentId(), req.GetSecrets(), nil); err != nil {
+		return nil, err
+	}
+	return &livekit.UpdateAgentResponse{Success: true}, nil
 }
 
+func (a *userAuthAgentAPI) updateSecrets(ctx context.Context, agentID string, set []*livekit.AgentSecret, remove []string) error {
+	err := a.client.UpdateAgentSecrets(ctx, a.projectID, agentID, set, remove)
+	if violations := public.FieldViolations(err); len(violations) > 0 {
+		return secretsError(err, violations, set, remove)
+	}
+	return agentServiceError(err, projectAdmin)
+}
+
+// secretsError is err, AgentService's refusal of the secrets in set and
+// remove, with a line for each of its violations that names the secret by
+// name, not by its index in the request.
+func secretsError(err error, violations []public.FieldViolation, set []*livekit.AgentSecret, remove []string) error {
+	var b strings.Builder
+	b.WriteString("invalid secrets:")
+	for _, v := range violations {
+		b.WriteString("\n  ")
+		b.WriteString(secretViolation(v, set, remove))
+	}
+	return &invalidSecretsError{msg: b.String(), err: err}
+}
+
+// invalidSecretsError reads as its lines, and unwraps to the Public API's
+// refusal.
+type invalidSecretsError struct {
+	msg string
+	err error
+}
+
+func (e *invalidSecretsError) Error() string { return e.msg }
+func (e *invalidSecretsError) Unwrap() error { return e.err }
+
+// secretFieldPattern matches a violation's field: set[i] or remove[i], then
+// the field of the secret in set, if any.
+var secretFieldPattern = regexp.MustCompile(`^(set|remove)\[(\d+)\](?:\.(\w+))?$`)
+
+// secretViolation words v as "secret NAME: FIELD DESCRIPTION", such as
+// "secret LIVEKIT_X: name is reserved: ...", or, for a field it doesn't
+// know, as the API names it.
+func secretViolation(v public.FieldViolation, set []*livekit.AgentSecret, remove []string) string {
+	asSent := v.Field + ": " + v.Description
+	m := secretFieldPattern.FindStringSubmatch(v.Field)
+	if m == nil {
+		return asSent
+	}
+	i, err := strconv.Atoi(m[2])
+	if err != nil {
+		return asSent
+	}
+	switch {
+	case m[1] == "set" && m[3] != "" && i < len(set):
+		return fmt.Sprintf("secret %s: %s %s", set[i].GetName(), m[3], v.Description)
+	case m[1] == "remove" && m[3] == "" && i < len(remove):
+		return fmt.Sprintf("secret %s to remove: name %s", remove[i], v.Description)
+	}
+	return asSent
+}
+
+// RestartAgent restarts the agent through AgentService, which a WRITE member
+// may call.
 func (a *userAuthAgentAPI) RestartAgent(ctx context.Context, req *livekit.RestartAgentRequest) (*livekit.RestartAgentResponse, error) {
-	res, err := a.bridge.RestartAgent(ctx, req)
-	return res, bridgeError(err)
+	if err := a.client.RestartAgent(ctx, a.projectID, req.GetAgentId()); err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return &livekit.RestartAgentResponse{Success: true}, nil
 }
 
+// RollbackAgent rolls the agent's production deployment back to req.Version
+// through AgentService, which a WRITE member may call.
 func (a *userAuthAgentAPI) RollbackAgent(ctx context.Context, req *livekit.RollbackAgentRequest) (*livekit.RollbackAgentResponse, error) {
-	res, err := a.bridge.RollbackAgent(ctx, req)
-	return res, bridgeError(err)
+	if err := a.client.RollbackAgent(ctx, a.projectID, req.GetAgentId(), req.GetVersion()); err != nil {
+		return nil, agentWriteError(err, req.GetAgentId(), projectWriter)
+	}
+	return &livekit.RollbackAgentResponse{Success: true}, nil
 }
 
+// PromoteAgent promotes the version that srcDeployment runs to production
+// through AgentService, which a WRITE member may call. AgentService promotes
+// only to production, so a promote to another deployment, which lk doesn't
+// make, goes through the bridge.
 func (a *userAuthAgentAPI) PromoteAgent(ctx context.Context, agentID, srcDeployment, dstDeployment string) error {
-	return bridgeError(a.bridge.PromoteAgent(ctx, agentID, srcDeployment, dstDeployment))
+	if deploymentName(dstDeployment) != productionDeployment {
+		return bridgeError(a.bridge.PromoteAgent(ctx, agentID, srcDeployment, dstDeployment))
+	}
+	if _, err := a.client.PromoteAgent(ctx, a.projectID, agentID, srcDeployment); err != nil {
+		return agentWriteError(err, agentID, projectWriter)
+	}
+	return nil
 }
 
+// DeleteAgent deletes the agent, or its deployment req.Deployment, through
+// AgentService, which lets only a project admin delete one.
 func (a *userAuthAgentAPI) DeleteAgent(ctx context.Context, req *livekit.DeleteAgentRequest) (*livekit.DeleteAgentResponse, error) {
-	res, err := a.bridge.DeleteAgent(ctx, req)
-	return res, bridgeError(err)
+	if err := a.client.DeleteAgent(ctx, a.projectID, req.GetAgentId(), req.GetDeployment()); err != nil {
+		return nil, agentWriteError(err, req.GetAgentId(), projectAdmin)
+	}
+	return &livekit.DeleteAgentResponse{Success: true}, nil
+}
+
+// agentWriteError is agentServiceError, except that AgentService's refusal
+// to roll back, promote or delete an Agent Builder agent says where to do
+// it instead.
+func agentWriteError(err error, agentID, who string) error {
+	if public.IsAgentBuilderAgent(err) {
+		return fmt.Errorf("agent %s is an Agent Builder agent: roll it back, promote it or delete it in Agent Builder, "+
+			"in the LiveKit Cloud dashboard (%w)", agentID, err)
+	}
+	return agentServiceError(err, who)
 }
 
 // GetClientSettings reads the project's settings for creating and deploying
@@ -359,9 +475,12 @@ func bridgeError(err error) error {
 		"A project API key works meanwhile: re-run without --user-auth", projectAdmin, refused)
 }
 
-// projectAdmin is who may make a call that needs the ADMIN role on the
-// project, as a refusal names them.
-const projectAdmin = "a project admin"
+// projectAdmin and projectWriter are who may make a call that needs the
+// ADMIN or the WRITE role on the project, as a refusal names them.
+const (
+	projectAdmin  = "a project admin"
+	projectWriter = "write access to the project"
+)
 
 // agentServiceError is err from a call to AgentService, worded as
 // cloudAPIError words it, except that the refusal of a member whose role on

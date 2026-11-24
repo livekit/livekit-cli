@@ -418,6 +418,11 @@ var publicAPIRoutes = []struct {
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/versions/[^/]+/build-log$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentBuildLogGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/secrets$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentSecretsListResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agent-client-settings$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentClientSettingsGetResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+:restart$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsRestartResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+:rollback$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsRollbackResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+:promote$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsPromoteResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsDeleteResponse) }},
+	{http.MethodPatch, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/secrets$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentSecretsUpdateResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
