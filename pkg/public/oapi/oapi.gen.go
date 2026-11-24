@@ -464,6 +464,36 @@ func (e LivekitPhoneNumberType) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPrivateLinkStatusStatus.
+const (
+	PRIVATELINKSTATUSAPPROVED        LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_APPROVED"
+	PRIVATELINKSTATUSHEALTHY         LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_HEALTHY"
+	PRIVATELINKSTATUSPENDINGAPPROVAL LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_PENDING_APPROVAL"
+	PRIVATELINKSTATUSPROVISIONING    LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_PROVISIONING"
+	PRIVATELINKSTATUSUNHEALTHY       LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_UNHEALTHY"
+	PRIVATELINKSTATUSUNKNOWN         LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_UNKNOWN"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPrivateLinkStatusStatus enum.
+func (e LivekitPrivateLinkStatusStatus) Valid() bool {
+	switch e {
+	case PRIVATELINKSTATUSAPPROVED:
+		return true
+	case PRIVATELINKSTATUSHEALTHY:
+		return true
+	case PRIVATELINKSTATUSPENDINGAPPROVAL:
+		return true
+	case PRIVATELINKSTATUSPROVISIONING:
+		return true
+	case PRIVATELINKSTATUSUNHEALTHY:
+		return true
+	case PRIVATELINKSTATUSUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitSIPDialtone.
 const (
 	SIPDIALTONEAU       LivekitSIPDialtone = "SIP_DIALTONE_AU"
@@ -2720,6 +2750,41 @@ type LivekitPresignedPostRequest struct {
 	Values *map[string]string `json:"values,omitempty"`
 }
 
+// LivekitPrivateLink defines model for livekit.PrivateLink.
+type LivekitPrivateLink struct {
+	CloudRegion        *string `json:"cloudRegion,omitempty"`
+	ConnectionEndpoint *string `json:"connectionEndpoint,omitempty"`
+	Endpoint           *string `json:"endpoint,omitempty"`
+	Name               *string `json:"name,omitempty"`
+	Port               *int    `json:"port,omitempty"`
+	PrivateLinkId      *string `json:"privateLinkId,omitempty"`
+	Region             *string `json:"region,omitempty"`
+	union              json.RawMessage
+}
+
+// LivekitPrivateLink0 defines model for LivekitPrivateLink.0.
+type LivekitPrivateLink0 struct {
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Aws *LivekitPrivateLinkAWSConfig `json:"aws,omitempty"`
+}
+
+// LivekitPrivateLinkAWSConfig defines model for livekit.PrivateLink.AWSConfig.
+type LivekitPrivateLinkAWSConfig struct {
+	// Endpoint Use the generic "endpoint" instead
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Endpoint *string `json:"endpoint,omitempty"`
+}
+
+// LivekitPrivateLinkStatus defines model for livekit.PrivateLinkStatus.
+type LivekitPrivateLinkStatus struct {
+	Reason    *string                         `json:"reason,omitempty"`
+	Status    *LivekitPrivateLinkStatusStatus `json:"status,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp        `json:"updatedAt,omitempty"`
+}
+
+// LivekitPrivateLinkStatusStatus defines model for livekit.PrivateLinkStatus.Status.
+type LivekitPrivateLinkStatusStatus string
+
 // LivekitProxyConfig defines model for livekit.ProxyConfig.
 type LivekitProxyConfig struct {
 	Password *string `json:"password,omitempty"`
@@ -4389,6 +4454,9 @@ type LivekitPublicapiAgentsV1AgentBuildLogGetResponse struct {
 	Truncated *bool `json:"truncated,omitempty"`
 }
 
+// LivekitPublicapiAgentsV1AgentBuildsStartResponse defines model for livekit.publicapi.agents.v1.AgentBuilds.Start.Response.
+type LivekitPublicapiAgentsV1AgentBuildsStartResponse = map[string]interface{}
+
 // LivekitPublicapiAgentsV1AgentClientSettingsGetResponse defines model for livekit.publicapi.agents.v1.AgentClientSettings.Get.Response.
 type LivekitPublicapiAgentsV1AgentClientSettingsGetResponse struct {
 	// Params The settings, in name order. For example, `available_regions` is a
@@ -4426,6 +4494,20 @@ type LivekitPublicapiAgentsV1AgentSecretsListResponse struct {
 // LivekitPublicapiAgentsV1AgentSecretsUpdateResponse defines model for livekit.publicapi.agents.v1.AgentSecrets.Update.Response.
 type LivekitPublicapiAgentsV1AgentSecretsUpdateResponse = map[string]interface{}
 
+// LivekitPublicapiAgentsV1AgentSourceUpload Where to upload the source of an agent for a deploy. Send the source as a
+//
+//	gzipped tarball of the agent directory, with a `Dockerfile` at its root,
+//	in a `multipart/form-data` POST to `url`: first each of `fields`, then the
+//	tarball in a field named `file`. The upload expires 10 minutes after
+//	`DeployAgent` returns.
+type LivekitPublicapiAgentsV1AgentSourceUpload struct {
+	// Fields The form fields to send before the file, with their values as they are.
+	Fields *map[string]string `json:"fields,omitempty"`
+
+	// Url The URL to POST the source to.
+	Url *string `json:"url,omitempty"`
+}
+
 // LivekitPublicapiAgentsV1AgentVersionsListResponse defines model for livekit.publicapi.agents.v1.AgentVersions.List.Response.
 type LivekitPublicapiAgentsV1AgentVersionsListResponse struct {
 	// Items The versions, newest first. `deployedAt` is empty for a version that
@@ -4436,8 +4518,24 @@ type LivekitPublicapiAgentsV1AgentVersionsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiAgentsV1AgentsCreateResponse defines model for livekit.publicapi.agents.v1.Agents.Create.Response.
+type LivekitPublicapiAgentsV1AgentsCreateResponse struct {
+	// AgentId The ID of the new agent (`CA_...`).
+	AgentId *string `json:"agentId,omitempty"`
+}
+
 // LivekitPublicapiAgentsV1AgentsDeleteResponse defines model for livekit.publicapi.agents.v1.Agents.Delete.Response.
 type LivekitPublicapiAgentsV1AgentsDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiAgentsV1AgentsDeployResponse defines model for livekit.publicapi.agents.v1.Agents.Deploy.Response.
+type LivekitPublicapiAgentsV1AgentsDeployResponse struct {
+	// Tag The tag of the version that the build makes, such as
+	//  `HnQf7bXbhVPh`. Give it to `StartAgentBuild`.
+	Tag *string `json:"tag,omitempty"`
+
+	// Upload Where to upload the source.
+	Upload *LivekitPublicapiAgentsV1AgentSourceUpload `json:"upload,omitempty"`
+}
 
 // LivekitPublicapiAgentsV1AgentsGetResponse defines model for livekit.publicapi.agents.v1.Agents.Get.Response.
 type LivekitPublicapiAgentsV1AgentsGetResponse struct {
@@ -4466,6 +4564,37 @@ type LivekitPublicapiAgentsV1AgentsRollbackResponse = map[string]interface{}
 
 // LivekitPublicapiAgentsV1DeploymentStatus The deployment state of an agent.
 type LivekitPublicapiAgentsV1DeploymentStatus string
+
+// LivekitPublicapiAgentsV1PrivateLink A private link of a project, with its health.
+type LivekitPublicapiAgentsV1PrivateLink struct {
+	// Link The private link. Agents reach the service at `connectionEndpoint`.
+	Link *LivekitPrivateLink `json:"link,omitempty"`
+
+	// Status The health of the private link. Unset when LiveKit could not read it.
+	//  Call `GetPrivateLinkStatus` to read it again.
+	Status *LivekitPrivateLinkStatus `json:"status,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1PrivateLinksCreateResponse defines model for livekit.publicapi.agents.v1.PrivateLinks.Create.Response.
+type LivekitPublicapiAgentsV1PrivateLinksCreateResponse struct {
+	PrivateLink *LivekitPrivateLink `json:"privateLink,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1PrivateLinksDeleteResponse defines model for livekit.publicapi.agents.v1.PrivateLinks.Delete.Response.
+type LivekitPublicapiAgentsV1PrivateLinksDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse defines model for livekit.publicapi.agents.v1.PrivateLinks.GetStatus.Response.
+type LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse struct {
+	Status *LivekitPrivateLinkStatus `json:"status,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1PrivateLinksListResponse defines model for livekit.publicapi.agents.v1.PrivateLinks.List.Response.
+type LivekitPublicapiAgentsV1PrivateLinksListResponse struct {
+	Items *[]LivekitPublicapiAgentsV1PrivateLink `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
 
 // LivekitPublicapiAnalyticsV1AgentInsightsGetResponse defines model for livekit.publicapi.analytics.v1.AgentInsights.Get.Response.
 type LivekitPublicapiAnalyticsV1AgentInsightsGetResponse struct {
@@ -8095,6 +8224,18 @@ type AgentServiceListAgentsParams struct {
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
+// AgentServiceCreateAgentJSONBody defines parameters for AgentServiceCreateAgent.
+type AgentServiceCreateAgentJSONBody struct {
+	// Region The region where the agent runs, such as `us-east`. Required. It
+	//  must be one of the regions in `available_regions` that
+	//  `GetAgentClientSettings` returns, else the API returns
+	//  `InvalidArgument`.
+	Region *string `json:"region,omitempty"`
+
+	// Secrets The secrets of the agent. Setting secrets requires the `ADMIN` role.
+	Secrets *[]LivekitPublicapiAgentsV1AgentSecretValue `json:"secrets,omitempty"`
+}
+
 // AgentServiceDeleteAgentParams defines parameters for AgentServiceDeleteAgent.
 type AgentServiceDeleteAgentParams struct {
 	// Deployment The name of a deployment of the agent. Deletes only this deployment,
@@ -8136,6 +8277,20 @@ type AgentServiceListAgentVersionsParams struct {
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
+// AgentServiceDeployAgentJSONBody defines parameters for AgentServiceDeployAgent.
+type AgentServiceDeployAgentJSONBody struct {
+	// Deployment The name of the deployment to deploy to, such as `staging`. When
+	//  empty, deploys to production. A deployment that the agent does not
+	//  have is created. A name has at most 22 letters, digits, `.`, `-`,
+	//  and `_`, and starts and ends with a letter or a digit.
+	Deployment *string `json:"deployment,omitempty"`
+
+	// Secrets The secrets to set on the agent before the build. The secrets that
+	//  the request does not name keep their values. Setting secrets
+	//  requires the `ADMIN` role.
+	Secrets *[]LivekitPublicapiAgentsV1AgentSecretValue `json:"secrets,omitempty"`
+}
+
 // AgentServicePromoteAgentJSONBody defines parameters for AgentServicePromoteAgent.
 type AgentServicePromoteAgentJSONBody struct {
 	// Deployment The name of the deployment whose version the production deployment
@@ -8150,6 +8305,21 @@ type AgentServiceRollbackAgentJSONBody struct {
 	//  version that the agent does not have returns `NotFound`. A version
 	//  whose build failed or did not finish returns `FailedPrecondition`.
 	Version *string `json:"version,omitempty"`
+}
+
+// AgentServiceStartAgentBuildJSONBody defines parameters for AgentServiceStartAgentBuild.
+type AgentServiceStartAgentBuildJSONBody struct {
+	// Attributes The attributes of the version, such as the commit of the source.
+	//  `ListAgentVersions` returns them.
+	Attributes *map[string]string `json:"attributes,omitempty"`
+
+	// Deployment The deployment that you gave to `DeployAgent`. When empty, builds
+	//  for production.
+	Deployment *string `json:"deployment,omitempty"`
+
+	// Tag The tag that `DeployAgent` returned. Required. The version that the
+	//  build makes has this tag.
+	Tag *string `json:"tag,omitempty"`
 }
 
 // EvalServiceUpdateEvalDefaultsJSONBody defines parameters for EvalServiceUpdateEvalDefaults.
@@ -8615,6 +8785,42 @@ type TelephonyServiceSearchPhoneNumbersParams struct {
 	// PagePageSize The maximum number of items to return. When 0, the list uses its default
 	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// AgentServiceListPrivateLinksParams defines parameters for AgentServiceListPrivateLinks.
+type AgentServiceListPrivateLinksParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// AgentServiceCreatePrivateLinkJSONBody defines parameters for AgentServiceCreatePrivateLink.
+type AgentServiceCreatePrivateLinkJSONBody struct {
+	// CloudRegion The cloud region of the service, such as `eastus`. Required when
+	//  `endpoint` is an Azure resource ID. When empty, LiveKit reads the
+	//  region from `endpoint`.
+	CloudRegion *string `json:"cloudRegion,omitempty"`
+
+	// Endpoint The service to connect to: the name of an AWS endpoint service, or
+	//  the alias or the resource ID of an Azure Private Link service.
+	Endpoint *string `json:"endpoint,omitempty"`
+
+	// Name The name of the private link: 1 to 63 lowercase letters, digits, and
+	//  `-`. It starts with a letter and ends with a letter or a digit. Each
+	//  private link of the project has its own name.
+	Name *string `json:"name,omitempty"`
+
+	// Port The TCP port of the service, from 1 to 65535.
+	Port *int `json:"port,omitempty"`
+
+	// Region The LiveKit Cloud region of the agents that use the link, such as
+	//  `us-east`. `GetAgentClientSettings` lists the regions in
+	//  `available_regions`.
+	Region *string `json:"region,omitempty"`
 }
 
 // SimulationServiceGenerateScenarioFromSessionJSONBody defines parameters for SimulationServiceGenerateScenarioFromSession.
@@ -9323,14 +9529,23 @@ type AgentBuilderServiceUpdateAgentJSONRequestBody AgentBuilderServiceUpdateAgen
 // AgentBuilderServiceDeployAgentJSONRequestBody defines body for AgentBuilderServiceDeployAgent for application/json ContentType.
 type AgentBuilderServiceDeployAgentJSONRequestBody AgentBuilderServiceDeployAgentJSONBody
 
+// AgentServiceCreateAgentJSONRequestBody defines body for AgentServiceCreateAgent for application/json ContentType.
+type AgentServiceCreateAgentJSONRequestBody AgentServiceCreateAgentJSONBody
+
 // AgentServiceUpdateAgentSecretsJSONRequestBody defines body for AgentServiceUpdateAgentSecrets for application/json ContentType.
 type AgentServiceUpdateAgentSecretsJSONRequestBody AgentServiceUpdateAgentSecretsJSONBody
+
+// AgentServiceDeployAgentJSONRequestBody defines body for AgentServiceDeployAgent for application/json ContentType.
+type AgentServiceDeployAgentJSONRequestBody AgentServiceDeployAgentJSONBody
 
 // AgentServicePromoteAgentJSONRequestBody defines body for AgentServicePromoteAgent for application/json ContentType.
 type AgentServicePromoteAgentJSONRequestBody AgentServicePromoteAgentJSONBody
 
 // AgentServiceRollbackAgentJSONRequestBody defines body for AgentServiceRollbackAgent for application/json ContentType.
 type AgentServiceRollbackAgentJSONRequestBody AgentServiceRollbackAgentJSONBody
+
+// AgentServiceStartAgentBuildJSONRequestBody defines body for AgentServiceStartAgentBuild for application/json ContentType.
+type AgentServiceStartAgentBuildJSONRequestBody AgentServiceStartAgentBuildJSONBody
 
 // EvalServiceUpdateEvalDefaultsJSONRequestBody defines body for EvalServiceUpdateEvalDefaults for application/json ContentType.
 type EvalServiceUpdateEvalDefaultsJSONRequestBody EvalServiceUpdateEvalDefaultsJSONBody
@@ -9373,6 +9588,9 @@ type TelephonyServicePurchasePhoneNumberJSONRequestBody TelephonyServicePurchase
 
 // TelephonyServiceUpdatePhoneNumberJSONRequestBody defines body for TelephonyServiceUpdatePhoneNumber for application/json ContentType.
 type TelephonyServiceUpdatePhoneNumberJSONRequestBody TelephonyServiceUpdatePhoneNumberJSONBody
+
+// AgentServiceCreatePrivateLinkJSONRequestBody defines body for AgentServiceCreatePrivateLink for application/json ContentType.
+type AgentServiceCreatePrivateLinkJSONRequestBody AgentServiceCreatePrivateLinkJSONBody
 
 // SimulationServiceGenerateScenarioFromSessionJSONRequestBody defines body for SimulationServiceGenerateScenarioFromSession for application/json ContentType.
 type SimulationServiceGenerateScenarioFromSessionJSONRequestBody SimulationServiceGenerateScenarioFromSessionJSONBody
@@ -10328,6 +10546,160 @@ func (t *LivekitImageOutput) UnmarshalJSON(b []byte) error {
 		err = json.Unmarshal(raw, &t.Width)
 		if err != nil {
 			return fmt.Errorf("error reading 'width': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsLivekitPrivateLink0 returns the union data inside the LivekitPrivateLink as a LivekitPrivateLink0
+func (t LivekitPrivateLink) AsLivekitPrivateLink0() (LivekitPrivateLink0, error) {
+	var body LivekitPrivateLink0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPrivateLink0 overwrites any union data inside the LivekitPrivateLink as the provided LivekitPrivateLink0
+func (t *LivekitPrivateLink) FromLivekitPrivateLink0(v LivekitPrivateLink0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPrivateLink0 performs a merge with any union data inside the LivekitPrivateLink, using the provided LivekitPrivateLink0
+func (t *LivekitPrivateLink) MergeLivekitPrivateLink0(v LivekitPrivateLink0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPrivateLink) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.CloudRegion != nil {
+		object["cloudRegion"], err = json.Marshal(t.CloudRegion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cloudRegion': %w", err)
+		}
+	}
+
+	if t.ConnectionEndpoint != nil {
+		object["connectionEndpoint"], err = json.Marshal(t.ConnectionEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'connectionEndpoint': %w", err)
+		}
+	}
+
+	if t.Endpoint != nil {
+		object["endpoint"], err = json.Marshal(t.Endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoint': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.Port != nil {
+		object["port"], err = json.Marshal(t.Port)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'port': %w", err)
+		}
+	}
+
+	if t.PrivateLinkId != nil {
+		object["privateLinkId"], err = json.Marshal(t.PrivateLinkId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'privateLinkId': %w", err)
+		}
+	}
+
+	if t.Region != nil {
+		object["region"], err = json.Marshal(t.Region)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'region': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *LivekitPrivateLink) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cloudRegion"]; found {
+		err = json.Unmarshal(raw, &t.CloudRegion)
+		if err != nil {
+			return fmt.Errorf("error reading 'cloudRegion': %w", err)
+		}
+	}
+
+	if raw, found := object["connectionEndpoint"]; found {
+		err = json.Unmarshal(raw, &t.ConnectionEndpoint)
+		if err != nil {
+			return fmt.Errorf("error reading 'connectionEndpoint': %w", err)
+		}
+	}
+
+	if raw, found := object["endpoint"]; found {
+		err = json.Unmarshal(raw, &t.Endpoint)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoint': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["port"]; found {
+		err = json.Unmarshal(raw, &t.Port)
+		if err != nil {
+			return fmt.Errorf("error reading 'port': %w", err)
+		}
+	}
+
+	if raw, found := object["privateLinkId"]; found {
+		err = json.Unmarshal(raw, &t.PrivateLinkId)
+		if err != nil {
+			return fmt.Errorf("error reading 'privateLinkId': %w", err)
+		}
+	}
+
+	if raw, found := object["region"]; found {
+		err = json.Unmarshal(raw, &t.Region)
+		if err != nil {
+			return fmt.Errorf("error reading 'region': %w", err)
 		}
 	}
 
@@ -12606,6 +12978,30 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/agents (the `AgentServiceListAgents` operationId).
 	AgentServiceListAgents(ctx context.Context, projectId string, params *AgentServiceListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AgentServiceCreateAgentWithBody CreateAgent
+	//
+	// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+	//  deploy its code, call `DeployAgent`, upload the source, then call
+	//  `StartAgentBuild`. A project at an agent limit of its plan returns
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+	AgentServiceCreateAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceCreateAgent CreateAgent
+	//
+	// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+	//  deploy its code, call `DeployAgent`, upload the source, then call
+	//  `StartAgentBuild`. A project at an agent limit of its plan returns
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+	AgentServiceCreateAgent(ctx context.Context, projectId string, body AgentServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AgentServiceDeleteAgent DeleteAgent
 	//
 	// Deletes an agent that runs on LiveKit Cloud, with all of its deployments
@@ -12680,6 +13076,36 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/agents/{agentId}/versions/{version}/build-log (the `AgentServiceGetAgentBuildLog` operationId).
 	AgentServiceGetAgentBuildLog(ctx context.Context, projectId string, agentId string, version string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AgentServiceDeployAgentWithBody DeployAgent
+	//
+	// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+	//  Returns where to upload the source, and the tag of the version that the
+	//  build makes. Upload the source, then call `StartAgentBuild` with `tag`
+	//  and the same `deployment`. From this call until that build ends, the
+	//  deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+	//  that it runs continues to run. An Agent Builder agent returns
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+	AgentServiceDeployAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceDeployAgent DeployAgent
+	//
+	// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+	//  Returns where to upload the source, and the tag of the version that the
+	//  build makes. Upload the source, then call `StartAgentBuild` with `tag`
+	//  and the same `deployment`. From this call until that build ends, the
+	//  deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+	//  that it runs continues to run. An Agent Builder agent returns
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+	AgentServiceDeployAgent(ctx context.Context, projectId string, agentId string, body AgentServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AgentServicePromoteAgentWithBody PromoteAgent
 	//
 	// Promotes the version that a deployment of an agent runs to the
@@ -12734,6 +13160,40 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:rollback (the `AgentServiceRollbackAgent` operationId).
 	AgentServiceRollbackAgent(ctx context.Context, projectId string, agentId string, body AgentServiceRollbackAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceStartAgentBuildWithBody StartAgentBuild
+	//
+	// Builds the source that you uploaded after `DeployAgent` as a new version
+	//  of the agent, and deploys the version when the build succeeds. Returns
+	//  when the build is queued, and the build continues after that. To follow
+	//  it, poll `GetAgent` until the deployment no longer has the status
+	//  `DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+	//  with `tag` has the status `Available` or `Failed`. Then read its log with
+	//  `GetAgentBuildLog`. Too many builds in a short time return
+	//  `ResourceExhausted`: try again later. A build that does not start
+	//  returns `FailedPrecondition`: call `DeployAgent` again.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+	AgentServiceStartAgentBuildWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceStartAgentBuild StartAgentBuild
+	//
+	// Builds the source that you uploaded after `DeployAgent` as a new version
+	//  of the agent, and deploys the version when the build succeeds. Returns
+	//  when the build is queued, and the build continues after that. To follow
+	//  it, poll `GetAgent` until the deployment no longer has the status
+	//  `DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+	//  with `tag` has the status `Available` or `Failed`. Then read its log with
+	//  `GetAgentBuildLog`. Too many builds in a short time return
+	//  `ResourceExhausted`: try again later. A build that does not start
+	//  returns `FailedPrecondition`: call `DeployAgent` again.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+	AgentServiceStartAgentBuild(ctx context.Context, projectId string, agentId string, body AgentServiceStartAgentBuildJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// EvalServiceGetEvalDefaults GetEvalDefaults
 	//
@@ -13371,6 +13831,59 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
 	TelephonyServiceSearchPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceListPrivateLinks ListPrivateLinks
+	//
+	// Lists the private links of the project, in name order, with the health
+	//  of each one. The list is always one page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/private-links (the `AgentServiceListPrivateLinks` operationId).
+	AgentServiceListPrivateLinks(ctx context.Context, projectId string, params *AgentServiceListPrivateLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceCreatePrivateLinkWithBody CreatePrivateLink
+	//
+	// Creates a private link from the agents of the project in a LiveKit Cloud
+	//  region to a service in your AWS or Azure network. Agents reach the
+	//  service at the `connectionEndpoint` of the link. A name that another
+	//  private link of the project has returns `AlreadyExists`. A project that
+	//  has the maximum number of private links in the region, or a cloud region
+	//  where private links are not available, returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+	AgentServiceCreatePrivateLinkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceCreatePrivateLink CreatePrivateLink
+	//
+	// Creates a private link from the agents of the project in a LiveKit Cloud
+	//  region to a service in your AWS or Azure network. Agents reach the
+	//  service at the `connectionEndpoint` of the link. A name that another
+	//  private link of the project has returns `AlreadyExists`. A project that
+	//  has the maximum number of private links in the region, or a cloud region
+	//  where private links are not available, returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+	AgentServiceCreatePrivateLink(ctx context.Context, projectId string, body AgentServiceCreatePrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceDeletePrivateLink DeletePrivateLink
+	//
+	// Deletes a private link of the project. Agents can no longer reach the
+	//  service through it. A private link that is not in the project returns
+	//  `NotFound`.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/private-links/{privateLinkId} (the `AgentServiceDeletePrivateLink` operationId).
+	AgentServiceDeletePrivateLink(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentServiceGetPrivateLinkStatus GetPrivateLinkStatus
+	//
+	// Returns the health of a private link of the project. A private link that
+	//  is not in the project returns `NotFound`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/private-links/{privateLinkId}/status (the `AgentServiceGetPrivateLinkStatus` operationId).
+	AgentServiceGetPrivateLinkStatus(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 	//
@@ -15100,6 +15613,52 @@ func (c *Client) AgentServiceListAgents(ctx context.Context, projectId string, p
 	return c.Client.Do(req)
 }
 
+// AgentServiceCreateAgentWithBody CreateAgent
+//
+// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+//
+//	deploy its code, call `DeployAgent`, upload the source, then call
+//	`StartAgentBuild`. A project at an agent limit of its plan returns
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+func (c *Client) AgentServiceCreateAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceCreateAgentRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceCreateAgent CreateAgent
+//
+// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+//
+//	deploy its code, call `DeployAgent`, upload the source, then call
+//	`StartAgentBuild`. A project at an agent limit of its plan returns
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+func (c *Client) AgentServiceCreateAgent(ctx context.Context, projectId string, body AgentServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceCreateAgentRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // AgentServiceDeleteAgent DeleteAgent
 //
 // Deletes an agent that runs on LiveKit Cloud, with all of its deployments
@@ -15251,6 +15810,58 @@ func (c *Client) AgentServiceGetAgentBuildLog(ctx context.Context, projectId str
 	return c.Client.Do(req)
 }
 
+// AgentServiceDeployAgentWithBody DeployAgent
+//
+// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+//
+//	Returns where to upload the source, and the tag of the version that the
+//	build makes. Upload the source, then call `StartAgentBuild` with `tag`
+//	and the same `deployment`. From this call until that build ends, the
+//	deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+//	that it runs continues to run. An Agent Builder agent returns
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+func (c *Client) AgentServiceDeployAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceDeployAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceDeployAgent DeployAgent
+//
+// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+//
+//	Returns where to upload the source, and the tag of the version that the
+//	build makes. Upload the source, then call `StartAgentBuild` with `tag`
+//	and the same `deployment`. From this call until that build ends, the
+//	deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+//	that it runs continues to run. An Agent Builder agent returns
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+func (c *Client) AgentServiceDeployAgent(ctx context.Context, projectId string, agentId string, body AgentServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceDeployAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // AgentServicePromoteAgentWithBody PromoteAgent
 //
 // Promotes the version that a deployment of an agent runs to the
@@ -15351,6 +15962,62 @@ func (c *Client) AgentServiceRollbackAgentWithBody(ctx context.Context, projectI
 // Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:rollback (the `AgentServiceRollbackAgent` operationId).
 func (c *Client) AgentServiceRollbackAgent(ctx context.Context, projectId string, agentId string, body AgentServiceRollbackAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAgentServiceRollbackAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceStartAgentBuildWithBody StartAgentBuild
+//
+// Builds the source that you uploaded after `DeployAgent` as a new version
+//
+//	of the agent, and deploys the version when the build succeeds. Returns
+//	when the build is queued, and the build continues after that. To follow
+//	it, poll `GetAgent` until the deployment no longer has the status
+//	`DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+//	with `tag` has the status `Available` or `Failed`. Then read its log with
+//	`GetAgentBuildLog`. Too many builds in a short time return
+//	`ResourceExhausted`: try again later. A build that does not start
+//	returns `FailedPrecondition`: call `DeployAgent` again.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+func (c *Client) AgentServiceStartAgentBuildWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceStartAgentBuildRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceStartAgentBuild StartAgentBuild
+//
+// Builds the source that you uploaded after `DeployAgent` as a new version
+//
+//	of the agent, and deploys the version when the build succeeds. Returns
+//	when the build is queued, and the build continues after that. To follow
+//	it, poll `GetAgent` until the deployment no longer has the status
+//	`DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+//	with `tag` has the status `Available` or `Failed`. Then read its log with
+//	`GetAgentBuildLog`. Too many builds in a short time return
+//	`ResourceExhausted`: try again later. A build that does not start
+//	returns `FailedPrecondition`: call `DeployAgent` again.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+func (c *Client) AgentServiceStartAgentBuild(ctx context.Context, projectId string, agentId string, body AgentServiceStartAgentBuildJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceStartAgentBuildRequest(c.Server, projectId, agentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16564,6 +17231,114 @@ func (c *Client) TelephonyServiceUpdatePhoneNumber(ctx context.Context, projectI
 // Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
 func (c *Client) TelephonyServiceSearchPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewTelephonyServiceSearchPhoneNumbersRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceListPrivateLinks ListPrivateLinks
+//
+// Lists the private links of the project, in name order, with the health
+//
+//	of each one. The list is always one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/private-links (the `AgentServiceListPrivateLinks` operationId).
+func (c *Client) AgentServiceListPrivateLinks(ctx context.Context, projectId string, params *AgentServiceListPrivateLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceListPrivateLinksRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceCreatePrivateLinkWithBody CreatePrivateLink
+//
+// Creates a private link from the agents of the project in a LiveKit Cloud
+//
+//	region to a service in your AWS or Azure network. Agents reach the
+//	service at the `connectionEndpoint` of the link. A name that another
+//	private link of the project has returns `AlreadyExists`. A project that
+//	has the maximum number of private links in the region, or a cloud region
+//	where private links are not available, returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+func (c *Client) AgentServiceCreatePrivateLinkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceCreatePrivateLinkRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceCreatePrivateLink CreatePrivateLink
+//
+// Creates a private link from the agents of the project in a LiveKit Cloud
+//
+//	region to a service in your AWS or Azure network. Agents reach the
+//	service at the `connectionEndpoint` of the link. A name that another
+//	private link of the project has returns `AlreadyExists`. A project that
+//	has the maximum number of private links in the region, or a cloud region
+//	where private links are not available, returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+func (c *Client) AgentServiceCreatePrivateLink(ctx context.Context, projectId string, body AgentServiceCreatePrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceCreatePrivateLinkRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceDeletePrivateLink DeletePrivateLink
+//
+// Deletes a private link of the project. Agents can no longer reach the
+//
+//	service through it. A private link that is not in the project returns
+//	`NotFound`.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/private-links/{privateLinkId} (the `AgentServiceDeletePrivateLink` operationId).
+func (c *Client) AgentServiceDeletePrivateLink(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceDeletePrivateLinkRequest(c.Server, projectId, privateLinkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentServiceGetPrivateLinkStatus GetPrivateLinkStatus
+//
+// Returns the health of a private link of the project. A private link that
+//
+//	is not in the project returns `NotFound`.
+//
+// Corresponds with GET /v0/projects/{projectId}/private-links/{privateLinkId}/status (the `AgentServiceGetPrivateLinkStatus` operationId).
+func (c *Client) AgentServiceGetPrivateLinkStatus(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentServiceGetPrivateLinkStatusRequest(c.Server, projectId, privateLinkId)
 	if err != nil {
 		return nil, err
 	}
@@ -19772,6 +20547,53 @@ func NewAgentServiceListAgentsRequest(server string, projectId string, params *A
 	return req, nil
 }
 
+// NewAgentServiceCreateAgentRequest calls the generic AgentServiceCreateAgent builder with application/json body
+func NewAgentServiceCreateAgentRequest(server string, projectId string, body AgentServiceCreateAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAgentServiceCreateAgentRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewAgentServiceCreateAgentRequestWithBody constructs an http.Request for the AgentServiceCreateAgent method, with any body, and a specified content type
+func NewAgentServiceCreateAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAgentServiceDeleteAgentRequest constructs an http.Request for the AgentServiceDeleteAgent method
 func NewAgentServiceDeleteAgentRequest(server string, projectId string, agentId string, params *AgentServiceDeleteAgentParams) (*http.Request, error) {
 	var err error
@@ -20143,6 +20965,60 @@ func NewAgentServiceGetAgentBuildLogRequest(server string, projectId string, age
 	return req, nil
 }
 
+// NewAgentServiceDeployAgentRequest calls the generic AgentServiceDeployAgent builder with application/json body
+func NewAgentServiceDeployAgentRequest(server string, projectId string, agentId string, body AgentServiceDeployAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAgentServiceDeployAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewAgentServiceDeployAgentRequestWithBody constructs an http.Request for the AgentServiceDeployAgent method, with any body, and a specified content type
+func NewAgentServiceDeployAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/%s:deploy", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAgentServicePromoteAgentRequest calls the generic AgentServicePromoteAgent builder with application/json body
 func NewAgentServicePromoteAgentRequest(server string, projectId string, agentId string, body AgentServicePromoteAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -20273,6 +21149,60 @@ func NewAgentServiceRollbackAgentRequestWithBody(server string, projectId string
 	}
 
 	operationPath := fmt.Sprintf("/v0/projects/%s/agents/%s:rollback", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAgentServiceStartAgentBuildRequest calls the generic AgentServiceStartAgentBuild builder with application/json body
+func NewAgentServiceStartAgentBuildRequest(server string, projectId string, agentId string, body AgentServiceStartAgentBuildJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAgentServiceStartAgentBuildRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewAgentServiceStartAgentBuildRequestWithBody constructs an http.Request for the AgentServiceStartAgentBuild method, with any body, and a specified content type
+func NewAgentServiceStartAgentBuildRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/%s:startBuild", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -22896,6 +23826,208 @@ func NewTelephonyServiceSearchPhoneNumbersRequest(server string, projectId strin
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAgentServiceListPrivateLinksRequest constructs an http.Request for the AgentServiceListPrivateLinks method
+func NewAgentServiceListPrivateLinksRequest(server string, projectId string, params *AgentServiceListPrivateLinksParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/private-links", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAgentServiceCreatePrivateLinkRequest calls the generic AgentServiceCreatePrivateLink builder with application/json body
+func NewAgentServiceCreatePrivateLinkRequest(server string, projectId string, body AgentServiceCreatePrivateLinkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAgentServiceCreatePrivateLinkRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewAgentServiceCreatePrivateLinkRequestWithBody constructs an http.Request for the AgentServiceCreatePrivateLink method, with any body, and a specified content type
+func NewAgentServiceCreatePrivateLinkRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/private-links", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAgentServiceDeletePrivateLinkRequest constructs an http.Request for the AgentServiceDeletePrivateLink method
+func NewAgentServiceDeletePrivateLinkRequest(server string, projectId string, privateLinkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "privateLinkId", privateLinkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/private-links/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAgentServiceGetPrivateLinkStatusRequest constructs an http.Request for the AgentServiceGetPrivateLinkStatus method
+func NewAgentServiceGetPrivateLinkStatusRequest(server string, projectId string, privateLinkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "privateLinkId", privateLinkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/private-links/%s/status", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -27562,6 +28694,30 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/agents (the `AgentServiceListAgents` operationId).
 	AgentServiceListAgentsWithResponse(ctx context.Context, projectId string, params *AgentServiceListAgentsParams, reqEditors ...RequestEditorFn) (*AgentServiceListAgentsResponse, error)
 
+	// AgentServiceCreateAgentWithBodyWithResponse CreateAgent
+	//
+	// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+	//  deploy its code, call `DeployAgent`, upload the source, then call
+	//  `StartAgentBuild`. A project at an agent limit of its plan returns
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+	AgentServiceCreateAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceCreateAgentResponse, error)
+
+	// AgentServiceCreateAgentWithResponse CreateAgent
+	//
+	// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+	//  deploy its code, call `DeployAgent`, upload the source, then call
+	//  `StartAgentBuild`. A project at an agent limit of its plan returns
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+	AgentServiceCreateAgentWithResponse(ctx context.Context, projectId string, body AgentServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceCreateAgentResponse, error)
+
 	// AgentServiceDeleteAgentWithResponse DeleteAgent
 	//
 	// Deletes an agent that runs on LiveKit Cloud, with all of its deployments
@@ -27646,6 +28802,36 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/agents/{agentId}/versions/{version}/build-log (the `AgentServiceGetAgentBuildLog` operationId).
 	AgentServiceGetAgentBuildLogWithResponse(ctx context.Context, projectId string, agentId string, version string, reqEditors ...RequestEditorFn) (*AgentServiceGetAgentBuildLogResponse, error)
 
+	// AgentServiceDeployAgentWithBodyWithResponse DeployAgent
+	//
+	// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+	//  Returns where to upload the source, and the tag of the version that the
+	//  build makes. Upload the source, then call `StartAgentBuild` with `tag`
+	//  and the same `deployment`. From this call until that build ends, the
+	//  deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+	//  that it runs continues to run. An Agent Builder agent returns
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+	AgentServiceDeployAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceDeployAgentResponse, error)
+
+	// AgentServiceDeployAgentWithResponse DeployAgent
+	//
+	// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+	//  Returns where to upload the source, and the tag of the version that the
+	//  build makes. Upload the source, then call `StartAgentBuild` with `tag`
+	//  and the same `deployment`. From this call until that build ends, the
+	//  deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+	//  that it runs continues to run. An Agent Builder agent returns
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+	AgentServiceDeployAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceDeployAgentResponse, error)
+
 	// AgentServicePromoteAgentWithBodyWithResponse PromoteAgent
 	//
 	// Promotes the version that a deployment of an agent runs to the
@@ -27702,6 +28888,40 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:rollback (the `AgentServiceRollbackAgent` operationId).
 	AgentServiceRollbackAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentServiceRollbackAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceRollbackAgentResponse, error)
+
+	// AgentServiceStartAgentBuildWithBodyWithResponse StartAgentBuild
+	//
+	// Builds the source that you uploaded after `DeployAgent` as a new version
+	//  of the agent, and deploys the version when the build succeeds. Returns
+	//  when the build is queued, and the build continues after that. To follow
+	//  it, poll `GetAgent` until the deployment no longer has the status
+	//  `DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+	//  with `tag` has the status `Available` or `Failed`. Then read its log with
+	//  `GetAgentBuildLog`. Too many builds in a short time return
+	//  `ResourceExhausted`: try again later. A build that does not start
+	//  returns `FailedPrecondition`: call `DeployAgent` again.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+	AgentServiceStartAgentBuildWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceStartAgentBuildResponse, error)
+
+	// AgentServiceStartAgentBuildWithResponse StartAgentBuild
+	//
+	// Builds the source that you uploaded after `DeployAgent` as a new version
+	//  of the agent, and deploys the version when the build succeeds. Returns
+	//  when the build is queued, and the build continues after that. To follow
+	//  it, poll `GetAgent` until the deployment no longer has the status
+	//  `DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+	//  with `tag` has the status `Available` or `Failed`. Then read its log with
+	//  `GetAgentBuildLog`. Too many builds in a short time return
+	//  `ResourceExhausted`: try again later. A build that does not start
+	//  returns `FailedPrecondition`: call `DeployAgent` again.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+	AgentServiceStartAgentBuildWithResponse(ctx context.Context, projectId string, agentId string, body AgentServiceStartAgentBuildJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceStartAgentBuildResponse, error)
 
 	// EvalServiceGetEvalDefaultsWithResponse GetEvalDefaults
 	//
@@ -28385,6 +29605,65 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
 	TelephonyServiceSearchPhoneNumbersWithResponse(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*TelephonyServiceSearchPhoneNumbersResponse, error)
+
+	// AgentServiceListPrivateLinksWithResponse ListPrivateLinks
+	//
+	// Lists the private links of the project, in name order, with the health
+	//  of each one. The list is always one page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/private-links (the `AgentServiceListPrivateLinks` operationId).
+	AgentServiceListPrivateLinksWithResponse(ctx context.Context, projectId string, params *AgentServiceListPrivateLinksParams, reqEditors ...RequestEditorFn) (*AgentServiceListPrivateLinksResponse, error)
+
+	// AgentServiceCreatePrivateLinkWithBodyWithResponse CreatePrivateLink
+	//
+	// Creates a private link from the agents of the project in a LiveKit Cloud
+	//  region to a service in your AWS or Azure network. Agents reach the
+	//  service at the `connectionEndpoint` of the link. A name that another
+	//  private link of the project has returns `AlreadyExists`. A project that
+	//  has the maximum number of private links in the region, or a cloud region
+	//  where private links are not available, returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+	AgentServiceCreatePrivateLinkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceCreatePrivateLinkResponse, error)
+
+	// AgentServiceCreatePrivateLinkWithResponse CreatePrivateLink
+	//
+	// Creates a private link from the agents of the project in a LiveKit Cloud
+	//  region to a service in your AWS or Azure network. Agents reach the
+	//  service at the `connectionEndpoint` of the link. A name that another
+	//  private link of the project has returns `AlreadyExists`. A project that
+	//  has the maximum number of private links in the region, or a cloud region
+	//  where private links are not available, returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+	AgentServiceCreatePrivateLinkWithResponse(ctx context.Context, projectId string, body AgentServiceCreatePrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceCreatePrivateLinkResponse, error)
+
+	// AgentServiceDeletePrivateLinkWithResponse DeletePrivateLink
+	//
+	// Deletes a private link of the project. Agents can no longer reach the
+	//  service through it. A private link that is not in the project returns
+	//  `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/private-links/{privateLinkId} (the `AgentServiceDeletePrivateLink` operationId).
+	AgentServiceDeletePrivateLinkWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*AgentServiceDeletePrivateLinkResponse, error)
+
+	// AgentServiceGetPrivateLinkStatusWithResponse GetPrivateLinkStatus
+	//
+	// Returns the health of a private link of the project. A private link that
+	//  is not in the project returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/private-links/{privateLinkId}/status (the `AgentServiceGetPrivateLinkStatus` operationId).
+	AgentServiceGetPrivateLinkStatusWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*AgentServiceGetPrivateLinkStatusResponse, error)
 
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 	//
@@ -30490,6 +31769,54 @@ func (r AgentServiceListAgentsResponse) ContentType() string {
 	return ""
 }
 
+type AgentServiceCreateAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1AgentsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceCreateAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1AgentsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceCreateAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceCreateAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceCreateAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceCreateAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceCreateAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AgentServiceDeleteAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30778,6 +32105,54 @@ func (r AgentServiceGetAgentBuildLogResponse) ContentType() string {
 	return ""
 }
 
+type AgentServiceDeployAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1AgentsDeployResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceDeployAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1AgentsDeployResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceDeployAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceDeployAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceDeployAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceDeployAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceDeployAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AgentServicePromoteAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30916,6 +32291,54 @@ func (r AgentServiceRollbackAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AgentServiceRollbackAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentServiceStartAgentBuildResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1AgentBuildsStartResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceStartAgentBuildResponse) GetJSON200() *LivekitPublicapiAgentsV1AgentBuildsStartResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceStartAgentBuildResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceStartAgentBuildResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceStartAgentBuildResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceStartAgentBuildResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceStartAgentBuildResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -32692,6 +34115,198 @@ func (r TelephonyServiceSearchPhoneNumbersResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r TelephonyServiceSearchPhoneNumbersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentServiceListPrivateLinksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1PrivateLinksListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceListPrivateLinksResponse) GetJSON200() *LivekitPublicapiAgentsV1PrivateLinksListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceListPrivateLinksResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceListPrivateLinksResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceListPrivateLinksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceListPrivateLinksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceListPrivateLinksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentServiceCreatePrivateLinkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1PrivateLinksCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceCreatePrivateLinkResponse) GetJSON200() *LivekitPublicapiAgentsV1PrivateLinksCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceCreatePrivateLinkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceCreatePrivateLinkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceCreatePrivateLinkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceCreatePrivateLinkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceCreatePrivateLinkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentServiceDeletePrivateLinkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1PrivateLinksDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceDeletePrivateLinkResponse) GetJSON200() *LivekitPublicapiAgentsV1PrivateLinksDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceDeletePrivateLinkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceDeletePrivateLinkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceDeletePrivateLinkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceDeletePrivateLinkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceDeletePrivateLinkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentServiceGetPrivateLinkStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentServiceGetPrivateLinkStatusResponse) GetJSON200() *LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentServiceGetPrivateLinkStatusResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentServiceGetPrivateLinkStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentServiceGetPrivateLinkStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentServiceGetPrivateLinkStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentServiceGetPrivateLinkStatusResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36666,6 +38281,44 @@ func (c *ClientWithResponses) AgentServiceListAgentsWithResponse(ctx context.Con
 	return ParseAgentServiceListAgentsResponse(rsp)
 }
 
+// AgentServiceCreateAgentWithBodyWithResponse CreateAgent
+//
+// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+//
+//	deploy its code, call `DeployAgent`, upload the source, then call
+//	`StartAgentBuild`. A project at an agent limit of its plan returns
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+func (c *ClientWithResponses) AgentServiceCreateAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceCreateAgentResponse, error) {
+	rsp, err := c.AgentServiceCreateAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceCreateAgentResponse(rsp)
+}
+
+// AgentServiceCreateAgentWithResponse CreateAgent
+//
+// Creates an agent that runs on LiveKit Cloud, with nothing deployed. To
+//
+//	deploy its code, call `DeployAgent`, upload the source, then call
+//	`StartAgentBuild`. A project at an agent limit of its plan returns
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents (the `AgentServiceCreateAgent` operationId).
+func (c *ClientWithResponses) AgentServiceCreateAgentWithResponse(ctx context.Context, projectId string, body AgentServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceCreateAgentResponse, error) {
+	rsp, err := c.AgentServiceCreateAgent(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceCreateAgentResponse(rsp)
+}
+
 // AgentServiceDeleteAgentWithResponse DeleteAgent
 //
 // Deletes an agent that runs on LiveKit Cloud, with all of its deployments
@@ -36799,6 +38452,50 @@ func (c *ClientWithResponses) AgentServiceGetAgentBuildLogWithResponse(ctx conte
 	return ParseAgentServiceGetAgentBuildLogResponse(rsp)
 }
 
+// AgentServiceDeployAgentWithBodyWithResponse DeployAgent
+//
+// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+//
+//	Returns where to upload the source, and the tag of the version that the
+//	build makes. Upload the source, then call `StartAgentBuild` with `tag`
+//	and the same `deployment`. From this call until that build ends, the
+//	deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+//	that it runs continues to run. An Agent Builder agent returns
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+func (c *ClientWithResponses) AgentServiceDeployAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceDeployAgentResponse, error) {
+	rsp, err := c.AgentServiceDeployAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceDeployAgentResponse(rsp)
+}
+
+// AgentServiceDeployAgentWithResponse DeployAgent
+//
+// Starts a deploy of new code to an agent that runs on LiveKit Cloud.
+//
+//	Returns where to upload the source, and the tag of the version that the
+//	build makes. Upload the source, then call `StartAgentBuild` with `tag`
+//	and the same `deployment`. From this call until that build ends, the
+//	deployment has the status `DEPLOYMENT_STATUS_BUILDING`, and the version
+//	that it runs continues to run. An Agent Builder agent returns
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:deploy (the `AgentServiceDeployAgent` operationId).
+func (c *ClientWithResponses) AgentServiceDeployAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceDeployAgentResponse, error) {
+	rsp, err := c.AgentServiceDeployAgent(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceDeployAgentResponse(rsp)
+}
+
 // AgentServicePromoteAgentWithBodyWithResponse PromoteAgent
 //
 // Promotes the version that a deployment of an agent runs to the
@@ -36889,6 +38586,54 @@ func (c *ClientWithResponses) AgentServiceRollbackAgentWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseAgentServiceRollbackAgentResponse(rsp)
+}
+
+// AgentServiceStartAgentBuildWithBodyWithResponse StartAgentBuild
+//
+// Builds the source that you uploaded after `DeployAgent` as a new version
+//
+//	of the agent, and deploys the version when the build succeeds. Returns
+//	when the build is queued, and the build continues after that. To follow
+//	it, poll `GetAgent` until the deployment no longer has the status
+//	`DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+//	with `tag` has the status `Available` or `Failed`. Then read its log with
+//	`GetAgentBuildLog`. Too many builds in a short time return
+//	`ResourceExhausted`: try again later. A build that does not start
+//	returns `FailedPrecondition`: call `DeployAgent` again.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+func (c *ClientWithResponses) AgentServiceStartAgentBuildWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceStartAgentBuildResponse, error) {
+	rsp, err := c.AgentServiceStartAgentBuildWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceStartAgentBuildResponse(rsp)
+}
+
+// AgentServiceStartAgentBuildWithResponse StartAgentBuild
+//
+// Builds the source that you uploaded after `DeployAgent` as a new version
+//
+//	of the agent, and deploys the version when the build succeeds. Returns
+//	when the build is queued, and the build continues after that. To follow
+//	it, poll `GetAgent` until the deployment no longer has the status
+//	`DEPLOYMENT_STATUS_BUILDING`, or `ListAgentVersions` until the version
+//	with `tag` has the status `Available` or `Failed`. Then read its log with
+//	`GetAgentBuildLog`. Too many builds in a short time return
+//	`ResourceExhausted`: try again later. A build that does not start
+//	returns `FailedPrecondition`: call `DeployAgent` again.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/{agentId}:startBuild (the `AgentServiceStartAgentBuild` operationId).
+func (c *ClientWithResponses) AgentServiceStartAgentBuildWithResponse(ctx context.Context, projectId string, agentId string, body AgentServiceStartAgentBuildJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceStartAgentBuildResponse, error) {
+	rsp, err := c.AgentServiceStartAgentBuild(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceStartAgentBuildResponse(rsp)
 }
 
 // EvalServiceGetEvalDefaultsWithResponse GetEvalDefaults
@@ -37944,6 +39689,100 @@ func (c *ClientWithResponses) TelephonyServiceSearchPhoneNumbersWithResponse(ctx
 		return nil, err
 	}
 	return ParseTelephonyServiceSearchPhoneNumbersResponse(rsp)
+}
+
+// AgentServiceListPrivateLinksWithResponse ListPrivateLinks
+//
+// Lists the private links of the project, in name order, with the health
+//
+//	of each one. The list is always one page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/private-links (the `AgentServiceListPrivateLinks` operationId).
+func (c *ClientWithResponses) AgentServiceListPrivateLinksWithResponse(ctx context.Context, projectId string, params *AgentServiceListPrivateLinksParams, reqEditors ...RequestEditorFn) (*AgentServiceListPrivateLinksResponse, error) {
+	rsp, err := c.AgentServiceListPrivateLinks(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceListPrivateLinksResponse(rsp)
+}
+
+// AgentServiceCreatePrivateLinkWithBodyWithResponse CreatePrivateLink
+//
+// Creates a private link from the agents of the project in a LiveKit Cloud
+//
+//	region to a service in your AWS or Azure network. Agents reach the
+//	service at the `connectionEndpoint` of the link. A name that another
+//	private link of the project has returns `AlreadyExists`. A project that
+//	has the maximum number of private links in the region, or a cloud region
+//	where private links are not available, returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+func (c *ClientWithResponses) AgentServiceCreatePrivateLinkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentServiceCreatePrivateLinkResponse, error) {
+	rsp, err := c.AgentServiceCreatePrivateLinkWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceCreatePrivateLinkResponse(rsp)
+}
+
+// AgentServiceCreatePrivateLinkWithResponse CreatePrivateLink
+//
+// Creates a private link from the agents of the project in a LiveKit Cloud
+//
+//	region to a service in your AWS or Azure network. Agents reach the
+//	service at the `connectionEndpoint` of the link. A name that another
+//	private link of the project has returns `AlreadyExists`. A project that
+//	has the maximum number of private links in the region, or a cloud region
+//	where private links are not available, returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/private-links (the `AgentServiceCreatePrivateLink` operationId).
+func (c *ClientWithResponses) AgentServiceCreatePrivateLinkWithResponse(ctx context.Context, projectId string, body AgentServiceCreatePrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentServiceCreatePrivateLinkResponse, error) {
+	rsp, err := c.AgentServiceCreatePrivateLink(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceCreatePrivateLinkResponse(rsp)
+}
+
+// AgentServiceDeletePrivateLinkWithResponse DeletePrivateLink
+//
+// Deletes a private link of the project. Agents can no longer reach the
+//
+//	service through it. A private link that is not in the project returns
+//	`NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/private-links/{privateLinkId} (the `AgentServiceDeletePrivateLink` operationId).
+func (c *ClientWithResponses) AgentServiceDeletePrivateLinkWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*AgentServiceDeletePrivateLinkResponse, error) {
+	rsp, err := c.AgentServiceDeletePrivateLink(ctx, projectId, privateLinkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceDeletePrivateLinkResponse(rsp)
+}
+
+// AgentServiceGetPrivateLinkStatusWithResponse GetPrivateLinkStatus
+//
+// Returns the health of a private link of the project. A private link that
+//
+//	is not in the project returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/private-links/{privateLinkId}/status (the `AgentServiceGetPrivateLinkStatus` operationId).
+func (c *ClientWithResponses) AgentServiceGetPrivateLinkStatusWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*AgentServiceGetPrivateLinkStatusResponse, error) {
+	rsp, err := c.AgentServiceGetPrivateLinkStatus(ctx, projectId, privateLinkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentServiceGetPrivateLinkStatusResponse(rsp)
 }
 
 // SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
@@ -40450,6 +42289,39 @@ func ParseAgentServiceListAgentsResponse(rsp *http.Response) (*AgentServiceListA
 	return response, nil
 }
 
+// ParseAgentServiceCreateAgentResponse parses an HTTP response from a AgentServiceCreateAgentWithResponse call
+func ParseAgentServiceCreateAgentResponse(rsp *http.Response) (*AgentServiceCreateAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceCreateAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1AgentsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAgentServiceDeleteAgentResponse parses an HTTP response from a AgentServiceDeleteAgentWithResponse call
 func ParseAgentServiceDeleteAgentResponse(rsp *http.Response) (*AgentServiceDeleteAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -40648,6 +42520,39 @@ func ParseAgentServiceGetAgentBuildLogResponse(rsp *http.Response) (*AgentServic
 	return response, nil
 }
 
+// ParseAgentServiceDeployAgentResponse parses an HTTP response from a AgentServiceDeployAgentWithResponse call
+func ParseAgentServiceDeployAgentResponse(rsp *http.Response) (*AgentServiceDeployAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceDeployAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1AgentsDeployResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAgentServicePromoteAgentResponse parses an HTTP response from a AgentServicePromoteAgentWithResponse call
 func ParseAgentServicePromoteAgentResponse(rsp *http.Response) (*AgentServicePromoteAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -40730,6 +42635,39 @@ func ParseAgentServiceRollbackAgentResponse(rsp *http.Response) (*AgentServiceRo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiAgentsV1AgentsRollbackResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentServiceStartAgentBuildResponse parses an HTTP response from a AgentServiceStartAgentBuildWithResponse call
+func ParseAgentServiceStartAgentBuildResponse(rsp *http.Response) (*AgentServiceStartAgentBuildResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceStartAgentBuildResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1AgentBuildsStartResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -41951,6 +43889,138 @@ func ParseTelephonyServiceSearchPhoneNumbersResponse(rsp *http.Response) (*Telep
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentServiceListPrivateLinksResponse parses an HTTP response from a AgentServiceListPrivateLinksWithResponse call
+func ParseAgentServiceListPrivateLinksResponse(rsp *http.Response) (*AgentServiceListPrivateLinksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceListPrivateLinksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1PrivateLinksListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentServiceCreatePrivateLinkResponse parses an HTTP response from a AgentServiceCreatePrivateLinkWithResponse call
+func ParseAgentServiceCreatePrivateLinkResponse(rsp *http.Response) (*AgentServiceCreatePrivateLinkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceCreatePrivateLinkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1PrivateLinksCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentServiceDeletePrivateLinkResponse parses an HTTP response from a AgentServiceDeletePrivateLinkWithResponse call
+func ParseAgentServiceDeletePrivateLinkResponse(rsp *http.Response) (*AgentServiceDeletePrivateLinkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceDeletePrivateLinkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1PrivateLinksDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentServiceGetPrivateLinkStatusResponse parses an HTTP response from a AgentServiceGetPrivateLinkStatusWithResponse call
+func ParseAgentServiceGetPrivateLinkStatusResponse(rsp *http.Response) (*AgentServiceGetPrivateLinkStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentServiceGetPrivateLinkStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
