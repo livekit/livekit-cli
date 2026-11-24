@@ -30,7 +30,8 @@ import (
 )
 
 // The commands in this file read a whole project's data over a time range,
-// rather than one session's: its logs, which only the Public API serves.
+// rather than one session's: its logs and log patterns, which only the Public
+// API serves.
 
 // logQueryHelp describes --query, the dashboard's log search syntax.
 const logQueryHelp = "--query takes a search in the syntax of the logs search box on the dashboard: " +
@@ -273,4 +274,136 @@ func projectReadError(err error, what string, access sessionReadAccess) error {
 		return fmt.Errorf("%w — reading a project's %s requires being a project admin", err, what)
 	}
 	return fmt.Errorf("%w — you don't have access to this project", err)
+}
+
+// analyticsLogPatternsCommand reads a project's log patterns.
+var analyticsLogPatternsCommand = &cli.Command{
+	Name:  "log-patterns",
+	Usage: "Print a project's log patterns: its log records grouped by message, with counts (requires --user-auth)",
+	UsageText: "lk analytics log-patterns [--since DURATION | --start TIME [--end TIME]] [--min-level LEVEL] [--source SOURCE ...] " +
+		"[--agent-name NAME] [--agent-id CA_ID] [--session-id RM_ID] [--query QUERY] [--rank RANK] [--limit N]",
+	Description: "Prints the log patterns that the logs page on the dashboard groups a project's log records into. " +
+		"A pattern groups the records that log the same message from one place in the code, at one level. " +
+		"Its template is the message with each variable part, such as a number or an ID, replaced by a placeholder, " +
+		"such as <N> or <*>. It prints one row per pattern: its number of records, level, source, first and last record, " +
+		"and template. --json prints the API's response, with each pattern's counts over time, its variants, " +
+		"and its logger and code location.\n\n" +
+		"By default it lists the 50 patterns with the most records among the agents' records at WARN or higher " +
+		"of the last 24 hours. --rank first-seen or last-seen lists the patterns with the newest first or last record " +
+		"instead. The range doesn't include --end, and one read covers at most the 7 days before the end of its range. " +
+		"The counts leave out the current minute (five minutes for a range of a day or more), and simulated sessions " +
+		"unless --session-id names one. On a project with many records the counts are estimates from a share of " +
+		"the sessions, as a note on stderr says.\n\n" +
+		logQueryHelp + "\n\n" +
+		"Reading a project's log patterns requires being a project admin.",
+	Action: projectRead(logPatternOptions, fetchLogPatterns),
+	Flags:  append([]cli.Flag{jsonFlag}, analyticsLogPatternFlags()...),
+}
+
+// analyticsLogPatternFlags returns fresh instances of the log patterns' own
+// flags (the --json flag is shared).
+func analyticsLogPatternFlags() []cli.Flag {
+	return append(timeRangeFlags("24h"),
+		&cli.StringFlag{
+			Name:  "min-level",
+			Usage: "Print only patterns at `LEVEL` or higher: trace (every level, records with none included), debug, info, warn, error or fatal (default warn)",
+		},
+		&cli.StringSliceFlag{
+			Name:  "source",
+			Usage: "Print only patterns from `SOURCE`: agent or client (the client SDKs); repeatable, matches any (default agent)",
+		},
+		&cli.StringFlag{
+			Name:  "agent-name",
+			Usage: "Print only the patterns of the agents named `NAME`",
+		},
+		&cli.StringFlag{
+			Name:  "agent-id",
+			Usage: "Print only the patterns of the cloud agent `CA_ID`",
+		},
+		&cli.StringFlag{
+			Name:  "session-id",
+			Usage: "Print only the patterns of the session `RM_ID`",
+		},
+		&cli.StringFlag{
+			Name:  "query",
+			Usage: "Count only records that match `QUERY`, in the dashboard's log search syntax, such as @lk.cloud_agent_id:CA_ID (see the description)",
+		},
+		&cli.StringFlag{
+			Name:  "rank",
+			Usage: "Which patterns to print, best first: `RANK` events (most records), first-seen or last-seen (newest first or last record); default events",
+		},
+		&cli.IntFlag{
+			Name:        "limit",
+			Usage:       "Maximum number of patterns to print (default 50, at most 200)",
+			HideDefault: true,
+		},
+	)
+}
+
+// logPatternRead is what `analytics log-patterns` reads, and whether it reads
+// the default range, so an empty read can say how to read further back.
+type logPatternRead struct {
+	public.LogPatternOptions
+	defaultRange bool
+}
+
+// logPatternOptions reads the log patterns flags. A bad range, limit, level,
+// source or rank fails here, before the project lookup.
+func logPatternOptions(cmd *cli.Command) (logPatternRead, error) {
+	limit := cmd.Int("limit")
+	if limit < 0 || (limit == 0 && cmd.IsSet("limit")) {
+		return logPatternRead{}, errors.New("limit must be greater than 0")
+	}
+	timeRange, err := timeRangeOptions(cmd)
+	if err != nil {
+		return logPatternRead{}, err
+	}
+	opts := public.LogPatternOptions{
+		Range:     timeRange,
+		Limit:     int32(limit),
+		Query:     strings.TrimSpace(cmd.String("query")),
+		MinLevel:  cmd.String("min-level"),
+		Sources:   cmd.StringSlice("source"),
+		AgentName: strings.TrimSpace(cmd.String("agent-name")),
+		AgentID:   strings.TrimSpace(cmd.String("agent-id")),
+		SessionID: strings.TrimSpace(cmd.String("session-id")),
+		RankBy:    cmd.String("rank"),
+	}
+	if err := opts.Validate(); err != nil {
+		return logPatternRead{}, err
+	}
+	return logPatternRead{LogPatternOptions: opts, defaultRange: usesDefaultWindow(cmd)}, nil
+}
+
+// fetchLogPatterns reads a project's log patterns and prints them, saying why
+// when there are none.
+func fetchLogPatterns(ctx context.Context, client *public.Client, projectID string, opts logPatternRead, asJSON bool) error {
+	resp, err := client.ListLogPatterns(ctx, projectID, opts.LogPatternOptions)
+	if err != nil {
+		return projectReadError(err, "log patterns", projectAdminAccess)
+	}
+	var empty string
+	if len(util.Deref(resp.Items)) == 0 {
+		empty = emptyLogPatternsReason(opts)
+	}
+	return render.LogPatterns(out, asJSON, *resp, empty)
+}
+
+// emptyLogPatternsReason explains a read with no patterns. With user data
+// recording off an unfiltered read is an error instead, so an empty one here
+// means nothing logged in the range at the levels asked for, or nothing that
+// matches.
+func emptyLogPatternsReason(opts logPatternRead) string {
+	filtered := opts.Query != "" || len(opts.Sources) > 0 || opts.AgentName != "" || opts.AgentID != "" || opts.SessionID != ""
+	switch {
+	case filtered:
+		return "No log patterns in the range match the filters"
+	case opts.MinLevel != "":
+		return fmt.Sprintf("No log patterns at %s or higher in the range", strings.ToUpper(strings.TrimSpace(opts.MinLevel)))
+	case opts.defaultRange:
+		return fmt.Sprintf("No agent log patterns at WARN or higher in the last 24 hours — re-run with %s for every level, or %s to read further back",
+			util.Accented("--min-level trace"), util.Accented("--since DURATION"))
+	default:
+		return "No agent log patterns at WARN or higher in the range"
+	}
 }

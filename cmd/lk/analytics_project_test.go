@@ -323,3 +323,158 @@ func TestFetchProjectLogsErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestLogPatternsCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	patternsCmd := findCommandByName(analyticsCmd.Commands, "log-patterns")
+	require.NotNil(t, patternsCmd, "'analytics log-patterns' command must exist")
+	require.NotNil(t, patternsCmd.Action)
+	for _, name := range []string{"since", "start", "end", "min-level", "source", "agent-name", "agent-id", "session-id", "query", "rank", "limit", "json"} {
+		assert.NotNil(t, findFlagByName(patternsCmd.Flags, name), "--%s", name)
+	}
+	assert.Nil(t, findFlagByName(patternsCmd.Flags, "cursor"), "the patterns are one page")
+
+	err := runAnalytics("--experimental", "log-patterns")
+	require.ErrorContains(t, err, "only available under --user-auth")
+}
+
+func TestLogPatternOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    logPatternRead
+		wantErr string
+	}{
+		{name: "defaults", want: logPatternRead{LogPatternOptions: public.LogPatternOptions{Sources: []string{}}, defaultRange: true}},
+		{
+			name: "filters, rank and limit",
+			args: []string{"--since", "2d", "--min-level", "info", "--source", "client", "--agent-name", "support", "--agent-id", "CA_1",
+				"--session-id", "RM_1", "--query", "timeout", "--rank", "first-seen", "--limit", "10"},
+			want: logPatternRead{LogPatternOptions: public.LogPatternOptions{
+				Range:     public.TimeRange{Start: time.Date(2026, 11, 22, 12, 0, 0, 0, time.UTC)},
+				Limit:     10,
+				Query:     "timeout",
+				MinLevel:  "info",
+				Sources:   []string{"client"},
+				AgentName: "support",
+				AgentID:   "CA_1",
+				SessionID: "RM_1",
+				RankBy:    "first-seen",
+			}},
+		},
+		{name: "platform source", args: []string{"--source", "platform"}, wantErr: "only agent and client logs have patterns"},
+		{name: "unknown rank", args: []string{"--rank", "newest"}, wantErr: `invalid rank "newest"`},
+		{name: "unknown level", args: []string{"--min-level", "loud"}, wantErr: `invalid log level "loud"`},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	analyticsNow = func() time.Time { return now }
+	t.Cleanup(func() { analyticsNow = time.Now })
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := cmdOptions(t, analyticsLogPatternFlags(), logPatternOptions, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// TestFetchLogPatterns prints one row per pattern, then how many records the
+// range holds and whether the counts are estimates; and when there are none,
+// says why.
+func TestFetchLogPatterns(t *testing.T) {
+	const patterns = `{"items":[{"id":"42","template":"tts failed after <N> retries","level":"LOG_LEVEL_ERROR",` +
+		`"source":"LOG_SOURCE_AGENT","events":"12"},{"id":"43","template":"no level","events":"3"}],` +
+		`"estimated":true,"sampleShare":0.25,"totalEvents":"480"}`
+	tests := []struct {
+		name       string
+		body       string
+		opts       logPatternRead
+		wantQuery  url.Values
+		wantOut    []string
+		wantStatus []string
+	}{
+		{
+			name:      "patterns",
+			body:      patterns,
+			opts:      logPatternRead{LogPatternOptions: public.LogPatternOptions{RankBy: "events", Limit: 2}},
+			wantQuery: url.Values{"rankBy": {"LOG_PATTERN_RANK_EVENTS"}, "page.pageSize": {"2"}},
+			wantOut:   []string{"12", "ERROR", "agent", "tts failed after <N> retries", "no level"},
+			wantStatus: []string{
+				"2 patterns shown; the range holds 480 records in all patterns",
+				"The counts are estimates: the API read the records of 25% of the sessions",
+			},
+		},
+		{
+			name:       "none in the default range",
+			body:       `{}`,
+			opts:       logPatternRead{defaultRange: true},
+			wantQuery:  url.Values{},
+			wantStatus: []string{"No agent log patterns at WARN or higher in the last 24 hours", "--min-level trace"},
+		},
+		{
+			name:       "none at the level",
+			body:       `{"items":[]}`,
+			opts:       logPatternRead{LogPatternOptions: public.LogPatternOptions{MinLevel: "error"}},
+			wantQuery:  url.Values{"minLevel": {"LOG_LEVEL_ERROR"}},
+			wantStatus: []string{"No log patterns at ERROR or higher in the range"},
+		},
+		{
+			name:       "none match",
+			body:       `{"items":[]}`,
+			opts:       logPatternRead{LogPatternOptions: public.LogPatternOptions{AgentID: "CA_1"}},
+			wantQuery:  url.Values{"agentId": {"CA_1"}},
+			wantStatus: []string{"No log patterns in the range match the filters"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, query := projectAPI(t, "/v0/projects/p1/log-patterns", http.StatusOK, tt.body)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchLogPatterns(context.Background(), client, "p1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQuery, *query)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+		})
+	}
+}
+
+// TestFetchLogPatternsJSON checks --json prints the API's response, estimate
+// included, with no notes on stderr.
+func TestFetchLogPatternsJSON(t *testing.T) {
+	const body = `{"items":[{"id":"42","template":"t","events":"12"}],"pageInfo":{},"estimated":true,"sampleShare":0.25,"totalEvents":"480"}`
+	client, _ := projectAPI(t, "/v0/projects/p1/log-patterns", http.StatusOK, body)
+	stdout, stderr := captureOut(t)
+	require.NoError(t, fetchLogPatterns(context.Background(), client, "p1", logPatternRead{}, true))
+	assert.JSONEq(t, body, stdout.String())
+	assert.Empty(t, stderr.String())
+}
+
+// TestFetchLogPatternsErrors checks a non-admin is told the read requires
+// being a project admin, and user data recording being off names the
+// settings page.
+func TestFetchLogPatternsErrors(t *testing.T) {
+	client, _ := projectAPI(t, "/v0/projects/p1/log-patterns", http.StatusForbidden, `{"code":7,"message":"this needs observability:read on the project"}`)
+	err := fetchLogPatterns(context.Background(), client, "p1", logPatternRead{}, false)
+	require.ErrorContains(t, err, "reading a project's log patterns requires being a project admin")
+
+	client, _ = projectAPI(t, "/v0/projects/p1/log-patterns", http.StatusBadRequest, `{"code":9,"message":"off","details":[`+
+		`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/settings"}]}`)
+	err = fetchLogPatterns(context.Background(), client, "p1", logPatternRead{}, false)
+	require.ErrorContains(t, err, "the project has no log patterns: user data recording is off")
+	require.ErrorContains(t, err, "https://cloud.example/settings")
+}

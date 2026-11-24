@@ -190,6 +190,7 @@ var (
 					},
 				},
 				analyticsLogsCommand,
+				analyticsLogPatternsCommand,
 			},
 		},
 	}

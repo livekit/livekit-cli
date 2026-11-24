@@ -66,3 +66,56 @@ func logSourceName(s *oapi.LivekitPublicapiObservabilityV1LogSource) string {
 	}
 	return strings.ToLower(strings.TrimPrefix(string(*s), "LOG_SOURCE_"))
 }
+
+var logPatternHeaders = []string{"Events", "Level", "Source", "First Seen", "Last Seen", "Template"}
+
+// logPatternTemplateWidth is how much of a pattern's template a row shows;
+// --json has all of it.
+const logPatternTemplateWidth = 80
+
+func logPatternRow(lp oapi.LivekitPublicapiObservabilityV1LogPattern) []string {
+	level := "-"
+	if lp.Level != nil && *lp.Level != oapi.LOGLEVELUNSPECIFIED {
+		level = strings.TrimPrefix(string(*lp.Level), "LOG_LEVEL_")
+	}
+	return []string{
+		util.DashString(lp.Events), level, logSourceName(lp.Source),
+		util.FormatTime(lp.FirstSeen), util.FormatTime(lp.LastSeen),
+		clip(oneLine(util.Deref(lp.Template)), logPatternTemplateWidth),
+	}
+}
+
+// LogPatterns prints a project's ranked log patterns, one row each with its
+// count, level, source, first and last record, and template, then on stderr
+// how many records the range holds and whether the counts are estimates;
+// --json prints the API's response. empty says why there are no patterns, on
+// stderr in both modes so --json output stays parseable.
+func LogPatterns(p *util.Printer, asJSON bool, resp oapi.LivekitPublicapiObservabilityV1LogPatternsListResponse, empty string) error {
+	patterns := util.Deref(resp.Items)
+	if asJSON {
+		if err := util.PrintJSONTo(p.ResultWriter(), resp); err != nil {
+			return err
+		}
+	} else if len(patterns) > 0 {
+		t := util.CreateTable().Headers(logPatternHeaders...)
+		for _, lp := range patterns {
+			t.Row(logPatternRow(lp)...)
+		}
+		p.Result(t)
+	}
+	if len(patterns) == 0 {
+		if empty != "" {
+			p.Status(empty)
+		}
+		return nil
+	}
+	if asJSON {
+		return nil
+	}
+	p.Statusf("%d patterns shown; the range holds %s records in all patterns", len(patterns), util.Dash(util.Deref(resp.TotalEvents)))
+	if util.Deref(resp.Estimated) {
+		p.Statusf("The counts are estimates: the API read the records of %s of the sessions, and scaled the counts",
+			formatPercent(util.Deref(resp.SampleShare)))
+	}
+	return nil
+}

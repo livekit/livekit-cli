@@ -174,3 +174,96 @@ func TestListProjectLogsErrors(t *testing.T) {
 		assert.Equal(t, "https://cloud.example/settings", url)
 	})
 }
+
+const logPatternsPage = `{"items":[{"id":"42","template":"tts failed after <N> retries","level":"LOG_LEVEL_ERROR",` +
+	`"source":"LOG_SOURCE_AGENT","logger":"livekit.agents","events":"12","lastSeen":"2026-11-21T00:20:35Z",` +
+	`"buckets":[{"startTime":"2026-11-21T00:00:00Z","events":"12"}],"variants":[{"template":"tts failed after 3 retries","events":"7"}]}],` +
+	`"pageInfo":{},"estimated":true,"sampleShare":0.25,"totalEvents":"480"}`
+
+func TestListLogPatterns(t *testing.T) {
+	start := time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name string
+		opts LogPatternOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "every filter and rank",
+			opts: LogPatternOptions{
+				Range:     TimeRange{Start: start},
+				Limit:     10,
+				Query:     "timeout",
+				MinLevel:  "trace",
+				Sources:   []string{"agent", "client"},
+				AgentName: "support",
+				AgentID:   "CA_1",
+				SessionID: "RM_1",
+				RankBy:    "last-seen",
+			},
+			want: url.Values{
+				"range.startTime": {"2026-11-20T00:00:00Z"},
+				"page.pageSize":   {"10"},
+				"query":           {"timeout"},
+				"minLevel":        {"LOG_LEVEL_TRACE"},
+				"sources":         {"LOG_SOURCE_AGENT", "LOG_SOURCE_CLIENT"},
+				"agentName":       {"support"},
+				"agentId":         {"CA_1"},
+				"sessionId":       {"RM_1"},
+				"rankBy":          {"LOG_PATTERN_RANK_LAST_SEEN"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, gotAuth, gotPath, gotQuery := queryServer(t, http.StatusOK, logPatternsPage)
+
+			resp, err := c.ListLogPatterns(context.Background(), "p1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", *gotAuth)
+			assert.Equal(t, "/v0/projects/p1/log-patterns", *gotPath)
+			assert.Equal(t, tt.want, *gotQuery)
+
+			require.Len(t, *resp.Items, 1)
+			pattern := (*resp.Items)[0]
+			assert.Equal(t, "tts failed after <N> retries", *pattern.Template)
+			assert.Equal(t, "12", *pattern.Events)
+			assert.Len(t, *pattern.Variants, 1)
+			assert.True(t, *resp.Estimated)
+			assert.Equal(t, 0.25, *resp.SampleShare)
+			assert.Equal(t, "480", *resp.TotalEvents)
+		})
+	}
+}
+
+// TestListLogPatternsRejectsBadOptions confirms a negative limit and unknown
+// level, source and rank names fail Validate, and fail ListLogPatterns before
+// any request is sent. Platform records have no patterns.
+func TestListLogPatternsRejectsBadOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    LogPatternOptions
+		wantErr string
+	}{
+		{name: "negative limit", opts: LogPatternOptions{Limit: -1}, wantErr: "limit must not be negative"},
+		{name: "unknown level", opts: LogPatternOptions{MinLevel: "loud"}, wantErr: `invalid log level "loud"`},
+		{name: "unknown source", opts: LogPatternOptions{Sources: []string{"system"}}, wantErr: `invalid log source "system"`},
+		{
+			name:    "platform source",
+			opts:    LogPatternOptions{Sources: []string{"agent", "platform"}},
+			wantErr: `invalid log source "platform": only agent and client logs have patterns`,
+		},
+		{name: "unknown rank", opts: LogPatternOptions{RankBy: "newest"}, wantErr: `invalid rank "newest" (expected events, first-seen or last-seen)`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorContains(t, tt.opts.Validate(), tt.wantErr)
+
+			c, called := noRequestServer(t)
+			_, err := c.ListLogPatterns(context.Background(), "p1", tt.opts)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.False(t, *called, "no request should be sent")
+		})
+	}
+}
