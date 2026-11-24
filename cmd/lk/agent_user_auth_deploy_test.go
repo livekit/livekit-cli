@@ -282,6 +282,9 @@ func TestUserAuthDeployAgentBuildFailed(t *testing.T) {
 	_, err := a.CreateAgent(context.Background(), agentSource, nil, []string{"us-east"}, nil, agentExcludes, io.Discard)
 	require.EqualError(t, err, "created agent CA_1, but the build of version T1 failed: its build log is above",
 		"create names the agent it created")
+	var created *agentCreatedError
+	require.ErrorAs(t, err, &created, "lk saves the agent's ID")
+	require.Equal(t, "CA_1", created.agentID)
 }
 
 // When ctx ends before the build does, the deploy returns ctx's error, which

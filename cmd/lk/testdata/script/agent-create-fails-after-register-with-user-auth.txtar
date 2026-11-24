@@ -1,0 +1,43 @@
+# Under --user-auth, lk agent create registers the agent before it uploads
+# and builds the source. When a later step fails, lk saves the agent's ID
+# in livekit.toml, as it does once the build succeeds, so that lk agent
+# deploy and lk agent status find the agent.
+respond GET http://publicapi.test/v0/projects/p_1/agent-client-settings 200 '{"params":[{"name":"available_regions","value":"us-east"}]}'
+respond POST http://publicapi.test/v0/projects/p_1/agents 200 '{"agentId":"CA_1"}'
+respond POST http://publicapi.test/v0/projects/p_1/agents/CA_1:deploy 200 '{"tag":"T1","upload":{"url":"http://uploads.test/bucket","fields":{"key":"CA_1/source.tar.gz"}}}'
+respond POST http://uploads.test/bucket 204
+respond POST http://publicapi.test/v0/projects/p_1/agents/CA_1:startBuild 429 '{"code":8,"message":"too many builds; try again later"}'
+
+! exists livekit.toml
+! exec lk --user-auth agent create --region us-east --skip-sdk-check --no-default-attributes
+stderr '^Created agent with ID \[CA_1\]$'
+stderr '^unable to create agent: created agent CA_1, but too many builds; try again later$'
+grep '^  id = "CA_1"$' livekit.toml
+
+-- Dockerfile --
+FROM python
+-- .dockerignore --
+.venv
+-- requirements.txt --
+livekit-agents
+-- agent.py --
+print("hi")
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test

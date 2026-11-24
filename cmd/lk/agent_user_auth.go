@@ -374,10 +374,23 @@ func (a *userAuthAgentAPI) CreateAgent(ctx context.Context, source fs.FS, secret
 	}
 	info, err := a.deploy(ctx, agentID, source, nil, attributes, "", excludeFiles, buildLog)
 	if err != nil {
-		return nil, fmt.Errorf("created agent %s, but %w", agentID, err)
+		return nil, &agentCreatedError{agentID: agentID, err: err}
 	}
 	return &livekit.CreateAgentResponse{AgentId: agentID, ServerRegions: serverRegions(info, "")}, nil
 }
+
+// agentCreatedError is err, which stopped CreateAgent after it created the
+// agent agentID.
+type agentCreatedError struct {
+	agentID string
+	err     error
+}
+
+func (e *agentCreatedError) Error() string {
+	return fmt.Sprintf("created agent %s, but %v", e.agentID, e.err)
+}
+
+func (e *agentCreatedError) Unwrap() error { return e.err }
 
 // DeployAgentV2 deploys source to the agent's deployment, production when
 // "", through AgentService, which a WRITE member may call; with secrets, it
