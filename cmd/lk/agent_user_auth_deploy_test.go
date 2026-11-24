@@ -49,8 +49,10 @@ type fakeBuild struct {
 	statuses []string
 	versions []string
 	// refuse answers a path with a status and a body in place of its
-	// usual answer.
-	refuse map[string]string
+	// usual answer. unavailable answers a path with 503 that many times
+	// before its usual answer.
+	refuse      map[string]string
+	unavailable map[string]int
 
 	mu       sync.Mutex
 	requests []string          // the method and the URL, with its query, of each request
@@ -78,6 +80,12 @@ func (f *fakeBuild) serve(w http.ResponseWriter, r *http.Request) {
 		f.bodies[r.Method+" "+r.URL.Path] = string(b)
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if f.unavailable[r.Method+" "+r.URL.Path] > 0 {
+		f.unavailable[r.Method+" "+r.URL.Path]--
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = io.WriteString(w, `{"code":14,"message":"cloud agents is unavailable"}`)
+		return
+	}
 	if refusal, ok := f.refuse[r.Method+" "+r.URL.Path]; ok {
 		status, body, _ := strings.Cut(refusal, " ")
 		var code int
@@ -140,7 +148,8 @@ func (f *fakeBuild) readUpload(r *http.Request) {
 }
 
 // start serves f, and returns a userAuthAgentAPI that calls it. awaitBuild
-// polls it every millisecond.
+// polls it every millisecond, and makes a read that failed transiently
+// again after a millisecond.
 func (f *fakeBuild) start() *userAuthAgentAPI {
 	f.t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(f.serve))
@@ -150,6 +159,9 @@ func (f *fakeBuild) start() *userAuthAgentAPI {
 	interval := buildPollInterval
 	buildPollInterval = time.Millisecond
 	f.t.Cleanup(func() { buildPollInterval = interval })
+	backoff := pollRetryBackoff
+	pollRetryBackoff = time.Millisecond
+	f.t.Cleanup(func() { pollRetryBackoff = backoff })
 	return &userAuthAgentAPI{client: client, projectID: "p_1"}
 }
 
@@ -364,6 +376,43 @@ func TestUserAuthDeployAgentRefusals(t *testing.T) {
 	a := f.start()
 	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
 	require.EqualError(t, err, "too many builds; try again later")
+}
+
+// A poll that fails transiently is made again, a few times.
+func TestUserAuthDeployAgentRetriesPolls(t *testing.T) {
+	f := &fakeBuild{t: t, statuses: []string{"Building", "Running"}, versions: []string{"", "Available"},
+		unavailable: map[string]int{"GET /v0/projects/p_1/agents/CA_1": 1, "GET /v0/projects/p_1/agents/CA_1/versions": pollAttempts - 1}}
+	a := f.start()
+	require.NoError(t, a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard))
+
+	// So is one that is rate limited.
+	f = &fakeBuild{t: t, statuses: []string{"Running"}, versions: []string{"Available"},
+		refuse: map[string]string{"GET /v0/projects/p_1/agents/CA_1": `429 {"code":8,"message":"too many requests"}`}}
+	a = f.start()
+	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
+	require.ErrorContains(t, err, "can't follow the build of version T1")
+	require.Equal(t, pollAttempts, countRequests(f, "GET /v0/projects/p_1/agents/CA_1"))
+
+	// Any other refusal isn't.
+	f = &fakeBuild{t: t, statuses: []string{"Running"}, versions: []string{"Available"},
+		refuse: map[string]string{"GET /v0/projects/p_1/agents/CA_1/versions": `403 {"code":7,"message":"this needs READ on the project"}`}}
+	a = f.start()
+	err = a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
+	require.ErrorContains(t, err, "can't follow the build of version T1")
+	require.Equal(t, 1, countRequests(f, "GET /v0/projects/p_1/agents/CA_1/versions"))
+}
+
+// countRequests is how many requests f got for request, a method and a URL.
+func countRequests(f *fakeBuild, request string) int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	n := 0
+	for _, r := range f.requests {
+		if r == request {
+			n++
+		}
+	}
+	return n
 }
 
 // A poll that fails says that the build continues, and how to follow it.

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"regexp"
 	"slices"
@@ -432,7 +433,8 @@ const buildFailed = "Build Failed"
 // awaitBuild follows the build of the version tag that StartAgentBuild
 // started for deployment of the agent agentID. Every buildPollInterval it
 // reads the agent and its versions, and writes each new status of the
-// deployment to w. Once the version is available or failed, it writes the
+// deployment to w. A read that fails transiently is made again a few times
+// (see retryPoll) before awaitBuild gives up on following the build. Once the version is available or failed, it writes the
 // version's build log to w, and returns the agent, or an error when the
 // build failed. When ctx is done first, it returns ctx's error: the build
 // continues on LiveKit Cloud.
@@ -442,7 +444,9 @@ func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, 
 	defer ticker.Stop()
 	last := ""
 	for {
-		agent, err := a.client.GetAgent(ctx, a.projectID, agentID)
+		agent, err := retryPoll(ctx, func(ctx context.Context) (*public.Agent, error) {
+			return a.client.GetAgent(ctx, a.projectID, agentID)
+		})
 		if err != nil {
 			return nil, lostBuildError(tag, err)
 		}
@@ -451,7 +455,9 @@ func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, 
 			fmt.Fprintf(w, "Status: %s\n", status)
 			last = status
 		}
-		versions, err := a.client.ListAgentVersions(ctx, a.projectID, agentID)
+		versions, err := retryPoll(ctx, func(ctx context.Context) ([]*livekit.AgentVersion, error) {
+			return a.client.ListAgentVersions(ctx, a.projectID, agentID)
+		})
 		if err != nil {
 			return nil, lostBuildError(tag, err)
 		}
@@ -473,6 +479,48 @@ func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, 
 		case <-ticker.C:
 		}
 	}
+}
+
+// pollAttempts is how many times awaitBuild makes a read that fails
+// transiently before it gives up on following the build.
+const pollAttempts = 4
+
+// pollRetryBackoff is how long awaitBuild waits before it makes a read that
+// failed transiently again. It doubles for each next attempt.
+var pollRetryBackoff = time.Second
+
+// retryPoll returns read(ctx), made again after a backoff while it fails
+// transiently (see transientPollError), up to pollAttempts times in all.
+func retryPoll[T any](ctx context.Context, read func(context.Context) (T, error)) (T, error) {
+	backoff := pollRetryBackoff
+	for attempt := 1; ; attempt++ {
+		v, err := read(ctx)
+		if err == nil || attempt == pollAttempts || !transientPollError(err) {
+			return v, err
+		}
+		select {
+		case <-ctx.Done():
+			return v, ctx.Err()
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+	}
+}
+
+// transientPollError reports whether err, from a read of the Public API,
+// can pass when the read is made again: the API answered 429 or a 5xx, or
+// lk got no answer. Any other refusal, such as a 401 or a 403, stays as it
+// is, and so does the error of a done ctx.
+func transientPollError(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	var refused *public.APIError
+	if errors.As(err, &refused) {
+		return refused.Status == http.StatusTooManyRequests || refused.Status >= http.StatusInternalServerError
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
 }
 
 // buildFailedError writes the build log of the version tag, whose build
