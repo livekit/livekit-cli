@@ -478,3 +478,133 @@ func TestFetchLogPatternsErrors(t *testing.T) {
 	require.ErrorContains(t, err, "the project has no log patterns: user data recording is off")
 	require.ErrorContains(t, err, "https://cloud.example/settings")
 }
+
+func TestInsightsCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	insightsCmd := findCommandByName(analyticsCmd.Commands, "insights")
+	require.NotNil(t, insightsCmd, "'analytics insights' command must exist")
+	require.NotNil(t, insightsCmd.Action)
+	for _, name := range []string{"since", "start", "end", "agent-id", "agent-name", "json"} {
+		assert.NotNil(t, findFlagByName(insightsCmd.Flags, name), "--%s", name)
+	}
+
+	err := runAnalytics("--experimental", "insights")
+	require.ErrorContains(t, err, "only available under --user-auth")
+}
+
+func TestAgentInsightsOptions(t *testing.T) {
+	opts, err := cmdOptions(t, analyticsInsightsFlags(), agentInsightsOptions)
+	require.NoError(t, err)
+	assert.Equal(t, agentInsightsRead{AgentInsightsOptions: public.AgentInsightsOptions{AgentIDs: []string{}, AgentNames: []string{}}, defaultRange: true}, opts)
+
+	opts, err = cmdOptions(t, analyticsInsightsFlags(), agentInsightsOptions,
+		"--start", "2026-11-01", "--end", "2026-11-08", "--agent-id", "CA_1", "--agent-id", "CA_2", "--agent-name", "self-hosted")
+	require.NoError(t, err)
+	assert.Equal(t, agentInsightsRead{AgentInsightsOptions: public.AgentInsightsOptions{
+		Range:      public.TimeRange{Start: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC), End: time.Date(2026, 11, 8, 0, 0, 0, 0, time.UTC)},
+		AgentIDs:   []string{"CA_1", "CA_2"},
+		AgentNames: []string{"self-hosted"},
+	}}, opts)
+
+	_, err = cmdOptions(t, analyticsInsightsFlags(), agentInsightsOptions, "--agent-name", " ")
+	require.ErrorContains(t, err, "agent name must not be empty")
+}
+
+// TestFetchAgentInsights prints the totals, the latencies with measurements,
+// the agents and the models; and when there is no data, says why.
+func TestFetchAgentInsights(t *testing.T) {
+	const insights = `{"summary":{"sessions":"2","turns":"3","interruptions":"0","inputTokens":"3303","outputTokens":"189",` +
+		`"e2eLatency":{"p50Ms":2465.6,"p95Ms":2470,"p99Ms":2478,"meanMs":2478.2,"maxMs":2478.2,"count":"1"},` +
+		`"toolDuration":{"count":"0"}},` +
+		`"agents":[{"agentId":"CA_1","agentName":"support","sessions":"2","turns":"3","e2eLatency":{"p50Ms":2465.6,"p95Ms":2470,"count":"1"}},` +
+		`{"agentName":"self-hosted","deploymentId":"dep_1","sessions":"1"}],` +
+		`"models":[{"component":"MODEL_COMPONENT_LLM","provider":"openai","model":"gpt-4.1","requests":"4","sessions":"1",` +
+		`"latency":{"p50Ms":944,"p95Ms":1388.5,"count":"3"},"inputTokens":"3303","outputTokens":"189","cachedInputTokens":"320"},` +
+		`{"component":"MODEL_COMPONENT_TTS","provider":"cartesia","model":"sonic-3","requests":"2","ttsCharacters":"542"},` +
+		`{"component":"MODEL_COMPONENT_STT","provider":"deepgram","model":"nova-3","sttAudioSeconds":34.2}]}`
+	const none = `{"summary":{"sessions":"0","e2eLatency":{"count":"0"}},"agents":[],"models":[]}`
+	tests := []struct {
+		name       string
+		body       string
+		opts       agentInsightsRead
+		wantQuery  url.Values
+		wantOut    []string
+		notOut     []string
+		wantStatus string
+	}{
+		{
+			name:      "insights",
+			body:      insights,
+			opts:      agentInsightsRead{AgentInsightsOptions: public.AgentInsightsOptions{AgentIDs: []string{"CA_1"}}},
+			wantQuery: url.Values{"agentIds": {"CA_1"}},
+			wantOut: []string{
+				"3303", "End-to-end", "2466ms", "2478ms",
+				"support", "CA_1", "production", "self-hosted", "dep_1",
+				"gpt-4.1", "944ms", "1388ms", "3303 in, 189 out tokens (320 cached)", "542 characters", "34.2s of audio",
+			},
+			notOut: []string{"Tool call duration"},
+		},
+		{
+			name:       "none in the default range",
+			body:       none,
+			opts:       agentInsightsRead{defaultRange: true},
+			wantQuery:  url.Values{},
+			wantStatus: "No agent data in the last 7 days",
+		},
+		{
+			name:       "none for the agents",
+			body:       `{}`,
+			opts:       agentInsightsRead{AgentInsightsOptions: public.AgentInsightsOptions{AgentNames: []string{"gone"}}},
+			wantQuery:  url.Values{"agentNames": {"gone"}},
+			wantStatus: "No data in the range for the agents asked for",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, query := projectAPI(t, "/v0/projects/p1/agent-insights", http.StatusOK, tt.body)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchAgentInsights(context.Background(), client, "p1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQuery, *query)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			for _, not := range tt.notOut {
+				assert.NotContains(t, stdout.String(), not)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			if tt.wantStatus != "" {
+				assert.Contains(t, stderr.String(), tt.wantStatus)
+			}
+		})
+	}
+}
+
+// TestFetchAgentInsightsJSON checks --json prints the API's response, and
+// still explains no data on stderr.
+func TestFetchAgentInsightsJSON(t *testing.T) {
+	const body = `{"summary":{"sessions":"0"},"agents":[],"models":[]}`
+	client, _ := projectAPI(t, "/v0/projects/p1/agent-insights", http.StatusOK, body)
+	stdout, stderr := captureOut(t)
+	require.NoError(t, fetchAgentInsights(context.Background(), client, "p1", agentInsightsRead{}, true))
+	assert.JSONEq(t, body, stdout.String())
+	assert.Contains(t, stderr.String(), "No agent data in the range")
+}
+
+// TestFetchAgentInsightsErrors checks a caller who isn't a project member is
+// told so, not that the read needs an admin, and a refused range passes
+// through.
+func TestFetchAgentInsightsErrors(t *testing.T) {
+	client, _ := projectAPI(t, "/v0/projects/p1/agent-insights", http.StatusForbidden, `{"code":7,"message":"not authorized"}`)
+	err := fetchAgentInsights(context.Background(), client, "p1", agentInsightsRead{}, false)
+	require.ErrorContains(t, err, "you don't have access to this project")
+	assert.NotContains(t, err.Error(), "admin")
+
+	client, _ = projectAPI(t, "/v0/projects/p1/agent-insights", http.StatusBadRequest, `{"code":3,"message":"the time range can be at most 30 days"}`)
+	err = fetchAgentInsights(context.Background(), client, "p1", agentInsightsRead{}, false)
+	require.EqualError(t, err, "the time range can be at most 30 days")
+}

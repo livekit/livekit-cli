@@ -30,8 +30,8 @@ import (
 )
 
 // The commands in this file read a whole project's data over a time range,
-// rather than one session's: its logs and log patterns, which only the Public
-// API serves.
+// rather than one session's: its logs, log patterns and agent insights, which
+// only the Public API serves.
 
 // logQueryHelp describes --query, the dashboard's log search syntax.
 const logQueryHelp = "--query takes a search in the syntax of the logs search box on the dashboard: " +
@@ -405,5 +405,89 @@ func emptyLogPatternsReason(opts logPatternRead) string {
 			util.Accented("--min-level trace"), util.Accented("--since DURATION"))
 	default:
 		return "No agent log patterns at WARN or higher in the range"
+	}
+}
+
+// analyticsInsightsCommand reads a project's agent insights.
+var analyticsInsightsCommand = &cli.Command{
+	Name:      "insights",
+	Usage:     "Print the agent insights of a project: totals, latencies, agents and models (requires --user-auth)",
+	UsageText: "lk analytics insights [--since DURATION | --start TIME [--end TIME]] [--agent-id CA_ID ...] [--agent-name NAME ...]",
+	Description: "Prints the data that the agent dashboards of LiveKit Cloud show, from the turns, model requests and tool calls " +
+		"that the project's agents recorded: their totals; the latencies that have measurements, such as end-to-end " +
+		"and LLM time to first token; one row for each agent and deployment, busiest first; and one row for each model " +
+		"that the agents used. --json prints the API's response.\n\n" +
+		"It reads the last 7 days unless --since or --start says otherwise. The range doesn't include --end, and can be " +
+		"at most 30 days. Simulated sessions are left out. --agent-id and --agent-name select agents, at most 25 " +
+		"together; a self-hosted agent has no ID, so select it by name.",
+	Action: projectRead(agentInsightsOptions, fetchAgentInsights),
+	Flags:  append([]cli.Flag{jsonFlag}, analyticsInsightsFlags()...),
+}
+
+// analyticsInsightsFlags returns fresh instances of the agent insights' own
+// flags (the --json flag is shared).
+func analyticsInsightsFlags() []cli.Flag {
+	return append(timeRangeFlags("7d"),
+		&cli.StringSliceFlag{
+			Name:  "agent-id",
+			Usage: "Print only the data of the cloud agent `CA_ID`; repeatable, with --agent-name matches any (default every agent)",
+		},
+		&cli.StringSliceFlag{
+			Name:  "agent-name",
+			Usage: "Print only the data of the agents named `NAME`; repeatable, with --agent-id matches any (default every agent)",
+		},
+	)
+}
+
+// agentInsightsRead is what `analytics insights` reads, and whether it reads
+// the default range, so an empty read can say how to read further back.
+type agentInsightsRead struct {
+	public.AgentInsightsOptions
+	defaultRange bool
+}
+
+// agentInsightsOptions reads the agent insights flags. A bad range or a blank
+// agent fails here, before the project lookup.
+func agentInsightsOptions(cmd *cli.Command) (agentInsightsRead, error) {
+	timeRange, err := timeRangeOptions(cmd)
+	if err != nil {
+		return agentInsightsRead{}, err
+	}
+	opts := public.AgentInsightsOptions{
+		Range:      timeRange,
+		AgentIDs:   cmd.StringSlice("agent-id"),
+		AgentNames: cmd.StringSlice("agent-name"),
+	}
+	if err := opts.Validate(); err != nil {
+		return agentInsightsRead{}, err
+	}
+	return agentInsightsRead{AgentInsightsOptions: opts, defaultRange: usesDefaultWindow(cmd)}, nil
+}
+
+// fetchAgentInsights reads a project's agent insights and prints them, saying
+// why when there are none.
+func fetchAgentInsights(ctx context.Context, client *public.Client, projectID string, opts agentInsightsRead, asJSON bool) error {
+	resp, err := client.GetAgentInsights(ctx, projectID, opts.AgentInsightsOptions)
+	if err != nil {
+		return projectReadError(err, "agent insights", projectReadAccess)
+	}
+	var empty string
+	sessions := util.Deref(util.Deref(resp.Summary).Sessions)
+	if (sessions == "" || sessions == "0") && len(util.Deref(resp.Agents)) == 0 && len(util.Deref(resp.Models)) == 0 {
+		empty = emptyAgentInsightsReason(opts)
+	}
+	return render.AgentInsights(out, asJSON, *resp, empty)
+}
+
+// emptyAgentInsightsReason explains a read with no agent data.
+func emptyAgentInsightsReason(opts agentInsightsRead) string {
+	switch {
+	case len(opts.AgentIDs) > 0 || len(opts.AgentNames) > 0:
+		return "No data in the range for the agents asked for"
+	case opts.defaultRange:
+		return fmt.Sprintf("No agent data in the last 7 days — re-run with %s or %s to read further back (at most 30 days)",
+			util.Accented("--since DURATION"), util.Accented("--start TIME"))
+	default:
+		return "No agent data in the range"
 	}
 }

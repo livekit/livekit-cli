@@ -191,6 +191,7 @@ var (
 				},
 				analyticsLogsCommand,
 				analyticsLogPatternsCommand,
+				analyticsInsightsCommand,
 			},
 		},
 	}
