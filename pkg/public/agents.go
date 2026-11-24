@@ -124,3 +124,76 @@ func IsAgentNotFound(err error) bool {
 	var apiErr *APIError
 	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound && apiErr.Message == agentNotFound
 }
+
+// ListAgentVersions returns the versions of the project's cloud agent
+// agentID, newest first. The list is always one page.
+func (c *Client) ListAgentVersions(ctx context.Context, projectID, agentID string) ([]*livekit.AgentVersion, error) {
+	resp, err := c.gen.AgentServiceListAgentVersionsWithResponse(ctx, projectID, agentID, &oapi.AgentServiceListAgentVersionsParams{})
+	if err != nil {
+		return nil, err
+	}
+	return decodeOnePage[livekit.AgentVersion](resp.StatusCode(), resp.Body)
+}
+
+// ListAgentSecrets returns the secrets of the project's cloud agent agentID,
+// in name order, without their values. The list is always one page.
+func (c *Client) ListAgentSecrets(ctx context.Context, projectID, agentID string) ([]*livekit.AgentSecret, error) {
+	resp, err := c.gen.AgentServiceListAgentSecretsWithResponse(ctx, projectID, agentID, &oapi.AgentServiceListAgentSecretsParams{})
+	if err != nil {
+		return nil, err
+	}
+	return decodeOnePage[livekit.AgentSecret](resp.StatusCode(), resp.Body)
+}
+
+// BuildLog is the build log of one version of a cloud agent.
+type BuildLog struct {
+	// Text is the log as plain text, or its end, from the start of a line,
+	// when Truncated.
+	Text string
+	// Truncated is true when the log is longer than the API returns.
+	Truncated bool
+}
+
+// GetAgentBuildLog returns the build log of version of the project's cloud
+// agent agentID. The log exists once the build ends: before that, and for a
+// version without one, it is NotFound "build log not found".
+func (c *Client) GetAgentBuildLog(ctx context.Context, projectID, agentID, version string) (*BuildLog, error) {
+	resp, err := c.gen.AgentServiceGetAgentBuildLogWithResponse(ctx, projectID, agentID, version)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil {
+		return nil, errors.New("unexpected response from server: not JSON")
+	}
+	log := &BuildLog{}
+	if resp.JSON200.Text != nil {
+		log.Text = *resp.JSON200.Text
+	}
+	if resp.JSON200.Truncated != nil {
+		log.Truncated = *resp.JSON200.Truncated
+	}
+	return log, nil
+}
+
+// GetAgentClientSettings returns the settings that lk reads before it
+// creates or deploys a cloud agent in the project, such as the regions where
+// the project can deploy one.
+func (c *Client) GetAgentClientSettings(ctx context.Context, projectID string) (*livekit.ClientSettingsResponse, error) {
+	resp, err := c.gen.AgentServiceGetAgentClientSettingsWithResponse(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	// The response is {"params": [livekit.SettingsParam]}, the shape of
+	// livekit.ClientSettingsResponse.
+	settings := new(livekit.ClientSettingsResponse)
+	if err := telephonyUnmarshal.Unmarshal(resp.Body, settings); err != nil {
+		return nil, fmt.Errorf("unexpected response from server: %w", err)
+	}
+	return settings, nil
+}

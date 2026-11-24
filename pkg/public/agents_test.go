@@ -193,3 +193,98 @@ func TestGetAgentMissingAgent(t *testing.T) {
 	_, err := c.GetAgent(context.Background(), "p_1", "CA_1")
 	require.EqualError(t, err, "unexpected response from server: missing agent")
 }
+
+// Versions come back as livekit.AgentVersion, newest first as the API sends
+// them, with a deploy time only where the API sends one.
+func TestListAgentVersions(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK,
+		`{"items":[{"version":"v2","createdAt":"2026-11-21T09:00:00Z","status":"Failed"},{"version":"v1","current":true,"active":true,"draining":true,"owner":"o","createdAt":"2026-11-20T09:00:00Z","deployedAt":"2026-11-20T10:00:00Z","attributes":{"git_sha":"abc"},"status":"Succeeded"}],"pageInfo":{}}`)
+	versions, err := c.ListAgentVersions(context.Background(), "p_1", "CA_1")
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodGet, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents/CA_1/versions", got.path)
+
+	require.Len(t, versions, 2)
+	require.True(t, proto.Equal(&livekit.AgentVersion{
+		Version: "v2", CreatedAt: timestamppb.New(time.Date(2026, 11, 21, 9, 0, 0, 0, time.UTC)), Status: "Failed",
+	}, versions[0]), "got %v", versions[0])
+	require.True(t, proto.Equal(&livekit.AgentVersion{
+		Version: "v1", Current: true, Active: true, Draining: true, Owner: "o",
+		CreatedAt:  timestamppb.New(time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)),
+		DeployedAt: timestamppb.New(time.Date(2026, 11, 20, 10, 0, 0, 0, time.UTC)),
+		Attributes: map[string]string{"git_sha": "abc"}, Status: "Succeeded",
+	}, versions[1]), "got %v", versions[1])
+}
+
+func TestListAgentSecrets(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK,
+		`{"items":[{"name":"API_TOKEN","createdAt":"2026-11-01T00:00:00Z","kind":"AGENT_SECRET_KIND_FILE","deployments":["staging"]}],"pageInfo":{}}`)
+	secrets, err := c.ListAgentSecrets(context.Background(), "p_1", "CA_1")
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodGet, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents/CA_1/secrets", got.path)
+	require.Len(t, secrets, 1)
+	require.True(t, proto.Equal(&livekit.AgentSecret{
+		Name: "API_TOKEN", CreatedAt: timestamppb.New(time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)),
+		Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_FILE, Deployments: []string{"staging"},
+	}, secrets[0]), "got %v", secrets[0])
+}
+
+// A member below admin gets the API's refusal as it is.
+func TestListAgentSecretsRefused(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusForbidden, `{"code":7,"message":"this needs ADMIN on the project"}`)
+	secrets, err := c.ListAgentSecrets(context.Background(), "p_1", "CA_1")
+	require.EqualError(t, err, "this needs ADMIN on the project")
+	assert.True(t, IsPermissionDenied(err))
+	assert.Nil(t, secrets)
+}
+
+func TestGetAgentBuildLog(t *testing.T) {
+	for name, tc := range map[string]struct {
+		body string
+		want BuildLog
+	}{
+		"whole":     {`{"text":"#1 resolve\n#2 DONE\n"}`, BuildLog{Text: "#1 resolve\n#2 DONE\n"}},
+		"truncated": {`{"text":"#2 DONE\n","truncated":true}`, BuildLog{Text: "#2 DONE\n", Truncated: true}},
+		"empty":     {`{}`, BuildLog{}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			c, got := telephonyServer(t, http.StatusOK, tc.body)
+			log, err := c.GetAgentBuildLog(context.Background(), "p_1", "CA_1", "v20261120")
+			require.NoError(t, err)
+			assert.Equal(t, http.MethodGet, got.method)
+			assert.Equal(t, "/v0/projects/p_1/agents/CA_1/versions/v20261120/build-log", got.path)
+			assert.Equal(t, tc.want, *log)
+		})
+	}
+}
+
+// A build that hasn't ended has no log yet.
+func TestGetAgentBuildLogNotFound(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusNotFound, `{"code":5,"message":"build log not found"}`)
+	log, err := c.GetAgentBuildLog(context.Background(), "p_1", "CA_1", "v1")
+	require.EqualError(t, err, "build log not found")
+	assert.True(t, IsNotFound(err))
+	assert.Nil(t, log)
+}
+
+func TestGetAgentClientSettings(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK,
+		`{"params":[{"name":"available_regions","value":"us-east,eu-central"},{"name":"python-min-sdk-version","value":"1.0.0"}],"aFieldFromANewerServer":1}`)
+	settings, err := c.GetAgentClientSettings(context.Background(), "p_1")
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodGet, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agent-client-settings", got.path)
+	require.True(t, proto.Equal(&livekit.ClientSettingsResponse{Params: []*livekit.SettingsParam{
+		{Name: "available_regions", Value: "us-east,eu-central"},
+		{Name: "python-min-sdk-version", Value: "1.0.0"},
+	}}, settings), "got %v", settings)
+}
+
+// Settings that aren't a list are an error, not no settings.
+func TestGetAgentClientSettingsBadResponse(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusOK, `{"params":"x"}`)
+	settings, err := c.GetAgentClientSettings(context.Background(), "p_1")
+	require.ErrorContains(t, err, "params")
+	assert.Nil(t, settings)
+}
