@@ -47,6 +47,9 @@ type SessionListOptions struct {
 	RoomPrefix string
 	// Tags keeps sessions carrying any of these tags.
 	Tags []string
+	// AgentID keeps sessions that this cloud agent (CA_...) served. An agent
+	// that runs outside LiveKit Cloud has no agent ID.
+	AgentID string
 	// SortOrder orders by start time: "asc" or "desc" (the server's default).
 	SortOrder string
 }
@@ -76,7 +79,8 @@ func parseSortOrder(s string) (oapi.LivekitPublicapiCommonV1SortOrder, error) {
 }
 
 // listProjectSessionsParams translates opts into the generated query params,
-// rejecting unknown status or sort order names before any request is sent.
+// rejecting unknown status or sort order names, and an agent ID that is not a
+// cloud agent ID, before any request is sent.
 func listProjectSessionsParams(opts SessionListOptions) (*oapi.AnalyticsServiceListProjectSessionsParams, error) {
 	params := &oapi.AnalyticsServiceListProjectSessionsParams{}
 	if opts.Limit > 0 {
@@ -108,6 +112,12 @@ func listProjectSessionsParams(opts SessionListOptions) (*oapi.AnalyticsServiceL
 	if len(opts.Tags) > 0 {
 		params.FilterTags = ptr(opts.Tags)
 	}
+	if opts.AgentID != "" {
+		if !strings.HasPrefix(opts.AgentID, "CA_") {
+			return nil, fmt.Errorf("invalid agent ID %q (expected a cloud agent ID, such as CA_..., from `lk agent list`)", opts.AgentID)
+		}
+		params.FilterAgentId = ptr(opts.AgentID)
+	}
 	if opts.SortOrder != "" {
 		order, err := parseSortOrder(opts.SortOrder)
 		if err != nil {
@@ -118,7 +128,8 @@ func listProjectSessionsParams(opts SessionListOptions) (*oapi.AnalyticsServiceL
 	return params, nil
 }
 
-// Validate reports an unknown status or sort order name. ListProjectSessions
+// Validate reports an unknown status or sort order name, or an agent ID that
+// is not a cloud agent ID. ListProjectSessions
 // makes the same check before sending a request; callers can run it earlier.
 func (o SessionListOptions) Validate() error {
 	_, err := listProjectSessionsParams(o)

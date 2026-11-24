@@ -284,6 +284,11 @@ func analyticsSessionListFlags() []cli.Flag {
 			Hidden: true,
 		}),
 		userAuthOnlyFlag(&cli.StringFlag{
+			Name:   "agent-id",
+			Usage:  "List sessions that the cloud agent `ID` (CA_...) served, as `lk agent list` shows it (requires --user-auth)",
+			Hidden: true,
+		}),
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "sort-order",
 			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --user-auth)",
 			Hidden: true,
@@ -430,7 +435,7 @@ func analyticsEventFlags() []cli.Flag {
 // --start and --end work in both modes. The filter flags are sent only to the Public API for now.
 var analyticsListModeFlags = authModeFlags{
 	legacyOnly:   []string{"page"},
-	userAuthOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
+	userAuthOnly: []string{"cursor", "status", "room", "tag", "agent-id", "sort-order"},
 }
 
 func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
@@ -895,6 +900,7 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 		Statuses:   cmd.StringSlice("status"),
 		RoomPrefix: cmd.String("room"),
 		Tags:       cmd.StringSlice("tag"),
+		AgentID:    cmd.String("agent-id"),
 		SortOrder:  cmd.String("sort-order"),
 	}
 	if err := opts.Validate(); err != nil {
