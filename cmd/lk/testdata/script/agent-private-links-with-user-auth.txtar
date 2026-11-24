@@ -1,0 +1,122 @@
+# Under --user-auth, lk agent private-link create, list, health-status and
+# delete call the Public API's AgentService, which a WRITE member may call,
+# and print what they print with an API key. list reads every link's health
+# in its one call to the Public API, where lk asks cloud agents for each
+# link's health with its own call. Neither asks the Public API for a token:
+# here it would refuse one, as it refuses a member below admin.
+env LK_AGENTS_URL=http://agents.test
+respond POST http://publicapi.test/v0/projects/p_1/tokens 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+
+# With an API key.
+respond POST http://agents.test/twirp/livekit.CloudAgent/GetClientSettings 200 '{"params":[{"name":"available_regions","value":"us-east"}]}'
+respond POST http://agents.test/twirp/livekit.CloudAgent/CreatePrivateLink 200 '{"privateLink":{"privateLinkId":"PL_1","name":"db","region":"us-east","port":5432,"endpoint":"com.amazonaws.vpce.us-east-1.vpce-svc-1","connectionEndpoint":"db.pl.livekit.cloud","cloudRegion":"us-east-1"}}'
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks 200 '{"items":[{"privateLinkId":"PL_1","name":"db","region":"us-east","port":5432,"endpoint":"com.amazonaws.vpce.us-east-1.vpce-svc-1","connectionEndpoint":"db.pl.livekit.cloud","cloudRegion":"us-east-1"}]}'
+respond POST http://agents.test/twirp/livekit.CloudAgent/GetPrivateLinkStatus 200 '{"value":{"status":"PRIVATE_LINK_STATUS_HEALTHY","updatedAt":"2026-11-23T10:00:00Z"}}'
+respond POST http://agents.test/twirp/livekit.CloudAgent/DestroyPrivateLink 200 ''
+
+exec lk agent private-link create --name db --region us-east --port 5432 --endpoint com.amazonaws.vpce.us-east-1.vpce-svc-1
+stderr '^Created private link \[PL_1\]$'
+stderr '^Gateway DNS \[db\.pl\.livekit\.cloud\]$'
+exec lk agent private-link list
+cmp stdout want-list
+exec lk agent private-link health-status --id PL_1
+cmp stdout want-health
+exec lk agent private-link delete --id PL_1
+stderr '^Deleted private link \[PL_1\]$'
+
+# Under --user-auth.
+respond GET http://publicapi.test/v0/projects/p_1/agent-client-settings 200 '{"params":[{"name":"available_regions","value":"us-east"}]}'
+respond POST http://publicapi.test/v0/projects/p_1/private-links 200 '{"privateLink":{"privateLinkId":"PL_1","name":"db","region":"us-east","port":5432,"endpoint":"com.amazonaws.vpce.us-east-1.vpce-svc-1","connectionEndpoint":"db.pl.livekit.cloud","cloudRegion":"us-east-1"}}'
+respond GET http://publicapi.test/v0/projects/p_1/private-links 200 '{"items":[{"link":{"privateLinkId":"PL_1","name":"db","region":"us-east","port":5432,"endpoint":"com.amazonaws.vpce.us-east-1.vpce-svc-1","connectionEndpoint":"db.pl.livekit.cloud","cloudRegion":"us-east-1"},"status":{"status":"PRIVATE_LINK_STATUS_HEALTHY","updatedAt":"2026-11-23T10:00:00Z"}}]}'
+respond GET http://publicapi.test/v0/projects/p_1/private-links/PL_1/status 200 '{"status":{"status":"PRIVATE_LINK_STATUS_HEALTHY","updatedAt":"2026-11-23T10:00:00Z"}}'
+respond DELETE http://publicapi.test/v0/projects/p_1/private-links/PL_1 200 '{}'
+
+exec lk --user-auth agent private-link create --name db --region us-east --port 5432 --endpoint com.amazonaws.vpce.us-east-1.vpce-svc-1
+stderr '^Created private link \[PL_1\]$'
+stderr '^Gateway DNS \[db\.pl\.livekit\.cloud\]$'
+exec lk --user-auth agent private-link list
+cmp stdout want-list
+exec lk --user-auth agent private-link health-status --id PL_1
+cmp stdout want-health
+exec lk --user-auth agent private-link delete --id PL_1
+stderr '^Deleted private link \[PL_1\]$'
+
+# A link whose health the Public API couldn't read lists with an error, as
+# one whose health cloud agents refuses to give lk does.
+respond GET http://publicapi.test/v0/projects/p_1/private-links 200 '{"items":[{"link":{"privateLinkId":"PL_1","name":"db","region":"us-east","port":5432,"endpoint":"com.amazonaws.vpce.us-east-1.vpce-svc-1","connectionEndpoint":"db.pl.livekit.cloud","cloudRegion":"us-east-1"}}]}'
+exec lk --user-auth agent private-link list --json
+cmp stdout want-list-unread
+
+# A WRITE member may manage private links; a READ member hears that the
+# command needs write access.
+respond DELETE http://publicapi.test/v0/projects/p_1/private-links/PL_1 403 '{"code":7,"message":"this needs WRITE on the project"}'
+! exec lk --user-auth agent private-link delete --id PL_1
+stderr '^unable to delete private link: signed in with --user-auth, this command needs write access to the project\. A project API key also works: re-run without --user-auth$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-list --
+┌──────┬──────┬─────────┬──────────────┬──────┬─────────────────────────────────────────┬─────────────────────┬─────────┬──────────────────────┬────────┐
+│ ID   │ Name │ Region  │ Cloud Region │ Port │ Endpoint                                │ DNS                 │ Health  │ Updated At           │ Reason │
+├──────┼──────┼─────────┼──────────────┼──────┼─────────────────────────────────────────┼─────────────────────┼─────────┼──────────────────────┼────────┤
+│ PL_1 │ db   │ us-east │ us-east-1    │ 5432 │ com.amazonaws.vpce.us-east-1.vpce-svc-1 │ db.pl.livekit.cloud │ Healthy │ 2026-11-23T10:00:00Z │ -      │
+└──────┴──────┴─────────┴──────────────┴──────┴─────────────────────────────────────────┴─────────────────────┴─────────┴──────────────────────┴────────┘
+-- want-health --
+┌──────┬─────────┬──────────────────────┬────────┐
+│ ID   │ Health  │ Updated At           │ Reason │
+├──────┼─────────┼──────────────────────┼────────┤
+│ PL_1 │ Healthy │ 2026-11-23T10:00:00Z │ -      │
+└──────┴─────────┴──────────────────────┴────────┘
+-- want-list-unread --
+{
+  "items": [
+    {
+      "private_link": {
+        "private_link_id": "PL_1",
+        "name": "db",
+        "region": "us-east",
+        "port": 5432,
+        "endpoint": "com.amazonaws.vpce.us-east-1.vpce-svc-1",
+        "connection_endpoint": "db.pl.livekit.cloud",
+        "cloud_region": "us-east-1",
+        "Config": null
+      },
+      "health": null,
+      "health_error": "LiveKit could not read its health"
+    }
+  ]
+}
+-- want-requests --
+POST http://agents.test/twirp/livekit.CloudAgent/GetClientSettings apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/CreatePrivateLink apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/GetPrivateLinkStatus apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/GetPrivateLinkStatus apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/DestroyPrivateLink apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agent-client-settings bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/private-links bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/private-links bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/private-links/PL_1/status bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/private-links/PL_1 bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/private-links bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/private-links/PL_1 bearer=st_1 project=p_1

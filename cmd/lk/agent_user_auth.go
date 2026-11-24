@@ -49,9 +49,9 @@ import (
 // itself, for the reads and writes it serves: the agents, their versions,
 // secret names and build logs, the project's client settings, and restart,
 // rollback, promote, delete and secret updates, and create and deploy from
-// source. It sends every other call, such as a prebuilt image push, a
-// runtime log and private links, through the bridge for now. A method moves
-// to AgentService by calling a.client in place of a.bridge.
+// source, and private links. It sends every other call, a prebuilt image
+// push and a runtime log, through the bridge for now. A method moves to
+// AgentService by calling a.client in place of a.bridge.
 
 // agentAPI is what the cloud agent commands call.
 type agentAPI interface {
@@ -81,7 +81,9 @@ type agentAPI interface {
 	StreamLogs(ctx context.Context, logType, agentID, deployment string, w io.Writer, serverRegion string) error
 }
 
-// privateLinkAPI is what the agent private-link commands call.
+// privateLinkAPI is what the agent private-link commands call. One that is
+// also a privateLinkHealthLister lists the links with their health in one
+// call.
 type privateLinkAPI interface {
 	CreatePrivateLink(ctx context.Context, req *livekit.CreatePrivateLinkRequest) (*livekit.CreatePrivateLinkResponse, error)
 	ListPrivateLinks(ctx context.Context, req *livekit.ListPrivateLinksRequest) (*livekit.ListPrivateLinksResponse, error)
@@ -89,11 +91,18 @@ type privateLinkAPI interface {
 	DestroyPrivateLink(ctx context.Context, req *livekit.DestroyPrivateLinkRequest) (*livekit.DestroyPrivateLinkResponse, error)
 }
 
+// privateLinkHealthLister lists the private links, each with its health, or
+// without it when LiveKit couldn't read it.
+type privateLinkHealthLister interface {
+	ListPrivateLinksWithHealth(ctx context.Context) ([]public.PrivateLink, error)
+}
+
 var (
-	_ agentAPI       = (*cloudagents.Client)(nil)
-	_ agentAPI       = (*userAuthAgentAPI)(nil)
-	_ privateLinkAPI = (*cloudagents.Client)(nil)
-	_ privateLinkAPI = (*userAuthAgentAPI)(nil)
+	_ agentAPI                = (*cloudagents.Client)(nil)
+	_ agentAPI                = (*userAuthAgentAPI)(nil)
+	_ privateLinkAPI          = (*cloudagents.Client)(nil)
+	_ privateLinkAPI          = (*userAuthAgentAPI)(nil)
+	_ privateLinkHealthLister = (*userAuthAgentAPI)(nil)
 )
 
 // newAgentAPI returns the cloud agents API for pc: server-sdk-go's client
@@ -755,24 +764,54 @@ func deployedVersion(info *livekit.AgentInfo, deployment string) string {
 	return ""
 }
 
+// The private link methods call AgentService, which, as the dashboard, lets
+// a WRITE member manage and read the project's private links.
+
 func (a *userAuthAgentAPI) CreatePrivateLink(ctx context.Context, req *livekit.CreatePrivateLinkRequest) (*livekit.CreatePrivateLinkResponse, error) {
-	res, err := a.bridge.CreatePrivateLink(ctx, req)
-	return res, bridgeError(err)
+	link, err := a.client.CreatePrivateLink(ctx, a.projectID, req)
+	if err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return &livekit.CreatePrivateLinkResponse{PrivateLink: link}, nil
 }
 
-func (a *userAuthAgentAPI) ListPrivateLinks(ctx context.Context, req *livekit.ListPrivateLinksRequest) (*livekit.ListPrivateLinksResponse, error) {
-	res, err := a.bridge.ListPrivateLinks(ctx, req)
-	return res, bridgeError(err)
+// ListPrivateLinks lists the private links without their health. The list
+// command reads their health from ListPrivateLinksWithHealth instead.
+func (a *userAuthAgentAPI) ListPrivateLinks(ctx context.Context, _ *livekit.ListPrivateLinksRequest) (*livekit.ListPrivateLinksResponse, error) {
+	links, err := a.ListPrivateLinksWithHealth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	res := &livekit.ListPrivateLinksResponse{Items: make([]*livekit.PrivateLink, 0, len(links))}
+	for _, link := range links {
+		res.Items = append(res.Items, link.Link)
+	}
+	return res, nil
+}
+
+// ListPrivateLinksWithHealth lists the private links, each with its health,
+// which AgentService reads for every link itself.
+func (a *userAuthAgentAPI) ListPrivateLinksWithHealth(ctx context.Context) ([]public.PrivateLink, error) {
+	links, err := a.client.ListPrivateLinks(ctx, a.projectID)
+	if err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return links, nil
 }
 
 func (a *userAuthAgentAPI) GetPrivateLinkStatus(ctx context.Context, req *livekit.GetPrivateLinkStatusRequest) (*livekit.GetPrivateLinkStatusResponse, error) {
-	res, err := a.bridge.GetPrivateLinkStatus(ctx, req)
-	return res, bridgeError(err)
+	status, err := a.client.GetPrivateLinkStatus(ctx, a.projectID, req.GetPrivateLinkId())
+	if err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return &livekit.GetPrivateLinkStatusResponse{Value: status}, nil
 }
 
 func (a *userAuthAgentAPI) DestroyPrivateLink(ctx context.Context, req *livekit.DestroyPrivateLinkRequest) (*livekit.DestroyPrivateLinkResponse, error) {
-	res, err := a.bridge.DestroyPrivateLink(ctx, req)
-	return res, bridgeError(err)
+	if err := a.client.DeletePrivateLink(ctx, a.projectID, req.GetPrivateLinkId()); err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return &livekit.DestroyPrivateLinkResponse{}, nil
 }
 
 // bridgeError is err from a call through the token bridge, or, when the

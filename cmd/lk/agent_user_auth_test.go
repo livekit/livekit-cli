@@ -81,7 +81,7 @@ func TestUserAuthAgentAPIRefusalNeedsAdmin(t *testing.T) {
 	require.NoError(t, err)
 	a := &userAuthAgentAPI{client: client, projectID: pc.ProjectId, bridge: bridge}
 
-	_, err = a.ListPrivateLinks(context.Background(), &livekit.ListPrivateLinksRequest{})
+	_, err = a.RegisterAgent(context.Background(), nil, []string{"us-east"})
 	require.EqualError(t, err, wantAdminRefusal)
 	require.True(t, public.IsPermissionDenied(err), "the Public API's refusal stays the cause")
 

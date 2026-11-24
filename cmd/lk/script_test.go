@@ -494,6 +494,10 @@ var publicAPIRoutes = []struct {
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsCreateResponse) }},
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+:deploy$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsDeployResponse) }},
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+:startBuild$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentBuildsStartResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/private-links$`), func() any { return new(oapi.LivekitPublicapiAgentsV1PrivateLinksCreateResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/private-links$`), func() any { return new(oapi.LivekitPublicapiAgentsV1PrivateLinksListResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/private-links/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1PrivateLinksDeleteResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/private-links/[^/]+/status$`), func() any { return new(oapi.LivekitPublicapiAgentsV1PrivateLinksGetStatusResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
