@@ -712,6 +712,20 @@ func (a *userAuthAgentAPI) writeBuildLog(ctx context.Context, agentID, version s
 	return nil
 }
 
+// tailCreatedAgentLogs writes the runtime log of the agent agentID, which
+// create just created, to w. Under --user-auth a runtime log goes through
+// the token bridge, which needs a project admin; the agent is created all
+// the same, so the bridge's refusal is a warning, not an error.
+func tailCreatedAgentLogs(ctx context.Context, api agentAPI, agentID, serverRegion string, w io.Writer) error {
+	err := api.StreamLogs(ctx, "deploy", agentID, "", w, serverRegion)
+	if _, userAuth := api.(*userAuthAgentAPI); userAuth && public.IsPermissionDenied(err) {
+		out.Warnf("Signed in with --user-auth, runtime logs need a project admin: a project admin can read them with `lk agent logs`, " +
+			"and so can a project API key, without --user-auth.")
+		return nil
+	}
+	return err
+}
+
 // buildLogType is the log type of a build log, as --log-type names it.
 const buildLogType = "build"
 

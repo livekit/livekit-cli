@@ -32,7 +32,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 )
 
@@ -461,4 +464,35 @@ func TestUserAuthDeployAgentLosesTrack(t *testing.T) {
 	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
 	require.EqualError(t, err, "can't follow the build of version T1, which continues on LiveKit Cloud: "+
 		"run `lk agent status` to follow it (cloud agents is unavailable)")
+}
+
+// After create, a member below admin who asks for the runtime log hears
+// that it needs a project admin, and create still succeeds.
+func TestTailCreatedAgentLogsRefused(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = io.WriteString(w, `{"code":7,"message":"this needs ADMIN on the project"}`)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("LK_AGENTS_URL", srv.URL)
+	client, err := public.New(srv.URL, "st_1")
+	require.NoError(t, err)
+	pc := &config.ProjectConfig{ProjectId: "p_1", URL: srv.URL, APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret}
+	sessionTokenSources[pc.ProjectId] = tokenauth.NewCachingTokenSource(&publicAPITokenSource{client: client, projectID: pc.ProjectId})
+	t.Cleanup(func() { delete(sessionTokenSources, pc.ProjectId) })
+	bridge, err := newAgentsClient(pc)
+	require.NoError(t, err)
+	a := &userAuthAgentAPI{client: client, projectID: pc.ProjectId, bridge: bridge}
+	var stderr strings.Builder
+	prev := out
+	out = util.NewPrinter(io.Discard, &stderr, false)
+	t.Cleanup(func() { out = prev })
+
+	require.NoError(t, tailCreatedAgentLogs(context.Background(), a, "CA_1", "osbxash1a", io.Discard))
+	require.Contains(t, stderr.String(), "Signed in with --user-auth, runtime logs need a project admin: "+
+		"a project admin can read them with `lk agent logs`, and so can a project API key, without --user-auth.")
+
+	// The same refusal of a command that only reads the log is an error.
+	require.EqualError(t, a.StreamLogs(context.Background(), "deploy", "CA_1", "", io.Discard, "osbxash1a"), wantAdminRefusal)
 }

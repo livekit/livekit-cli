@@ -842,7 +842,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				return fmt.Errorf("agent [%s] was created, but no region was returned to stream its logs from; view them with `lk agent logs`", resp.AgentId)
 			}
 			out.Status("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
+			return tailCreatedAgentLogs(ctx, agentsClient, lkConfig.Agent.ID, resp.ServerRegions[0], os.Stdout)
 		}
 	}
 	return nil
