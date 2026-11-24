@@ -223,9 +223,17 @@ func signInCommand() string {
 // or missing session suggests re-auth; a permission denial explains that the
 // signed-in account/session lacks access and points at the API-key escape hatch
 // (rather than silently falling back to API-key "admin" access): re-running
-// without --user-auth. Other errors
+// without --user-auth. A refused request lists the fields that are wrong, one
+// per line, when the API named them. Other errors
 // pass through unchanged.
 func cloudAPIError(err error) error {
+	if violations := public.FieldViolations(err); len(violations) > 0 {
+		var lines strings.Builder
+		for _, v := range violations {
+			fmt.Fprintf(&lines, "\n  %s: %s", v.Field, v.Description)
+		}
+		return fmt.Errorf("%w%s", err, lines.String())
+	}
 	switch {
 	case public.IsUnauthenticated(err):
 		return fmt.Errorf("%w (run %s to sign in again)", err, signInCommand())
@@ -235,6 +243,16 @@ func cloudAPIError(err error) error {
 	default:
 		return err
 	}
+}
+
+// cloudOnlyAPIError is cloudAPIError for a command that has no API-key
+// implementation: a permission denial says the account lacks access, without
+// pointing at an API-key path that doesn't exist for it.
+func cloudOnlyAPIError(err error) error {
+	if public.IsPermissionDenied(err) && len(public.FieldViolations(err)) == 0 {
+		return fmt.Errorf("%w — your account doesn't have access to this project or action", err)
+	}
+	return cloudAPIError(err)
 }
 
 // requireUserSession loads the CLI config and resolves the signed-in user with

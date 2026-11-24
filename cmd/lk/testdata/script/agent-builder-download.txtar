@@ -1,0 +1,63 @@
+# download asks the Public API for a short-lived signed URL to a version's
+# agent code, then fetches the zip from it. The URL is the credential, so
+# that request carries no session token.
+respond GET 'http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url?expirySeconds=60' 200 '{"url":"http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code?expires=1&signature=s","versionId":"abv_1"}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code 200 'PK zip bytes'
+exec lk --user-auth agent builder download ab_1
+stderr '^Downloaded version abv_1 of Agent Builder agent ab_1 to abv_1.zip$'
+grep '^PK zip bytes$' abv_1.zip
+
+# Without --output, lk doesn't overwrite a file.
+! exec lk --user-auth agent builder download ab_1
+stderr '^abv_1.zip already exists; pass --output to choose the file$'
+
+respond GET 'http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url?expirySeconds=60&versionId=abv_0' 200 '{"url":"http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_0/code?expires=1&signature=s","versionId":"abv_0"}'
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_0/code 200 'PK older zip bytes'
+exec lk --user-auth agent builder download ab_1 --version abv_0 --output old/agent.zip
+stderr '^Downloaded version abv_0 of Agent Builder agent ab_1 to old/agent.zip$'
+grep '^PK older zip bytes$' old/agent.zip
+
+# --unzip unpacks the zip (TestUnzipBuilderAgentCode covers a real one), and
+# needs an empty directory, which it checks before it asks for a URL.
+! exec lk --user-auth agent builder download ab_1 --unzip code
+stderr '^the agent code isn''t a zip: zip: not a valid zip file$'
+! exec lk --user-auth agent builder download ab_1 --unzip old
+stderr '^--unzip old: the directory isn''t empty$'
+! exec lk --user-auth agent builder download ab_1 --unzip code --output a.zip
+stderr '^--output and --unzip can''t be combined$'
+
+# A URL that no longer works fails with the error it got, and never prints
+# the URL.
+respond GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code 403 '{"code":7,"message":"this code URL expired; call GetBuilderAgentCodeURL for a new one"}'
+! exec lk --user-auth agent builder download ab_1 --output again.zip
+stderr '^this code URL expired; call GetBuilderAgentCodeURL for a new one$'
+! stderr 'signature'
+
+requests
+cmp stdout want-requests
+
+-- old/.keep --
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_0/code project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/code-url bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/agent-builder/agents/ab_1/versions/abv_1/code project=p_1

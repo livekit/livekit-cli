@@ -1,0 +1,28 @@
+# Webhooks, users and workspaces have no API-key implementation, so a
+# refusal for the user's role doesn't suggest re-running without
+# --user-auth.
+respond GET http://publicapi.test/v0/projects/p_1/webhooks 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
+! exec lk --user-auth project webhook list --project one
+! stdout .
+stderr '^permission denied: this needs ADMIN on the project — your account doesn''t have access to this project or action$'
+! stderr 'without'
+
+respond GET http://publicapi.test/v0/workspaces/w_1 403 '{"code":7,"message":"permission denied: this needs ADMIN on the workspace"}'
+! exec lk --user-auth workspace get w_1
+! stdout .
+stderr '^permission denied: this needs ADMIN on the workspace — your account doesn''t have access to this project or action$'
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+    workspaces:
+      - workspace_id: w_1
+        name: main

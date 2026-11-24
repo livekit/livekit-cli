@@ -295,6 +295,25 @@ func TestCloudAPIError(t *testing.T) {
 	}
 }
 
+// TestCloudOnlyAPIError checks that a command with no API-key implementation
+// doesn't suggest re-running without --user-auth, and otherwise reads as
+// cloudAPIError.
+func TestCloudOnlyAPIError(t *testing.T) {
+	prev := publicAPIURL
+	t.Cleanup(func() { publicAPIURL = prev })
+	publicAPIURL = public.DefaultBaseURL
+
+	denied := &public.APIError{Status: http.StatusForbidden, Message: "this needs agent:manage on the project"}
+	err := cloudOnlyAPIError(denied)
+	assert.EqualError(t, err, "this needs agent:manage on the project — your account doesn't have access to this project or action")
+	assert.ErrorIs(t, err, denied)
+
+	expired := &public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"}
+	assert.EqualError(t, cloudOnlyAPIError(expired), cloudAPIError(expired).Error())
+	plain := errors.New("connection refused")
+	assert.Equal(t, plain, cloudOnlyAPIError(plain))
+}
+
 // TestAnnounceUserNamesIgnoredEnvCredentials checks the note announceUser adds
 // for LIVEKIT_* credentials in the environment that --user-auth leaves unused,
 // and that commands handing them to an agent don't get it.

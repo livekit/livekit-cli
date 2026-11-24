@@ -423,13 +423,14 @@ func (c *Client) GetSessionMetrics(ctx context.Context, projectID, sessionID str
 // gzipMagic opens every gzip stream (RFC 1952).
 var gzipMagic = []byte{0x1f, 0x8b}
 
-// recordingClient downloads recordings. It is its own client, not
+// signedURLClient downloads from the signed URLs the Public API returns:
+// recordings and builder agent code. It is its own client, not
 // http.DefaultClient, so nothing else in the process can give it a cookie jar
-// or a credential-adding transport, and so a stalled object store can't hang
-// the download forever: the store must start answering within
-// ResponseHeaderTimeout, and the whole download, an hour-long recording
-// included, must finish within Timeout.
-var recordingClient = &http.Client{
+// or a credential-adding transport, and so a stalled server can't hang the
+// download forever: it must start answering within ResponseHeaderTimeout, and
+// the whole download, an hour-long recording included, must finish within
+// Timeout.
+var signedURLClient = &http.Client{
 	Timeout: 10 * time.Minute,
 	Transport: &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
@@ -452,7 +453,7 @@ func DownloadRecording(ctx context.Context, signedURL string, w io.Writer) (int6
 	if err != nil {
 		return 0, fmt.Errorf("download recording: %w", redactURLError(err))
 	}
-	resp, err := recordingClient.Do(req)
+	resp, err := signedURLClient.Do(req)
 	if err != nil {
 		return 0, fmt.Errorf("download recording: %w", redactURLError(err))
 	}

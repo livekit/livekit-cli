@@ -229,6 +229,27 @@ func errorDetail(err error, fullName string, v any) bool {
 	return false
 }
 
+// FieldViolation is one problem with a field of a request the Public API
+// refused: the field's path, such as config.httpTools[0].url, and what is
+// wrong with it.
+type FieldViolation struct {
+	Field       string `json:"field"`
+	Description string `json:"description"`
+}
+
+// FieldViolations returns the field violations of err's google.rpc.BadRequest
+// detail, which the Public API sends with an InvalidArgument that names each
+// field that is wrong. It returns nil when err has none.
+func FieldViolations(err error) []FieldViolation {
+	var detail struct {
+		FieldViolations []FieldViolation `json:"fieldViolations"`
+	}
+	if !errorDetail(err, "google.rpc.BadRequest", &detail) {
+		return nil
+	}
+	return detail.FieldViolations
+}
+
 // okOrError returns nil for a 200 response and a classified APIError otherwise.
 // Used by delete/remove/cancel operations whose success payload is empty.
 func okOrError(status int, body []byte) error {
