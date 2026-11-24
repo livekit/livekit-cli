@@ -11,6 +11,9 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// privateLinksClient is set, with agentsClient, by createAgentClient.
+var privateLinksClient privateLinkAPI
+
 var privateLinkCommands = &cli.Command{
 	Name:  "private-link",
 	Usage: "Manage private links for agents",
@@ -197,7 +200,7 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := buildCreatePrivateLinkRequest(cmd.String("name"), region, uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
-	resp, err := agentsClient.CreatePrivateLink(ctx, req)
+	resp, err := privateLinksClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
 	}
@@ -226,7 +229,7 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
-	resp, err := agentsClient.ListPrivateLinks(ctx, &lkproto.ListPrivateLinksRequest{})
+	resp, err := privateLinksClient.ListPrivateLinks(ctx, &lkproto.ListPrivateLinksRequest{})
 	if err != nil {
 		return formatPrivateLinkClientError("list", err)
 	}
@@ -237,7 +240,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 		if link == nil || link.PrivateLinkId == "" {
 			continue
 		}
-		health, healthErr := agentsClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
+		health, healthErr := privateLinksClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
 			PrivateLinkId: link.PrivateLinkId,
 		})
 		if healthErr != nil {
@@ -286,7 +289,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 
 func deletePrivateLink(ctx context.Context, cmd *cli.Command) error {
 	privateLinkID := cmd.String("id")
-	resp, err := agentsClient.DestroyPrivateLink(ctx, &lkproto.DestroyPrivateLinkRequest{
+	resp, err := privateLinksClient.DestroyPrivateLink(ctx, &lkproto.DestroyPrivateLinkRequest{
 		PrivateLinkId: privateLinkID,
 	})
 	if err != nil {
@@ -303,7 +306,7 @@ func deletePrivateLink(ctx context.Context, cmd *cli.Command) error {
 
 func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	privateLinkID := cmd.String("id")
-	resp, err := agentsClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
+	resp, err := privateLinksClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
 		PrivateLinkId: privateLinkID,
 	})
 	if err != nil {

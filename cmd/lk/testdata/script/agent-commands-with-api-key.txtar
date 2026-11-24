@@ -1,0 +1,29 @@
+# With an API key, the cloud agent commands call cloud agents through
+# server-sdk-go, signed with the key, and never the Public API. LK_AGENTS_URL
+# points the SDK at the fake cloud, which serves only plain HTTP.
+env LK_AGENTS_URL=http://agents.test
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgents 200 ''
+exec lk agent list
+
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgentSecrets 200 ''
+exec lk agent secrets --id CA_1
+
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks 200 ''
+exec lk agent private-link list
+stderr 'No private links found'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- want-requests --
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgentSecrets apikey=APIone
+POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks apikey=APIone

@@ -648,3 +648,60 @@ func TestAgentDeployRegistersIDFlag(t *testing.T) {
 	}
 	require.Contains(t, names, "id", "'agent deploy' must register the --id flag")
 }
+
+// fakeAgentLogs answers the calls `lk agent logs` makes.
+type fakeAgentLogs struct {
+	agentAPI
+	agents   []*lkproto.AgentInfo
+	streamed []string // the server region of each StreamLogs call
+}
+
+func (f *fakeAgentLogs) ListAgents(context.Context, *lkproto.ListAgentsRequest) (*lkproto.ListAgentsResponse, error) {
+	return &lkproto.ListAgentsResponse{Agents: f.agents}, nil
+}
+
+func (f *fakeAgentLogs) StreamLogs(_ context.Context, _, _, _ string, _ io.Writer, serverRegion string) error {
+	f.streamed = append(f.streamed, serverRegion)
+	return nil
+}
+
+// `lk agent logs` streams from the region of the agent's first deployment. An
+// agent with no deployment, which has no region to stream from, is an error,
+// as no agent is.
+func TestGetLogsNeedsADeployment(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		agents  []*lkproto.AgentInfo
+		wantErr string
+		want    []string
+	}{
+		{name: "no agent", wantErr: "no agent deployments found"},
+		{name: "no deployment", agents: []*lkproto.AgentInfo{{AgentId: "CA_1"}}, wantErr: "no agent deployments found"},
+		{name: "deployed", agents: []*lkproto.AgentInfo{{AgentId: "CA_1", AgentDeployments: []*lkproto.AgentDeployment{{ServerRegion: "osbxash1a"}}}},
+			want: []string{"osbxash1a"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := &fakeAgentLogs{agents: tc.agents}
+			prev := agentsClient
+			t.Cleanup(func() { agentsClient = prev })
+			agentsClient = fake
+
+			app := &cli.Command{
+				Name: "logs",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "id"},
+					&cli.StringFlag{Name: "log-type"},
+					&cli.StringFlag{Name: "deployment"},
+				},
+				Action: getLogs,
+			}
+			err := app.Run(context.Background(), []string{"logs", "--id", "CA_1"})
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.want, fake.streamed)
+		})
+	}
+}

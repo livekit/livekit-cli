@@ -38,7 +38,9 @@ package main
 //		answers any query; one with a query answers only that query, and
 //		wins over one without. A request with no answer gets 501. A Public
 //		API body (a /v0 path) must be what the spec says that route sends:
-//		see checkPublicAPIBody.
+//		see checkPublicAPIBody. A Twirp method's 200 body (a /twirp path) is
+//		its response message as protojson, or empty for an empty message,
+//		and goes to a protobuf client as protobuf: see twirpResponse.
 //	requests
 //		Print every request the fake received, in order, with the
 //		credential it carried (a session token as bearer=, or as apikey= the
@@ -73,6 +75,10 @@ import (
 
 	"github.com/livekit/protocol/auth"
 	"github.com/rogpeppe/go-internal/testscript"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
@@ -212,9 +218,52 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 			res.body = `{"code":"unimplemented","msg":"fake cloud: no response for ` + target + `"}`
 		}
 	}
+	if strings.HasPrefix(r.URL.Path, "/twirp/") && res.status == http.StatusOK && r.Header.Get("Content-Type") == protobufContentType {
+		msg, err := twirpResponse(r.URL.Path, res.body)
+		if err == nil {
+			var b []byte
+			if b, err = proto.Marshal(msg); err == nil {
+				w.Header().Set("Content-Type", protobufContentType)
+				_, _ = w.Write(b)
+				return
+			}
+		}
+		res = cannedResponse{http.StatusInternalServerError, `{"code":"internal","msg":"fake cloud: ` + err.Error() + `"}`}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(res.status)
 	fmt.Fprint(w, res.body)
+}
+
+const protobufContentType = "application/protobuf"
+
+// twirpResponse decodes body, the protojson 200 body of the Twirp method at
+// path (such as /twirp/livekit.CloudAgent/ListAgents), into the method's
+// response message. An empty body is an empty message. Decoding is strict,
+// so a field the message doesn't have fails.
+func twirpResponse(path, body string) (proto.Message, error) {
+	service, method, _ := strings.Cut(strings.TrimPrefix(path, "/twirp/"), "/")
+	d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(service))
+	if err != nil {
+		return nil, fmt.Errorf("no Twirp service %s: %w", service, err)
+	}
+	sd, ok := d.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil, fmt.Errorf("%s is not a service", service)
+	}
+	md := sd.Methods().ByName(protoreflect.Name(method))
+	if md == nil {
+		return nil, fmt.Errorf("no method %s in %s", method, service)
+	}
+	mt, err := protoregistry.GlobalTypes.FindMessageByName(md.Output().FullName())
+	if err != nil {
+		return nil, err
+	}
+	msg := mt.New().Interface()
+	if body == "" {
+		return msg, nil
+	}
+	return msg, protojson.Unmarshal([]byte(body), msg)
 }
 
 // mintToken answers a token request for project as the Public API's
@@ -302,6 +351,11 @@ func (f *fakeCloud) respond(target string, status int, body string) error {
 	if err := checkPublicAPIBody(method, u.Path, status, body); err != nil {
 		return fmt.Errorf("respond %s %d: %w", target, status, err)
 	}
+	if strings.HasPrefix(u.Path, "/twirp/") && status == http.StatusOK {
+		if _, err := twirpResponse(u.Path, body); err != nil {
+			return fmt.Errorf("respond %s %d: %w", target, status, err)
+		}
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	key := method + " " + u.Scheme + "://" + u.Host + u.Path
@@ -358,6 +412,8 @@ var publicAPIRoutes = []struct {
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersGetResponse) }},
 	{http.MethodPatch, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsListResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }

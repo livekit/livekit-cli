@@ -528,7 +528,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *cloudagents.Client
+	agentsClient     agentAPI
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -575,7 +575,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = newAgentsClient(project)
+	agentsClient, privateLinksClient, err = newAgentAPI(cmd, project)
 	if err != nil {
 		return ctx, err
 	}
@@ -688,7 +688,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			(&resolvedProject{project: project, source: sourceSelected}).announce()
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = newAgentsClient(project)
+			agentsClient, privateLinksClient, err = newAgentAPI(cmd, project)
 			if err != nil {
 				return err
 			}
@@ -823,6 +823,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		} else if viewLogs {
+			if len(resp.ServerRegions) == 0 {
+				return fmt.Errorf("agent [%s] was created, but no region was returned to stream its logs from; view them with `lk agent logs`", resp.AgentId)
+			}
 			out.Status("Tailing runtime logs...safe to exit at any time")
 			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
 		}
@@ -1326,7 +1329,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if len(response.Agents) == 0 {
+	if len(response.Agents) == 0 || len(response.Agents[0].AgentDeployments) == 0 {
 		return fmt.Errorf("no agent deployments found")
 	}
 
