@@ -528,7 +528,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *cloudagents.Client
+	agentsClient     agentAPI
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -575,7 +575,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = newAgentsClient(project)
+	agentsClient, privateLinksClient, err = newAgentAPI(cmd, project)
 	if err != nil {
 		return ctx, err
 	}
@@ -688,7 +688,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			(&resolvedProject{project: project, source: sourceSelected}).announce()
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = newAgentsClient(project)
+			agentsClient, privateLinksClient, err = newAgentAPI(cmd, project)
 			if err != nil {
 				return err
 			}

@@ -1,0 +1,37 @@
+# Under --user-auth, the cloud agent commands call cloud agents with a token
+# the Public API creates for the session (the token bridge), not an API key.
+# The Public API serves none of them yet.
+env LK_AGENTS_URL=http://agents.test
+mint st_1
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgents 200 ''
+exec lk --user-auth agent list
+
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgentSecrets 200 ''
+exec lk --user-auth agent secrets --id CA_1
+
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks 200 ''
+exec lk --user-auth agent private-link list
+stderr 'No private links found'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APImint_p_1
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgentSecrets apikey=APImint_p_1
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListPrivateLinks apikey=APImint_p_1
