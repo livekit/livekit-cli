@@ -117,11 +117,12 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
 			strings.TrimPrefix(run.GetMode().String(), "SIMULATION_MODE_"),
 			run.GetAgentName(),
+			run.GetPersonaModel(),
 		})
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Created At", "Status", "Mode", "Agent").
+		Headers("ID", "Created At", "Status", "Mode", "Agent", "Persona Model").
 		Rows(rows...)
 	out.Result(t)
 	fmt.Fprintf(out.StatusWriter(), "To open a run: %s\n", viewCommandHint("<run-id>"))
