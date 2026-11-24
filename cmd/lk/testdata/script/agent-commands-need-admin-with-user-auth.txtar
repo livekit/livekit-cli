@@ -2,8 +2,8 @@
 # the signed-in member is below it, and that an API key works too, not that
 # they lack access to the project. agent secrets hears it from the Public
 # API's AgentService. A command that still goes through the token bridge,
-# such as private-link list, needs the Agent.Admin grant, which the Public API
-# gives only to a project admin. Nothing reaches cloud agents.
+# such as update-secrets --overwrite, needs the Agent.Admin grant, which the
+# Public API gives only to a project admin. Nothing reaches cloud agents.
 env LK_AGENTS_URL=http://agents.test
 respond POST http://publicapi.test/v0/projects/p_1/tokens 403 '{"code":7,"message":"this needs ADMIN on the project"}'
 respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 403 '{"code":7,"message":"this needs ADMIN on the project"}'
@@ -13,9 +13,9 @@ respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 403 '{"cod
 stderr '^unable to list agent secrets: signed in with --user-auth, this command needs a project admin\. A project API key also works: re-run without --user-auth$'
 ! stderr 'access to this project'
 
-! exec lk --user-auth agent private-link list
+! exec lk --user-auth agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t --overwrite --yes
 ! stdout .
-stderr '^unable to list private link: signed in with --user-auth, this command needs a project admin\. A project API key works meanwhile: re-run without --user-auth$'
+stderr '^unable to update agent secrets: signed in with --user-auth, this command needs a project admin\. A project API key works meanwhile: re-run without --user-auth$'
 ! stderr 'access to this project'
 
 requests

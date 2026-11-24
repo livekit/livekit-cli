@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -228,19 +229,43 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
-	resp, err := privateLinksClient.ListPrivateLinks(ctx, &lkproto.ListPrivateLinksRequest{})
-	if err != nil {
-		return formatPrivateLinkClientError("list", err)
+// errHealthUnread is the health error of a link that the Public API lists
+// without its health.
+var errHealthUnread = errors.New("LiveKit could not read its health")
+
+// privateLinksWithHealth lists the private links, with the health of each,
+// or the error that reading it returned. A privateLinkHealthLister lists
+// them with their health in one call; with any other privateLinkAPI, lk
+// reads the health of each link with its own call.
+func privateLinksWithHealth(ctx context.Context, api privateLinkAPI) ([]*lkproto.PrivateLink, map[string]*lkproto.PrivateLinkStatus, map[string]error, error) {
+	healthByID := make(map[string]*lkproto.PrivateLinkStatus)
+	healthErrByID := make(map[string]error)
+	if lister, ok := api.(privateLinkHealthLister); ok {
+		listed, err := lister.ListPrivateLinksWithHealth(ctx)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		links := make([]*lkproto.PrivateLink, 0, len(listed))
+		for _, l := range listed {
+			links = append(links, l.Link)
+			if l.Status != nil {
+				healthByID[l.Link.GetPrivateLinkId()] = l.Status
+			} else {
+				healthErrByID[l.Link.GetPrivateLinkId()] = errHealthUnread
+			}
+		}
+		return links, healthByID, healthErrByID, nil
 	}
 
-	healthByID := make(map[string]*lkproto.PrivateLinkStatus, len(resp.Items))
-	healthErrByID := make(map[string]error)
+	resp, err := api.ListPrivateLinks(ctx, &lkproto.ListPrivateLinksRequest{})
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	for _, link := range resp.Items {
 		if link == nil || link.PrivateLinkId == "" {
 			continue
 		}
-		health, healthErr := privateLinksClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
+		health, healthErr := api.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
 			PrivateLinkId: link.PrivateLinkId,
 		})
 		if healthErr != nil {
@@ -251,6 +276,14 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 			healthByID[link.PrivateLinkId] = health.Value
 		}
 	}
+	return resp.Items, healthByID, healthErrByID, nil
+}
+
+func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
+	links, healthByID, healthErrByID, err := privateLinksWithHealth(ctx, privateLinksClient)
+	if err != nil {
+		return formatPrivateLinkClientError("list", err)
+	}
 
 	if cmd.Bool("json") {
 		type privateLinkWithHealth struct {
@@ -258,8 +291,8 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 			Status      *lkproto.PrivateLinkStatus `json:"health"`
 			HealthError string                     `json:"health_error,omitempty"`
 		}
-		items := make([]privateLinkWithHealth, 0, len(resp.Items))
-		for _, link := range resp.Items {
+		items := make([]privateLinkWithHealth, 0, len(links))
+		for _, link := range links {
 			if link == nil {
 				continue
 			}
@@ -276,12 +309,12 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	if len(resp.Items) == 0 {
+	if len(links) == 0 {
 		out.Status("No private links found")
 		return nil
 	}
 
-	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
+	rows := buildPrivateLinkListRows(links, healthByID, healthErrByID)
 	table := util.CreateTable().Headers("ID", "Name", "Region", "Cloud Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
 	out.Result(table)
 	return nil
