@@ -53,7 +53,8 @@ type fakeBuild struct {
 	refuse map[string]string
 
 	mu       sync.Mutex
-	requests []string
+	requests []string          // the method and the URL, with its query, of each request
+	bodies   map[string]string // the JSON body of each request that has one, by method and path, the last one kept
 	polls    int
 	upload   map[string]string // the form fields of the upload
 	files    []string          // the names in the uploaded tarball
@@ -67,7 +68,15 @@ const (
 func (f *fakeBuild) serve(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.requests = append(f.requests, r.Method+" "+r.URL.Path)
+	f.requests = append(f.requests, r.Method+" "+r.URL.RequestURI())
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		b, err := io.ReadAll(r.Body)
+		require.NoError(f.t, err)
+		if f.bodies == nil {
+			f.bodies = map[string]string{}
+		}
+		f.bodies[r.Method+" "+r.URL.Path] = string(b)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	if refusal, ok := f.refuse[r.Method+" "+r.URL.Path]; ok {
 		status, body, _ := strings.Cut(refusal, " ")
@@ -166,7 +175,7 @@ func TestUserAuthCreateAgent(t *testing.T) {
 	a := f.start()
 	var log strings.Builder
 
-	res, err := a.CreateAgent(context.Background(), agentSource, nil, []string{"us-east"}, map[string]string{"commit": "abc"}, agentExcludes, &log)
+	res, err := a.CreateAgent(context.Background(), agentSource, agentSecrets, []string{"us-east"}, map[string]string{"commit": "abc"}, agentExcludes, &log)
 	require.NoError(t, err)
 	require.Equal(t, "CA_1", res.AgentId)
 	require.Equal(t, []string{"osbxash1a"}, res.ServerRegions)
@@ -191,7 +200,22 @@ func TestUserAuthCreateAgent(t *testing.T) {
 		"GET /v0/projects/p_1/agents/CA_1/versions",
 		"GET /v0/projects/p_1/agents/CA_1/versions/T1/build-log",
 	}, f.requests)
+	// CreateAgent sets the secrets, so the deploy sends none.
+	require.JSONEq(t, `{"region":"us-east","secrets":`+agentSecretsJSON+`}`, f.bodies["POST /v0/projects/p_1/agents"])
+	require.JSONEq(t, `{}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:deploy"])
+	require.JSONEq(t, `{"tag":"T1","attributes":{"commit":"abc"}}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:startBuild"])
 }
+
+// agentSecrets are the secrets that the tests deploy, and agentSecretsJSON
+// is how the Public API takes them.
+var (
+	agentSecrets = []*livekit.AgentSecret{
+		{Name: "API_TOKEN", Value: []byte("s3cr3t"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT},
+		{Name: "creds.json", Value: []byte("{}"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_FILE},
+	}
+	agentSecretsJSON = `[{"name":"API_TOKEN","value":"czNjcjN0","kind":"AGENT_SECRET_KIND_ENVIRONMENT"},` +
+		`{"name":"creds.json","value":"e30=","kind":"AGENT_SECRET_KIND_FILE"}]`
+)
 
 // An agent is created in one region.
 func TestUserAuthCreateAgentNeedsOneRegion(t *testing.T) {
@@ -203,16 +227,25 @@ func TestUserAuthCreateAgentNeedsOneRegion(t *testing.T) {
 }
 
 // deploy to a deployment follows that deployment's status, and sends the
-// deployment and the secrets.
+// deployment, the secrets and the attributes.
 func TestUserAuthDeployAgent(t *testing.T) {
 	f := &fakeBuild{t: t, statuses: []string{"Running"}, versions: []string{"", "Available"}}
 	a := f.start()
 	var log strings.Builder
 
-	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "staging", agentExcludes, &log)
+	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, agentSecrets, map[string]string{"commit": "abc"}, "staging", agentExcludes, &log)
 	require.NoError(t, err)
 	require.Equal(t, "Building version T1. This deploy continues even if you disconnect.\n"+
 		"Status: Running\n"+fakeBuildLog+"\n", log.String(), "staging's status, not production's")
+	require.JSONEq(t, `{"deployment":"staging","secrets":`+agentSecretsJSON+`}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:deploy"])
+	require.JSONEq(t, `{"deployment":"staging","tag":"T1","attributes":{"commit":"abc"}}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:startBuild"])
+
+	// To production, the deploy names no deployment.
+	f = &fakeBuild{t: t, statuses: []string{"Running"}, versions: []string{"Available"}}
+	a = f.start()
+	require.NoError(t, a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard))
+	require.JSONEq(t, `{}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:deploy"])
+	require.JSONEq(t, `{"tag":"T1"}`, f.bodies["POST /v0/projects/p_1/agents/CA_1:startBuild"])
 }
 
 // A build that fails writes its build log and says so, whether the version

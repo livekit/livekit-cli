@@ -33,10 +33,12 @@ respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1 200 '{"agent":{"in
 respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions 200 '{"items":[{"version":"T1","status":"Available"}]}'
 respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions/T1/build-log 200 '{"text":"#1 [build] RUN pip install\n#1 DONE"}'
 
+# The requests at the end show that the region, the deployment, the
+# secrets and the attributes reach the Public API.
 cd user
-exec lk --user-auth agent create --region us-east --skip-sdk-check --no-default-attributes
+exec lk --user-auth agent create --region us-east --skip-sdk-check --no-default-attributes --secrets API_TOKEN=s3cr3t --attribute team=voice
 cmp stderr ../want-create
-exec lk --user-auth agent deploy --skip-sdk-check --no-default-attributes
+exec lk --user-auth agent deploy --skip-sdk-check --no-default-attributes --deployment staging --secrets API_TOKEN=s3cr3t --attribute team=voice
 cmp stderr ../want-deploy
 cd ..
 
@@ -48,7 +50,7 @@ stderr '^#1 DONE$'
 stderr '^unable to deploy agent: the build of version T1 failed: its build log is above$'
 cd ..
 
-requests
+requests -v
 cmp stdout want-requests
 
 -- key/Dockerfile --
@@ -108,11 +110,11 @@ Using agent [CA_1]
 Detected agent language [python.pip]
 Loading client settings...
 Error checking SDK version: unable to fetch client settings from server, please try again later, skipping...
+Using deployment [staging]
 Building version T1. This deploy continues even if you disconnect.
-Status: Running
 #1 [build] RUN pip install
 #1 DONE
-Completed deployment of agent support to production
+Completed deployment of agent support to staging
 -- home/.livekit/cli-config.yaml --
 default_project: one
 projects:
@@ -136,32 +138,39 @@ users:
 POST http://agents.test/twirp/livekit.CloudAgent/GetClientSettings apikey=APIone
 POST http://agents.test/twirp/livekit.CloudAgent/CreateAgent apikey=APIone
 POST http://uploads.test/bucket
-POST http://agents.test/build apikey=APIone
+POST http://agents.test/build?agent_id=CA_1 apikey=APIone
 POST http://agents.test/twirp/livekit.CloudAgent/GetClientSettings apikey=APIone
 POST http://agents.test/twirp/livekit.CloudAgent/DeployAgentV2 apikey=APIone
 POST http://uploads.test/bucket
-POST http://agents.test/build apikey=APIone
+POST http://agents.test/build?agent_id=CA_1 apikey=APIone
 POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
 GET http://publicapi.test/v0/projects/p_1/agent-client-settings bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/agents bearer=st_1 project=p_1
+  {"region":"us-east","secrets":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:deploy bearer=st_1 project=p_1
+  {}
 POST http://uploads.test/bucket
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:startBuild bearer=st_1 project=p_1
+  {"attributes":{"team":"voice"},"tag":"T1"}
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions/T1/build-log bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agent-client-settings bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:deploy bearer=st_1 project=p_1
+  {"deployment":"staging","secrets":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}
 POST http://uploads.test/bucket
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:startBuild bearer=st_1 project=p_1
+  {"attributes":{"team":"voice"},"deployment":"staging","tag":"T1"}
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions/T1/build-log bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agent-client-settings bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:deploy bearer=st_1 project=p_1
+  {}
 POST http://uploads.test/bucket
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:startBuild bearer=st_1 project=p_1
+  {"tag":"T1"}
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/agents/CA_1/versions/T1/build-log bearer=st_1 project=p_1
