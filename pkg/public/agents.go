@@ -262,19 +262,103 @@ func (c *Client) DeleteAgent(ctx context.Context, projectID, agentID, deployment
 // agentID. The agent's other secrets keep their values. A request the API
 // finds invalid is InvalidArgument, with a FieldViolation for each problem.
 func (c *Client) UpdateAgentSecrets(ctx context.Context, projectID, agentID string, set []*livekit.AgentSecret, remove []string) error {
-	body := oapi.AgentServiceUpdateAgentSecretsJSONRequestBody{}
-	if len(set) > 0 {
-		values := make([]oapi.LivekitPublicapiAgentsV1AgentSecretValue, len(set))
-		for i, secret := range set {
-			kind := oapi.LivekitAgentSecretKind(secret.GetKind().String())
-			values[i] = oapi.LivekitPublicapiAgentsV1AgentSecretValue{Name: &secret.Name, Value: &secret.Value, Kind: &kind}
-		}
-		body.Set = &values
-	}
+	body := oapi.AgentServiceUpdateAgentSecretsJSONRequestBody{Set: secretValues(set)}
 	if len(remove) > 0 {
 		body.Remove = &remove
 	}
 	resp, err := c.gen.AgentServiceUpdateAgentSecretsWithResponse(ctx, projectID, agentID, body)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
+// secretValues returns secrets as the API takes them, or nil for none.
+func secretValues(secrets []*livekit.AgentSecret) *[]oapi.LivekitPublicapiAgentsV1AgentSecretValue {
+	if len(secrets) == 0 {
+		return nil
+	}
+	values := make([]oapi.LivekitPublicapiAgentsV1AgentSecretValue, len(secrets))
+	for i, secret := range secrets {
+		kind := oapi.LivekitAgentSecretKind(secret.GetKind().String())
+		values[i] = oapi.LivekitPublicapiAgentsV1AgentSecretValue{Name: &secret.Name, Value: &secret.Value, Kind: &kind}
+	}
+	return &values
+}
+
+// CreateAgent creates a cloud agent in the project, in region, with secrets
+// and nothing deployed, and returns its ID. region must be one of the
+// regions that GetAgentClientSettings lists in available_regions. To deploy
+// the agent's source, call DeployAgent.
+func (c *Client) CreateAgent(ctx context.Context, projectID, region string, secrets []*livekit.AgentSecret) (string, error) {
+	resp, err := c.gen.AgentServiceCreateAgentWithResponse(ctx, projectID,
+		oapi.AgentServiceCreateAgentJSONRequestBody{Region: &region, Secrets: secretValues(secrets)})
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return "", responseError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil || resp.JSON200.AgentId == nil || *resp.JSON200.AgentId == "" {
+		return "", errors.New("unexpected response from server: missing agent ID")
+	}
+	return *resp.JSON200.AgentId, nil
+}
+
+// SourceDeploy is a deploy that DeployAgent started: where to upload the
+// source, and the tag of the version that its build makes.
+type SourceDeploy struct {
+	// Tag is the tag of the version that the build makes, which
+	// StartAgentBuild takes.
+	Tag string
+	// UploadURL and UploadFields are a presigned POST: send the source as a
+	// gzipped tarball in a multipart form, first each of UploadFields, then
+	// the tarball in a field named "file".
+	UploadURL    string
+	UploadFields map[string]string
+}
+
+// DeployAgent starts a deploy of new source to deployment of the project's
+// cloud agent agentID, or to production when deployment is "", and sets
+// secrets on the agent. Upload the source as the returned SourceDeploy
+// says, then call StartAgentBuild with its Tag.
+func (c *Client) DeployAgent(ctx context.Context, projectID, agentID, deployment string, secrets []*livekit.AgentSecret) (*SourceDeploy, error) {
+	body := oapi.AgentServiceDeployAgentJSONRequestBody{Secrets: secretValues(secrets)}
+	if deployment != "" {
+		body.Deployment = &deployment
+	}
+	resp, err := c.gen.AgentServiceDeployAgentWithResponse(ctx, projectID, agentID, body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	r := resp.JSON200
+	if r == nil || r.Tag == nil || *r.Tag == "" || r.Upload == nil || r.Upload.Url == nil || *r.Upload.Url == "" {
+		return nil, errors.New("unexpected response from server: missing tag or upload")
+	}
+	d := &SourceDeploy{Tag: *r.Tag, UploadURL: *r.Upload.Url, UploadFields: map[string]string{}}
+	if r.Upload.Fields != nil {
+		d.UploadFields = *r.Upload.Fields
+	}
+	return d, nil
+}
+
+// StartAgentBuild builds the source uploaded for the deploy that
+// DeployAgent started, as the version tag, and deploys the version to
+// deployment when the build succeeds. It returns once the build is queued;
+// the build continues. Too many builds in a short time are
+// ResourceExhausted, and a build that doesn't start is FailedPrecondition.
+func (c *Client) StartAgentBuild(ctx context.Context, projectID, agentID, deployment, tag string, attributes map[string]string) error {
+	body := oapi.AgentServiceStartAgentBuildJSONRequestBody{Tag: &tag}
+	if deployment != "" {
+		body.Deployment = &deployment
+	}
+	if len(attributes) > 0 {
+		body.Attributes = &attributes
+	}
+	resp, err := c.gen.AgentServiceStartAgentBuildWithResponse(ctx, projectID, agentID, body)
 	if err != nil {
 		return err
 	}

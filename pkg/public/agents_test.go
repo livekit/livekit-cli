@@ -418,3 +418,69 @@ func TestPromoteAgentMissingVersion(t *testing.T) {
 	_, err := c.PromoteAgent(context.Background(), "p_1", "CA_1", "staging")
 	require.EqualError(t, err, "unexpected response from server: missing version")
 }
+
+// CreateAgent sends the region and the secrets, as UpdateAgentSecrets sends
+// them, and returns the new agent's ID.
+func TestCreateAgent(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK, `{"agentId":"CA_1"}`)
+	id, err := c.CreateAgent(context.Background(), "p_1", "us-east", []*livekit.AgentSecret{
+		{Name: "API_TOKEN", Value: []byte("s3cr3t"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "CA_1", id)
+	assert.Equal(t, http.MethodPost, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents", got.path)
+	assert.JSONEq(t, `{"region":"us-east","secrets":[{"name":"API_TOKEN","value":"czNjcjN0","kind":"AGENT_SECRET_KIND_ENVIRONMENT"}]}`, got.body)
+
+	c, got = telephonyServer(t, http.StatusOK, `{"agentId":"CA_2"}`)
+	_, err = c.CreateAgent(context.Background(), "p_1", "us-east", nil)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"region":"us-east"}`, got.body, "no secrets leaves them out")
+
+	c, _ = telephonyServer(t, http.StatusOK, `{}`)
+	_, err = c.CreateAgent(context.Background(), "p_1", "us-east", nil)
+	require.EqualError(t, err, "unexpected response from server: missing agent ID")
+}
+
+// DeployAgent returns the tag and the presigned POST; production is no
+// deployment.
+func TestDeployAgent(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK,
+		`{"tag":"T1","upload":{"url":"https://uploads.example/bucket","fields":{"key":"CA_1/source.tar.gz","policy":"p"}}}`)
+	d, err := c.DeployAgent(context.Background(), "p_1", "CA_1", "staging", nil)
+	require.NoError(t, err)
+	assert.Equal(t, &SourceDeploy{
+		Tag:          "T1",
+		UploadURL:    "https://uploads.example/bucket",
+		UploadFields: map[string]string{"key": "CA_1/source.tar.gz", "policy": "p"},
+	}, d)
+	assert.Equal(t, http.MethodPost, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents/CA_1:deploy", got.path)
+	assert.JSONEq(t, `{"deployment":"staging"}`, got.body)
+
+	c, got = telephonyServer(t, http.StatusOK, `{"tag":"T1","upload":{"url":"https://uploads.example/bucket"}}`)
+	d, err = c.DeployAgent(context.Background(), "p_1", "CA_1", "", []*livekit.AgentSecret{{Name: "S", Value: []byte("v"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT}})
+	require.NoError(t, err)
+	assert.Empty(t, d.UploadFields)
+	assert.JSONEq(t, `{"secrets":[{"name":"S","value":"dg==","kind":"AGENT_SECRET_KIND_ENVIRONMENT"}]}`, got.body)
+
+	c, _ = telephonyServer(t, http.StatusOK, `{"tag":"T1"}`)
+	_, err = c.DeployAgent(context.Background(), "p_1", "CA_1", "", nil)
+	require.EqualError(t, err, "unexpected response from server: missing tag or upload")
+}
+
+func TestStartAgentBuild(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK, `{}`)
+	require.NoError(t, c.StartAgentBuild(context.Background(), "p_1", "CA_1", "staging", "T1", map[string]string{"commit": "abc"}))
+	assert.Equal(t, http.MethodPost, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents/CA_1:startBuild", got.path)
+	assert.JSONEq(t, `{"tag":"T1","deployment":"staging","attributes":{"commit":"abc"}}`, got.body)
+
+	c, got = telephonyServer(t, http.StatusOK, `{}`)
+	require.NoError(t, c.StartAgentBuild(context.Background(), "p_1", "CA_1", "", "T1", nil))
+	assert.JSONEq(t, `{"tag":"T1"}`, got.body)
+
+	c, _ = telephonyServer(t, http.StatusTooManyRequests, `{"code":8,"message":"too many builds; try again later"}`)
+	err := c.StartAgentBuild(context.Background(), "p_1", "CA_1", "", "T1", nil)
+	require.EqualError(t, err, "too many builds; try again later")
+}
