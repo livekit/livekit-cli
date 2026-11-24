@@ -37,7 +37,7 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
-const wantAdminRefusal = "signed in with --user-auth, this command needs a project admin (this needs ADMIN on the project). " +
+const wantAdminRefusal = "signed in with --user-auth, this command needs a project admin. " +
 	"A project API key works meanwhile: re-run without --user-auth"
 
 // When the Public API refuses the token bridge the Agent.Admin grant, a
@@ -200,9 +200,19 @@ func TestDeployedVersion(t *testing.T) {
 func TestAgentServiceError(t *testing.T) {
 	lacksRole := &public.APIError{Status: http.StatusForbidden, Message: "this needs ADMIN on the project"}
 	err := agentServiceError(lacksRole, projectAdmin)
-	require.EqualError(t, err, "signed in with --user-auth, this command needs a project admin (this needs ADMIN on the project). "+
+	require.EqualError(t, err, "signed in with --user-auth, this command needs a project admin. "+
 		"A project API key also works: re-run without --user-auth")
 	require.ErrorIs(t, err, lacksRole)
+
+	// The refusal is quoted when it says more than who: the permissions, or a
+	// role other than the one who names.
+	lacksPermission := &public.APIError{Status: http.StatusForbidden, Message: "this needs agent:delete on the project"}
+	require.EqualError(t, agentServiceError(lacksPermission, projectAdmin),
+		"signed in with --user-auth, this command needs a project admin (this needs agent:delete on the project). "+
+			"A project API key also works: re-run without --user-auth")
+	require.EqualError(t, agentServiceError(lacksRole, projectWriter),
+		"signed in with --user-auth, this command needs write access to the project (this needs ADMIN on the project). "+
+			"A project API key also works: re-run without --user-auth")
 
 	suspended := &public.APIError{Status: http.StatusForbidden, Message: "this project is suspended"}
 	require.Equal(t, cloudAPIError(suspended).Error(), agentServiceError(suspended, projectAdmin).Error())
@@ -328,7 +338,7 @@ func TestAgentWriteError(t *testing.T) {
 
 	lacksRole := &public.APIError{Status: http.StatusForbidden, Message: "this needs WRITE on the project"}
 	require.EqualError(t, agentWriteError(lacksRole, "CA_1", projectWriter),
-		"signed in with --user-auth, this command needs write access to the project (this needs WRITE on the project). "+
+		"signed in with --user-auth, this command needs write access to the project. "+
 			"A project API key also works: re-run without --user-auth")
 
 	failed := &public.APIError{Status: http.StatusBadRequest, Message: "version is not available: its build failed or did not finish"}

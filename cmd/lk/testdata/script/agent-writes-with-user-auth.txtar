@@ -63,7 +63,7 @@ cd ..
 # The Public API has no overwrite, so update-secrets --overwrite still goes
 # through the token bridge, which needs a project admin.
 ! exec lk --user-auth agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t --overwrite --yes
-stderr '^unable to update agent secrets: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key works meanwhile: re-run without --user-auth$'
+stderr '^unable to update agent secrets: signed in with --user-auth, this command needs a project admin\. A project API key works meanwhile: re-run without --user-auth$'
 
 requests
 cmp stdout want-requests

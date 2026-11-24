@@ -10,12 +10,12 @@ respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 403 '{"cod
 
 ! exec lk --user-auth agent secrets --id CA_1
 ! stdout .
-stderr '^unable to list agent secrets: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key also works: re-run without --user-auth$'
+stderr '^unable to list agent secrets: signed in with --user-auth, this command needs a project admin\. A project API key also works: re-run without --user-auth$'
 ! stderr 'access to this project'
 
 ! exec lk --user-auth agent private-link list
 ! stdout .
-stderr '^unable to list private link: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key works meanwhile: re-run without --user-auth$'
+stderr '^unable to list private link: signed in with --user-auth, this command needs a project admin\. A project API key works meanwhile: re-run without --user-auth$'
 ! stderr 'access to this project'
 
 requests

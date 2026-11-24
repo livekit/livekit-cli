@@ -255,18 +255,17 @@ func secretsError(err error, violations []public.FieldViolation, set []*livekit.
 		b.WriteString("\n  ")
 		b.WriteString(secretViolation(v, set, remove))
 	}
-	return &invalidSecretsError{msg: b.String(), err: err}
+	return &rewordedError{msg: b.String(), err: err}
 }
 
-// invalidSecretsError reads as its lines, and unwraps to the Public API's
-// refusal.
-type invalidSecretsError struct {
+// rewordedError reads as msg, and unwraps to err, the Public API's refusal.
+type rewordedError struct {
 	msg string
 	err error
 }
 
-func (e *invalidSecretsError) Error() string { return e.msg }
-func (e *invalidSecretsError) Unwrap() error { return e.err }
+func (e *rewordedError) Error() string { return e.msg }
+func (e *rewordedError) Unwrap() error { return e.err }
 
 // secretFieldPattern matches a violation's field: set[i] or remove[i], then
 // the field of the secret in set, if any.
@@ -471,8 +470,20 @@ func bridgeError(err error) error {
 	if !errors.As(err, &refused) || !public.IsPermissionDenied(refused) {
 		return err
 	}
-	return fmt.Errorf("signed in with --user-auth, this command needs %s (%w). "+
-		"A project API key works meanwhile: re-run without --user-auth", projectAdmin, refused)
+	return needsError(refused, projectAdmin, "A project API key works meanwhile: re-run without --user-auth")
+}
+
+// needsError is refused, the Public API's refusal of a member whose role on
+// the project is too low, worded as "signed in with --user-auth, this
+// command needs <who>", then apiKey. It quotes refused unless refused names
+// only the role that who names, such as "this needs ADMIN on the project"
+// for projectAdmin; on a server that checks permissions, refused names them.
+func needsError(refused *public.APIError, who, apiKey string) error {
+	msg := "signed in with --user-auth, this command needs " + who
+	if refused.Error() != lacksRolePrefix+roles[who]+" on the project" {
+		msg += " (" + refused.Error() + ")"
+	}
+	return &rewordedError{msg: msg + ". " + apiKey, err: refused}
 }
 
 // projectAdmin and projectWriter are who may make a call that needs the
@@ -481,6 +492,10 @@ const (
 	projectAdmin  = "a project admin"
 	projectWriter = "write access to the project"
 )
+
+// roles maps projectAdmin and projectWriter to the role that the Public API
+// names.
+var roles = map[string]string{projectAdmin: "ADMIN", projectWriter: "WRITE"}
 
 // agentServiceError is err from a call to AgentService, worded as
 // cloudAPIError words it, except that the refusal of a member whose role on
@@ -492,8 +507,7 @@ const (
 func agentServiceError(err error, who string) error {
 	var refused *public.APIError
 	if errors.As(err, &refused) && public.IsPermissionDenied(refused) && strings.HasPrefix(refused.Message, lacksRolePrefix) {
-		return fmt.Errorf("signed in with --user-auth, this command needs %s (%w). "+
-			"A project API key also works: re-run without --user-auth", who, refused)
+		return needsError(refused, who, "A project API key also works: re-run without --user-auth")
 	}
 	return cloudAPIError(err)
 }
