@@ -24,10 +24,10 @@ respond DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 403 '{"code":7,
 ! exec lk --user-auth agent delete --id CA_1 --yes
 stderr '^unable to delete agent: signed in with --user-auth, this command needs a project admin \(this needs agent:delete on the project\)\. A project API key also works: re-run without --user-auth$'
 
-# A reserved name. cloud agents drops it without an error; the Public API
-# refuses it.
-respond PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 400 '{"code":3,"message":"secrets are invalid; this error''s details name each field that is wrong","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"is reserved: LiveKit Cloud sets the LIVEKIT_ variables of each agent"}]}]}'
-! exec lk --user-auth agent update-secrets --id CA_1 --secrets LIVEKIT_AGENT_NAME=support
+# A name that cloud agents refuses. The Public API refuses it first, with a
+# violation for each field.
+respond PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets 400 '{"code":3,"message":"secrets are invalid; this error''s details name each field that is wrong","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"must have only letters, digits and _, and must not start with a digit"}]}]}'
+! exec lk --user-auth agent update-secrets --id CA_1 --secrets 1KEY=support
 cmp stderr want-invalid-secrets
 
 # An Agent Builder agent.
@@ -59,7 +59,7 @@ users:
 Using user [dev@example.com] on [http://publicapi.test]
 Using agent [CA_1]
 unable to update agent secrets: invalid secrets:
-  secret LIVEKIT_AGENT_NAME: name is reserved: LiveKit Cloud sets the LIVEKIT_ variables of each agent
+  secret 1KEY: name must have only letters, digits and _, and must not start with a digit
 -- want-requests --
 POST http://publicapi.test/v0/projects/p_1/agents/CA_1:restart bearer=st_1 project=p_1
 DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1

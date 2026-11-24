@@ -392,10 +392,10 @@ func TestUpdateAgentSecretsOnlyRemove(t *testing.T) {
 
 func TestFieldViolations(t *testing.T) {
 	c, _ := telephonyServer(t, http.StatusBadRequest, `{"code":3,"message":"secrets are invalid; this error's details name each field that is wrong","details":[`+
-		`{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"is reserved"},{"field":"remove[0]","description":"is required"}]}]}`)
-	err := c.UpdateAgentSecrets(context.Background(), "p_1", "CA_1", []*livekit.AgentSecret{{Name: "LIVEKIT_X", Value: []byte("v")}}, []string{""})
+		`{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"must have only letters, digits and _, and must not start with a digit"},{"field":"remove[1]","description":"names a secret that an earlier item of remove names"}]}]}`)
+	err := c.UpdateAgentSecrets(context.Background(), "p_1", "CA_1", []*livekit.AgentSecret{{Name: "1KEY", Value: []byte("v")}}, []string{"OLD", "OLD"})
 	require.EqualError(t, err, "secrets are invalid; this error's details name each field that is wrong")
-	assert.Equal(t, []FieldViolation{{"set[0].name", "is reserved"}, {"remove[0]", "is required"}}, FieldViolations(err))
+	assert.Equal(t, []FieldViolation{{"set[0].name", "must have only letters, digits and _, and must not start with a digit"}, {"remove[1]", "names a secret that an earlier item of remove names"}}, FieldViolations(err))
 
 	assert.Nil(t, FieldViolations(&APIError{Status: http.StatusBadRequest, Message: "set or remove is required"}))
 	assert.Nil(t, FieldViolations(errors.New("plain")))

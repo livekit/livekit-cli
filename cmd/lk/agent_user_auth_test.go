@@ -304,11 +304,11 @@ func TestUserAuthUpdateAgentSecretsOverwriteUsesBridge(t *testing.T) {
 
 // Each field violation names the secret, not its index in the request.
 func TestSecretsError(t *testing.T) {
-	set := []*livekit.AgentSecret{{Name: "LIVEKIT_X"}, {Name: "EMPTY"}}
+	set := []*livekit.AgentSecret{{Name: "1KEY"}, {Name: "EMPTY"}}
 	remove := []string{"API_TOKEN"}
 	refusal := &public.APIError{Status: http.StatusBadRequest, Message: "secrets are invalid"}
 	err := secretsError(refusal, []public.FieldViolation{
-		{Field: "set[0].name", Description: "is reserved"},
+		{Field: "set[0].name", Description: "must have only letters, digits and _, and must not start with a digit"},
 		{Field: "set[1].value", Description: "is required"},
 		{Field: "remove[0]", Description: "names a secret that set names"},
 		{Field: "set[7].name", Description: "is required"},
@@ -317,7 +317,7 @@ func TestSecretsError(t *testing.T) {
 		{Field: "agent_id", Description: "is required"},
 	}, set, remove)
 	require.EqualError(t, err, "invalid secrets:\n"+
-		"  secret LIVEKIT_X: name is reserved\n"+
+		"  secret 1KEY: name must have only letters, digits and _, and must not start with a digit\n"+
 		"  secret EMPTY: value is required\n"+
 		"  secret API_TOKEN to remove: name names a secret that set names\n"+
 		"  set[7].name: is required\n"+

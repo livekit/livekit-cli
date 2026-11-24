@@ -48,6 +48,19 @@ stderr '^Updated agent secrets$'
 exec lk --user-auth agent update-secrets --id CA_1 --secrets API_TOKEN=s3cr3t
 stderr '^Updated agent secrets$'
 
+# A LIVEKIT_ name reaches the Public API as it reaches cloud agents with an
+# API key; cloud agents drops the names that it sets on each agent itself.
+# lk drops LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET before it
+# sends, in both modes.
+exec lk agent update-secrets --id CA_1 --secrets LIVEKIT_AGENT_NAME=support
+stderr '^Updated agent secrets$'
+exec lk --user-auth agent update-secrets --id CA_1 --secrets LIVEKIT_AGENT_NAME=support
+stderr '^Updated agent secrets$'
+! exec lk agent update-secrets --id CA_1 --secrets LIVEKIT_URL=wss://elsewhere.test
+stderr 'no valid secrets provided, LIVEKIT_ secrets are ignored and injected automatically to your agent'
+! exec lk --user-auth agent update-secrets --id CA_1 --secrets LIVEKIT_URL=wss://elsewhere.test
+stderr 'no valid secrets provided, LIVEKIT_ secrets are ignored and injected automatically to your agent'
+
 # update sets the secrets it is given, and restarts the agent, also when it
 # is given none.
 respond POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgent 200 '{"success":true}'
@@ -111,6 +124,9 @@ DELETE http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
 POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgentSecrets apikey=APIone
 PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
   {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}
+POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgentSecrets apikey=APIone
+PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
+  {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"LIVEKIT_AGENT_NAME","value":"REDACTED"}]}
 POST http://agents.test/twirp/livekit.CloudAgent/UpdateAgent apikey=APIone
 PATCH http://publicapi.test/v0/projects/p_1/agents/CA_1/secrets bearer=st_1 project=p_1
   {"set":[{"kind":"AGENT_SECRET_KIND_ENVIRONMENT","name":"API_TOKEN","value":"REDACTED"}]}

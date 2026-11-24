@@ -276,8 +276,8 @@ func (e *rewordedError) Unwrap() error { return e.err }
 var secretFieldPattern = regexp.MustCompile(`^(set|remove)\[(\d+)\](?:\.(\w+))?$`)
 
 // secretViolation words v as "secret NAME: FIELD DESCRIPTION", such as
-// "secret LIVEKIT_X: name is reserved: ...", or, for a field it doesn't
-// know, as the API names it.
+// "secret 1KEY: name must have only letters, ...", or, for a field it
+// doesn't know, as the API names it.
 func secretViolation(v public.FieldViolation, set []*livekit.AgentSecret, remove []string) string {
 	asSent := v.Field + ": " + v.Description
 	m := secretFieldPattern.FindStringSubmatch(v.Field)
