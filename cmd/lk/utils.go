@@ -104,6 +104,11 @@ var (
 		Usage:       "Custom `URL` to a repository or archive to instantiate (for example, a Git repo URL). The project at that URL must include a taskfile.yaml file at its root.",
 		Destination: &templateURL,
 	}
+	templateBranchFlag = &cli.StringFlag{
+		Name:        "template-branch",
+		Usage:       "Git `BRANCH` or tag of the template repository to clone. Defaults to the repository's default branch.",
+		Destination: &templateBranch,
+	}
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
 		Usage: "Install the project's dependencies after creating it. If unset, the CLI asks. Skipped in non-interactive mode. Pass --install=false to skip.",

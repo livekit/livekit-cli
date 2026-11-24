@@ -362,11 +362,18 @@ func mergeDotEnv(existing string, envMap map[string]string) (string, error) {
 	return result, nil
 }
 
-func CloneTemplate(url, dir string) (string, string, error) {
+// CloneTemplate shallow-clones the repository at url into dir. A non-empty
+// branch checks out that branch or tag instead of the default branch.
+func CloneTemplate(url, branch, dir string) (string, string, error) {
 	var stdout = strings.Builder{}
 	var stderr = strings.Builder{}
 
-	cmd := exec.Command("git", "clone", "--depth=1", url, dir)
+	args := []string{"clone", "--depth=1"}
+	if branch != "" {
+		args = append(args, "--branch="+branch)
+	}
+	args = append(args, "--", url, dir)
+	cmd := exec.Command("git", args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()

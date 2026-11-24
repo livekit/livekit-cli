@@ -1,0 +1,52 @@
+# With an API key, the sip and number commands still call the project's SIP
+# API through server-sdk-go, signed with the key, and never the Public API.
+respond POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk 200 ''
+exec lk sip inbound list
+
+respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 200 ''
+exec lk sip outbound delete ST_1
+
+# The SIP API deletes a trunk of either kind by its ID, so its NotFound names
+# no kind, and lk passes it through.
+respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 404 '{"code":"not_found","msg":"requested sip trunk does not exist"}'
+! exec lk sip inbound delete ST_none
+! stdout .
+stderr 'requested sip trunk does not exist'
+
+# A get reads through the SIP API's list, not its Get, which returns a
+# trunk's password; an ID the list doesn't have is named as the Public API
+# names it.
+respond POST http://one.test/twirp/livekit.SIP/ListSIPOutboundTrunk 200 ''
+! exec lk sip outbound get ST_none
+! stdout .
+stderr '^outbound trunk not found$'
+respond POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule 200 ''
+! exec lk sip dispatch get SDR_none
+stderr '^dispatch rule not found$'
+
+# number list asks the SIP API once, and prints the total above the table.
+respond POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers 200 ''
+exec lk number list
+stdout '^Total phone numbers: 0$'
+
+! exec lk number list --cursor c2
+stderr '^--cursor is only supported with --user-auth'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- want-requests --
+POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/ListSIPOutboundTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule apikey=APIone
+POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone

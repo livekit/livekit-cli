@@ -20,6 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/livekit/protocol/livekit"
 )
 
 // TestRenderPageJSON checks every paged listing prints the Public API's
@@ -34,6 +36,24 @@ func TestRenderPageJSON(t *testing.T) {
 	stdout.Reset()
 	require.NoError(t, RenderPage[string](NewPrinter(&stdout, nil, true), true, nil, "", "none", []string{"X"}, row))
 	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
+}
+
+// TestRenderPageJSONItems checks a page of proto messages prints each as
+// protojson, with camelCase names and enum names as PrintJSON prints one,
+// and any other item exactly as encoding/json prints it.
+func TestRenderPageJSONItems(t *testing.T) {
+	var stdout bytes.Buffer
+	numbers := []*livekit.PhoneNumber{{Id: "PN_1", E164Format: "+14155550100", Status: livekit.PhoneNumberStatus_PHONE_NUMBER_STATUS_ACTIVE}}
+	require.NoError(t, RenderPage(NewPrinter(&stdout, nil, true), true, numbers, "c2", "none", nil, nil))
+	assert.JSONEq(t, `{"items":[{"id":"PN_1","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}],"pageInfo":{"nextCursor":"c2","hasMore":true}}`, stdout.String())
+
+	type user struct {
+		ID    string `json:"id"`
+		Email string `json:"email_address,omitempty"`
+	}
+	stdout.Reset()
+	require.NoError(t, RenderPage(NewPrinter(&stdout, nil, true), true, []user{{ID: "u_1", Email: "a@b.c"}}, "", "none", nil, nil))
+	assert.JSONEq(t, `{"items":[{"id":"u_1","email_address":"a@b.c"}],"pageInfo":{}}`, stdout.String())
 }
 
 func TestRenderAction(t *testing.T) {

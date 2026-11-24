@@ -13,7 +13,7 @@
 # alongside cfg.yaml).
 set -eu
 
-BASE_URL="${LK_PUBLIC_API_URL:-https://beta-api.livekit.cloud}"
+BASE_URL="${LK_PUBLIC_API_URL:-https://api.livekit.cloud}"
 SPEC_URL="${BASE_URL}/v0/openapi"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

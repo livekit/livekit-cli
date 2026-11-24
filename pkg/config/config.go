@@ -100,34 +100,45 @@ type UserProjectConfig struct {
 
 // FindProject returns the cached project matching ref by ProjectId or
 // (case-insensitively) by Name/alias, or nil if none matches. Used to resolve
-// the --project flag against the user's project cache in user-auth mode.
+// the --project flag against the user's project cache in user-auth mode. A
+// ProjectId match wins, so another project's name or alias can't shadow an ID.
 func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
-	if u == nil || ref == "" {
+	if u == nil {
 		return nil
 	}
-	for i := range u.Projects {
-		p := &u.Projects[i]
-		if p.ProjectId == ref ||
-			(p.Name != "" && strings.EqualFold(p.Name, ref)) ||
-			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
-			return p
-		}
-	}
-	return nil
+	return findRef(u.Projects, ref, func(p *UserProjectConfig) (string, string, string) {
+		return p.ProjectId, p.Name, p.Alias
+	})
 }
 
 // FindWorkspace resolves a workspace reference (id, name, or alias) against the
-// cached workspaces, mirroring FindProject.
+// cached workspaces, mirroring FindProject: a WorkspaceId match wins.
 func (u *UserConfig) FindWorkspace(ref string) *UserWorkspaceConfig {
-	if u == nil || ref == "" {
+	if u == nil {
 		return nil
 	}
-	for i := range u.Workspaces {
-		w := &u.Workspaces[i]
-		if w.WorkspaceId == ref ||
-			(w.Name != "" && strings.EqualFold(w.Name, ref)) ||
-			(w.Alias != "" && strings.EqualFold(w.Alias, ref)) {
-			return w
+	return findRef(u.Workspaces, ref, func(w *UserWorkspaceConfig) (string, string, string) {
+		return w.WorkspaceId, w.Name, w.Alias
+	})
+}
+
+// findRef returns the item whose ID is ref, or else the first whose name or
+// alias matches ref case-insensitively, or nil. keys returns an item's ID,
+// name and alias.
+func findRef[T any](items []T, ref string, keys func(*T) (id, name, alias string)) *T {
+	if ref == "" {
+		return nil
+	}
+	for i := range items {
+		if id, _, _ := keys(&items[i]); id == ref {
+			return &items[i]
+		}
+	}
+	for i := range items {
+		_, name, alias := keys(&items[i])
+		if (name != "" && strings.EqualFold(name, ref)) ||
+			(alias != "" && strings.EqualFold(alias, ref)) {
+			return &items[i]
 		}
 	}
 	return nil
@@ -237,9 +248,17 @@ func sameUser(a, b UserConfig) bool {
 	return a.Email != "" && strings.EqualFold(a.Email, b.Email)
 }
 
+// legacyAPIURLs maps the beta-api hosts that served the Public API before it
+// moved to api to their new hosts. Both hosts serve the same API, so a session
+// issued by one is valid on the other.
+var legacyAPIURLs = map[string]string{
+	"https://beta-api.livekit.cloud":         public.DefaultBaseURL,
+	"https://beta-api.staging.livekit.cloud": "https://api.staging.livekit.cloud",
+}
+
 // SameAPIURL reports whether two Public API base URLs refer to the same API.
-// Empty means the default Public API, and trailing slashes and case are
-// ignored.
+// Empty means the default Public API, a beta-api host means its api host, and
+// trailing slashes and case are ignored.
 func SameAPIURL(a, b string) bool {
 	return strings.EqualFold(normalizeAPIURL(a), normalizeAPIURL(b))
 }
@@ -248,6 +267,15 @@ func normalizeAPIURL(u string) string {
 	u = strings.TrimRight(strings.TrimSpace(u), "/")
 	if u == "" {
 		return public.DefaultBaseURL
+	}
+	return migrateAPIURL(u)
+}
+
+// migrateAPIURL returns the api host of a user stored with a beta-api host,
+// so that the CLI calls the new host. It leaves every other URL as it is.
+func migrateAPIURL(u string) string {
+	if moved, ok := legacyAPIURLs[strings.ToLower(strings.TrimRight(strings.TrimSpace(u), "/"))]; ok {
+		return moved
 	}
 	return u
 }
@@ -375,6 +403,9 @@ func LoadOrCreate() (*CLIConfig, error) {
 	err = yaml.Unmarshal(content, c)
 	if err != nil {
 		return nil, err
+	}
+	for i := range c.Users {
+		c.Users[i].APIURL = migrateAPIURL(c.Users[i].APIURL)
 	}
 	c.hasPersisted = true
 

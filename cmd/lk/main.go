@@ -140,6 +140,19 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, UpdateCommands...)
 	app.CommandNotFound = commandNotFound
 	setCommandNotFound(app.Commands)
+	// Since urfave/cli v3.10, completing runs every Before in the command
+	// chain first. lk's Befores load a project, print notices and may prompt,
+	// so Tab would fail, hang or print to the terminal; skip them all, as
+	// urfave did before. Like urfave, treat a final
+	// --generate-shell-completion as a completion request.
+	completing := os.Args[len(os.Args)-1] == "--generate-shell-completion"
+	_ = app.Walk(func(c *cli.Command) error {
+		c.OnUsageError = onUsageError
+		if completing {
+			c.Before = nil
+		}
+		return nil
+	})
 
 	// Before Run, so help and shell completion (which can be served before
 	// the root Before) see the same tree. Categorize after, since it skips
@@ -180,6 +193,24 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		}
 		os.Exit(exitCode(err))
 	}
+}
+
+// onUsageError shows cmd's help for a usage error (an unknown flag, a missing
+// required flag, mutually exclusive flags) and leaves printing err to main.
+// Without it urfave/cli prints "Incorrect Usage: <err>" itself, so the error
+// would print twice. An unknown flag keeps urfave/cli's "Did you mean" hint.
+func onUsageError(_ context.Context, cmd *cli.Command, err error, _ bool) error {
+	if cmd.Root() == cmd {
+		_ = cli.ShowRootCommandHelp(cmd)
+	} else {
+		_ = cli.ShowSubcommandHelp(cmd)
+	}
+	if name, ok := strings.CutPrefix(err.Error(), "flag provided but not defined: -"); ok && cmd.Suggest {
+		if suggestion := cli.SuggestFlag(cmd.Flags, name, cmd.HideHelp); suggestion != "" {
+			return fmt.Errorf("%w\n\n"+cli.SuggestDidYouMeanTemplate, err, suggestion)
+		}
+	}
+	return err
 }
 
 func checkForLegacyName() {
@@ -234,6 +265,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 
 	apiClientInfo.Command = commandName(cmd)
 	apiClientInfo.CodingAgent = public.DetectCodingAgent(os.Getenv)
+	apiClientInfo.Source = public.DetectSource(os.Getenv)
 
 	showBanner(ctx, cmd)
 

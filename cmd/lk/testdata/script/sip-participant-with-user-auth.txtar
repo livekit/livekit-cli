@@ -1,0 +1,29 @@
+# Under --user-auth, placing and transferring a call goes to the Public API.
+# A call the far end refuses still prints its SIP status.
+respond POST http://publicapi.test/v0/projects/p_1/sip/participants 200 '{"participant":{"participantId":"PA_1","participantIdentity":"caller","roomName":"support","sipCallId":"SCL_1"}}'
+exec lk --user-auth sip participant create --trunk ST_out --to +15550100 --room support --identity caller
+stdout '^SIPCallID: SCL_1$'
+stdout '^RoomName: support$'
+
+respond POST http://publicapi.test/v0/projects/p_1/sip/participants:transfer 200 '{"transfer":{"transferId":"TR_1"}}'
+exec lk --user-auth sip participant transfer --room support --identity caller --to tel:+15550101
+! stdout .
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/sip/participants bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/sip/participants:transfer bearer=st_1 project=p_1

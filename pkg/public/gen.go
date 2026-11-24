@@ -19,7 +19,7 @@
 //
 // The spec is served by the API itself at <base>/v0/openapi and fetched at
 // generate time — no copy is kept in the repo. The base defaults to production
-// (https://beta-api.livekit.cloud); override it for a local/staging server:
+// (https://api.livekit.cloud); override it for a local/staging server:
 //
 //	go generate -tags oapigen ./pkg/public/...                                       # prod
 //	LK_PUBLIC_API_URL=http://localhost:8000 go generate -tags oapigen ./pkg/public/...
