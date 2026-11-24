@@ -16,12 +16,16 @@ package public
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -287,4 +291,130 @@ func TestGetAgentClientSettingsBadResponse(t *testing.T) {
 	settings, err := c.GetAgentClientSettings(context.Background(), "p_1")
 	require.ErrorContains(t, err, "params")
 	assert.Nil(t, settings)
+}
+
+func TestAgentWrites(t *testing.T) {
+	ctx := context.Background()
+	for name, tc := range map[string]struct {
+		call     func(c *Client) error
+		response string
+		method   string
+		path     string
+		query    string
+		body     string
+	}{
+		"restart": {
+			call:   func(c *Client) error { return c.RestartAgent(ctx, "p_1", "CA_1") },
+			method: http.MethodPost, path: "/v0/projects/p_1/agents/CA_1:restart",
+		},
+		"rollback": {
+			call:   func(c *Client) error { return c.RollbackAgent(ctx, "p_1", "CA_1", "v1") },
+			method: http.MethodPost, path: "/v0/projects/p_1/agents/CA_1:rollback", body: `{"version":"v1"}`,
+		},
+		"rollback to the previous version": {
+			call:   func(c *Client) error { return c.RollbackAgent(ctx, "p_1", "CA_1", "") },
+			method: http.MethodPost, path: "/v0/projects/p_1/agents/CA_1:rollback", body: `{}`,
+		},
+		"promote": {
+			call: func(c *Client) error {
+				version, err := c.PromoteAgent(ctx, "p_1", "CA_1", "staging")
+				if version != "v2" {
+					return fmt.Errorf("version %q", version)
+				}
+				return err
+			},
+			response: `{"version":"v2"}`,
+			method:   http.MethodPost, path: "/v0/projects/p_1/agents/CA_1:promote", body: `{"deployment":"staging"}`,
+		},
+		"delete": {
+			call:   func(c *Client) error { return c.DeleteAgent(ctx, "p_1", "CA_1", "") },
+			method: http.MethodDelete, path: "/v0/projects/p_1/agents/CA_1",
+		},
+		"delete a deployment": {
+			call:   func(c *Client) error { return c.DeleteAgent(ctx, "p_1", "CA_1", "staging") },
+			method: http.MethodDelete, path: "/v0/projects/p_1/agents/CA_1", query: "deployment=staging",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			response := tc.response
+			if response == "" {
+				response = `{}`
+			}
+			c, got := telephonyServer(t, http.StatusOK, response)
+			require.NoError(t, tc.call(c))
+			assert.Equal(t, tc.method, got.method)
+			assert.Equal(t, tc.path, got.path)
+			assert.Equal(t, tc.query, got.query)
+			if tc.body == "" {
+				assert.Empty(t, got.body)
+			} else {
+				assert.JSONEq(t, tc.body, got.body)
+			}
+		})
+	}
+}
+
+// A secret's value goes out as base64, as protojson sends bytes, with its
+// kind by name.
+func TestUpdateAgentSecrets(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK, `{}`)
+	err := c.UpdateAgentSecrets(context.Background(), "p_1", "CA_1", []*livekit.AgentSecret{
+		{Name: "API_TOKEN", Value: []byte("s3cr3t\n"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT},
+		{Name: "creds.json", Value: []byte{0xff, 0x00}, Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_FILE},
+	}, []string{"OLD"})
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodPatch, got.method)
+	assert.Equal(t, "/v0/projects/p_1/agents/CA_1/secrets", got.path)
+	assert.JSONEq(t, `{
+		"set": [
+			{"name": "API_TOKEN", "value": "czNjcjN0Cg==", "kind": "AGENT_SECRET_KIND_ENVIRONMENT"},
+			{"name": "creds.json", "value": "/wA=", "kind": "AGENT_SECRET_KIND_FILE"}
+		],
+		"remove": ["OLD"]
+	}`, got.body)
+
+	// The value decodes as the API decodes it, with protojson.
+	var sent struct {
+		Set []json.RawMessage `json:"set"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(got.body), &sent))
+	secret := new(livekit.AgentSecret)
+	require.NoError(t, protojson.Unmarshal(sent.Set[1], secret))
+	assert.Equal(t, []byte{0xff, 0x00}, secret.Value)
+}
+
+// Only set or only remove leaves the other out.
+func TestUpdateAgentSecretsOnlyRemove(t *testing.T) {
+	c, got := telephonyServer(t, http.StatusOK, `{}`)
+	require.NoError(t, c.UpdateAgentSecrets(context.Background(), "p_1", "CA_1", nil, []string{"OLD"}))
+	assert.JSONEq(t, `{"remove": ["OLD"]}`, got.body)
+}
+
+func TestFieldViolations(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusBadRequest, `{"code":3,"message":"secrets are invalid; this error's details name each field that is wrong","details":[`+
+		`{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"set[0].name","description":"is reserved"},{"field":"remove[0]","description":"is required"}]}]}`)
+	err := c.UpdateAgentSecrets(context.Background(), "p_1", "CA_1", []*livekit.AgentSecret{{Name: "LIVEKIT_X", Value: []byte("v")}}, []string{""})
+	require.EqualError(t, err, "secrets are invalid; this error's details name each field that is wrong")
+	assert.Equal(t, []FieldViolation{{"set[0].name", "is reserved"}, {"remove[0]", "is required"}}, FieldViolations(err))
+
+	assert.Nil(t, FieldViolations(&APIError{Status: http.StatusBadRequest, Message: "set or remove is required"}))
+	assert.Nil(t, FieldViolations(errors.New("plain")))
+}
+
+// Rollback, promote and delete refuse an Agent Builder agent with
+// FailedPrecondition, which REST sends as 400.
+func TestIsAgentBuilderAgent(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusBadRequest,
+		`{"code":9,"message":"agent is an Agent Builder agent; delete it with AgentBuilderService.DeleteAgent"}`)
+	err := c.DeleteAgent(context.Background(), "p_1", "CA_1", "")
+	assert.True(t, IsAgentBuilderAgent(err))
+
+	assert.False(t, IsAgentBuilderAgent(&APIError{Status: http.StatusBadRequest, Message: "version is not available: its build failed or did not finish"}))
+	assert.False(t, IsAgentBuilderAgent(&APIError{Status: http.StatusNotFound, Message: "agent not found"}))
+}
+
+func TestPromoteAgentMissingVersion(t *testing.T) {
+	c, _ := telephonyServer(t, http.StatusOK, `{}`)
+	_, err := c.PromoteAgent(context.Background(), "p_1", "CA_1", "staging")
+	require.EqualError(t, err, "unexpected response from server: missing version")
 }

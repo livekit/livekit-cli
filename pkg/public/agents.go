@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/protocol/livekit"
@@ -196,4 +197,117 @@ func (c *Client) GetAgentClientSettings(ctx context.Context, projectID string) (
 		return nil, fmt.Errorf("unexpected response from server: %w", err)
 	}
 	return settings, nil
+}
+
+// RestartAgent restarts the project's cloud agent agentID. It keeps its
+// version and its secrets.
+func (c *Client) RestartAgent(ctx context.Context, projectID, agentID string) error {
+	resp, err := c.gen.AgentServiceRestartAgentWithResponse(ctx, projectID, agentID)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
+// RollbackAgent points the production deployment of the project's cloud
+// agent agentID at version, or at the version before the current one when
+// version is "". A version the agent doesn't have is NotFound, and one whose
+// build didn't succeed is FailedPrecondition.
+func (c *Client) RollbackAgent(ctx context.Context, projectID, agentID, version string) error {
+	body := oapi.AgentServiceRollbackAgentJSONRequestBody{}
+	if version != "" {
+		body.Version = &version
+	}
+	resp, err := c.gen.AgentServiceRollbackAgentWithResponse(ctx, projectID, agentID, body)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
+// PromoteAgent points the production deployment of the project's cloud
+// agent agentID at the version that deployment runs, and returns that
+// version.
+func (c *Client) PromoteAgent(ctx context.Context, projectID, agentID, deployment string) (string, error) {
+	resp, err := c.gen.AgentServicePromoteAgentWithResponse(ctx, projectID, agentID,
+		oapi.AgentServicePromoteAgentJSONRequestBody{Deployment: &deployment})
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return "", responseError(resp.StatusCode(), resp.Body)
+	}
+	if resp.JSON200 == nil || resp.JSON200.Version == nil {
+		return "", errors.New("unexpected response from server: missing version")
+	}
+	return *resp.JSON200.Version, nil
+}
+
+// DeleteAgent deletes the project's cloud agent agentID, or only its
+// deployment when deployment is set.
+func (c *Client) DeleteAgent(ctx context.Context, projectID, agentID, deployment string) error {
+	params := &oapi.AgentServiceDeleteAgentParams{}
+	if deployment != "" {
+		params.Deployment = &deployment
+	}
+	resp, err := c.gen.AgentServiceDeleteAgentWithResponse(ctx, projectID, agentID, params)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
+// UpdateAgentSecrets sets the name, value and kind of each secret in set,
+// and removes the secrets named in remove, on the project's cloud agent
+// agentID. The agent's other secrets keep their values. A request the API
+// finds invalid is InvalidArgument, with a FieldViolation for each problem.
+func (c *Client) UpdateAgentSecrets(ctx context.Context, projectID, agentID string, set []*livekit.AgentSecret, remove []string) error {
+	body := oapi.AgentServiceUpdateAgentSecretsJSONRequestBody{}
+	if len(set) > 0 {
+		values := make([]oapi.LivekitPublicapiAgentsV1AgentSecretValue, len(set))
+		for i, secret := range set {
+			kind := oapi.LivekitAgentSecretKind(secret.GetKind().String())
+			values[i] = oapi.LivekitPublicapiAgentsV1AgentSecretValue{Name: &secret.Name, Value: &secret.Value, Kind: &kind}
+		}
+		body.Set = &values
+	}
+	if len(remove) > 0 {
+		body.Remove = &remove
+	}
+	resp, err := c.gen.AgentServiceUpdateAgentSecretsWithResponse(ctx, projectID, agentID, body)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
+// FieldViolation is one problem with a field of a request that the API
+// refused as invalid, such as {"set[0].name", "is required"}.
+type FieldViolation struct {
+	Field       string `json:"field"`
+	Description string `json:"description"`
+}
+
+// FieldViolations returns the field violations of err, the API's
+// InvalidArgument with a google.rpc.BadRequest detail, or nil.
+func FieldViolations(err error) []FieldViolation {
+	var detail struct {
+		FieldViolations []FieldViolation `json:"fieldViolations"`
+	}
+	if !errorDetail(err, "google.rpc.BadRequest", &detail) {
+		return nil
+	}
+	return detail.FieldViolations
+}
+
+// agentBuilderAgent starts the message of AgentService's FailedPrecondition
+// for a write that an Agent Builder agent refuses.
+const agentBuilderAgent = "agent is an Agent Builder agent"
+
+// IsAgentBuilderAgent reports whether err is AgentService's refusal of a
+// rollback, promote or delete of an Agent Builder agent, which Agent Builder
+// deploys and deletes itself.
+func IsAgentBuilderAgent(err error) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.Status == http.StatusBadRequest && strings.HasPrefix(apiErr.Message, agentBuilderAgent)
 }
