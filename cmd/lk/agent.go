@@ -1322,6 +1322,12 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	// Under --user-auth, lk reads a build log from the Public API by the
+	// agent's version, so it needs no deployment to stream from.
+	if logType := cmd.String("log-type"); logType == buildLogType && userAuthEnabled(cmd) {
+		return agentsClient.StreamLogs(ctx, logType, agentID, cmd.String("deployment"), os.Stdout, "")
+	}
+
 	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
 		AgentId: agentID,
 	})

@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -40,9 +41,10 @@ import (
 // commands do (see telephony_user_auth.go): the SDK client implements it with
 // an API key, and userAuthAgentAPI under --user-auth. userAuthAgentAPI calls
 // the Public API's AgentService, which checks the user's role on the project
-// itself, for ListAgents, and sends every other call through the bridge for
-// now. A method moves to AgentService by calling a.client in place of
-// a.bridge.
+// itself, for the reads it serves: the agents, their versions, secret names
+// and build logs, and the project's client settings. It sends every other
+// call through the bridge for now. A method moves to AgentService by calling
+// a.client in place of a.bridge.
 
 // agentAPI is what the cloud agent commands call.
 type agentAPI interface {
@@ -170,14 +172,33 @@ func cloudAgentsInfo(info *livekit.AgentInfo) *livekit.AgentInfo {
 	return info
 }
 
+// ListAgentVersions lists the agent's versions through AgentService, which
+// a READ member may call. The Public API leaves out the deploy time of a
+// version that was never deployed, where cloud agents lists the zero time,
+// so ListAgentVersions puts that back and the commands print the same in
+// both modes.
 func (a *userAuthAgentAPI) ListAgentVersions(ctx context.Context, req *livekit.ListAgentVersionsRequest) (*livekit.ListAgentVersionsResponse, error) {
-	res, err := a.bridge.ListAgentVersions(ctx, req)
-	return res, bridgeError(err)
+	versions, err := a.client.ListAgentVersions(ctx, a.projectID, req.GetAgentId())
+	if err != nil {
+		return nil, cloudAPIError(err)
+	}
+	for _, v := range versions {
+		if v.DeployedAt == nil {
+			v.DeployedAt = timestamppb.New(time.Time{})
+		}
+	}
+	return &livekit.ListAgentVersionsResponse{Versions: versions}, nil
 }
 
+// ListAgentSecrets lists the names of the agent's secrets through
+// AgentService, which, as the dashboard, lets only a project admin list
+// them.
 func (a *userAuthAgentAPI) ListAgentSecrets(ctx context.Context, req *livekit.ListAgentSecretsRequest) (*livekit.ListAgentSecretsResponse, error) {
-	res, err := a.bridge.ListAgentSecrets(ctx, req)
-	return res, bridgeError(err)
+	secrets, err := a.client.ListAgentSecrets(ctx, a.projectID, req.GetAgentId())
+	if err != nil {
+		return nil, agentServiceError(err, projectAdmin)
+	}
+	return &livekit.ListAgentSecretsResponse{Secrets: secrets}, nil
 }
 
 func (a *userAuthAgentAPI) UpdateAgentSecrets(ctx context.Context, req *livekit.UpdateAgentSecretsRequest) (*livekit.UpdateAgentSecretsResponse, error) {
@@ -209,9 +230,11 @@ func (a *userAuthAgentAPI) DeleteAgent(ctx context.Context, req *livekit.DeleteA
 	return res, bridgeError(err)
 }
 
-func (a *userAuthAgentAPI) GetClientSettings(ctx context.Context, req *livekit.ClientSettingsRequest) (*livekit.ClientSettingsResponse, error) {
-	res, err := a.bridge.GetClientSettings(ctx, req)
-	return res, bridgeError(err)
+// GetClientSettings reads the project's settings for creating and deploying
+// an agent through AgentService, which a READ member may call.
+func (a *userAuthAgentAPI) GetClientSettings(ctx context.Context, _ *livekit.ClientSettingsRequest) (*livekit.ClientSettingsResponse, error) {
+	res, err := a.client.GetAgentClientSettings(ctx, a.projectID)
+	return res, cloudAPIError(err)
 }
 
 func (a *userAuthAgentAPI) CreateAgent(ctx context.Context, source fs.FS, secrets []*livekit.AgentSecret, regions []string, attributes map[string]string, excludeFiles []string, buildLog io.Writer) (*livekit.CreateAgentResponse, error) {
@@ -239,8 +262,67 @@ func (a *userAuthAgentAPI) NewRegistryTransport(attributes map[string]string) ht
 	return a.bridge.NewRegistryTransport(attributes)
 }
 
+// StreamLogs writes the build log of the version that deployment runs
+// through AgentService, which a READ member may call, and needs no
+// serverRegion. A runtime log goes through the bridge: the Public API serves
+// no runtime log stream.
 func (a *userAuthAgentAPI) StreamLogs(ctx context.Context, logType, agentID, deployment string, w io.Writer, serverRegion string) error {
-	return bridgeError(a.bridge.StreamLogs(ctx, logType, agentID, deployment, w, serverRegion))
+	if logType != buildLogType {
+		return bridgeError(a.bridge.StreamLogs(ctx, logType, agentID, deployment, w, serverRegion))
+	}
+	agent, err := a.client.GetAgent(ctx, a.projectID, agentID)
+	if err != nil {
+		return cloudAPIError(err)
+	}
+	version := deployedVersion(agent.Info, deployment)
+	if version == "" {
+		return fmt.Errorf("no version deployed to the %s deployment of agent %s", deploymentName(deployment), agentID)
+	}
+	log, err := a.client.GetAgentBuildLog(ctx, a.projectID, agentID, version)
+	if err != nil {
+		return cloudAPIError(err)
+	}
+	if _, err := io.WriteString(w, log.Text); err != nil {
+		return err
+	}
+	if log.Text != "" && !strings.HasSuffix(log.Text, "\n") {
+		if _, err := io.WriteString(w, "\n"); err != nil {
+			return err
+		}
+	}
+	if log.Truncated {
+		out.Warnf("The build log of version %s is too long to show in full: this is its end.", version)
+	}
+	return nil
+}
+
+// buildLogType is the log type of a build log, as --log-type names it.
+const buildLogType = "build"
+
+// deploymentName is deployment, or productionDeployment for "".
+func deploymentName(deployment string) string {
+	if deployment == "" {
+		return productionDeployment
+	}
+	return deployment
+}
+
+// deployedVersion returns the version that deployment ("" for production)
+// of the agent info runs, as cloud agents finds the build log it streams
+// when lk names no version: the version of the deployment's first region
+// that has one, else, for production, the agent's version. It returns ""
+// when the deployment runs no version.
+func deployedVersion(info *livekit.AgentInfo, deployment string) string {
+	name := deploymentName(deployment)
+	for _, d := range info.GetAgentDeployments() {
+		if deploymentName(d.GetDeployment()) == name && d.GetVersion() != "" {
+			return d.GetVersion()
+		}
+	}
+	if name == productionDeployment {
+		return info.GetVersion()
+	}
+	return ""
 }
 
 func (a *userAuthAgentAPI) CreatePrivateLink(ctx context.Context, req *livekit.CreatePrivateLinkRequest) (*livekit.CreatePrivateLinkResponse, error) {
@@ -273,6 +355,30 @@ func bridgeError(err error) error {
 	if !errors.As(err, &refused) || !public.IsPermissionDenied(refused) {
 		return err
 	}
-	return fmt.Errorf("signed in with --user-auth, this command needs a project admin (%w). "+
-		"A project API key works meanwhile: re-run without --user-auth", refused)
+	return fmt.Errorf("signed in with --user-auth, this command needs %s (%w). "+
+		"A project API key works meanwhile: re-run without --user-auth", projectAdmin, refused)
 }
+
+// projectAdmin is who may make a call that needs the ADMIN role on the
+// project, as a refusal names them.
+const projectAdmin = "a project admin"
+
+// agentServiceError is err from a call to AgentService, worded as
+// cloudAPIError words it, except that the refusal of a member whose role on
+// the project is too low says that the command needs who, such as
+// projectAdmin, not that the user lacks access to the project. The Public
+// API words that refusal "this needs <role or permission> on the project".
+// Any other refusal, such as of a suspended project, keeps cloudAPIError's
+// words.
+func agentServiceError(err error, who string) error {
+	var refused *public.APIError
+	if errors.As(err, &refused) && public.IsPermissionDenied(refused) && strings.HasPrefix(refused.Message, lacksRolePrefix) {
+		return fmt.Errorf("signed in with --user-auth, this command needs %s (%w). "+
+			"A project API key also works: re-run without --user-auth", who, refused)
+	}
+	return cloudAPIError(err)
+}
+
+// lacksRolePrefix starts the Public API's refusal of a member whose role on
+// the project is too low.
+const lacksRolePrefix = "this needs "
