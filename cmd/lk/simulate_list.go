@@ -21,6 +21,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
@@ -133,7 +134,18 @@ func cloudListSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	runs, nextCursor, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"), cmd.String("cursor"))
+	params := &oapi.SimulationServiceListSimulationRunsParams{}
+	if status := cmd.String("status"); status != "" {
+		s := oapi.LivekitSimulationRunStatus("STATUS_" + strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(status)), "STATUS_"))
+		if !s.Valid() {
+			return fmt.Errorf("invalid simulation status %q", status)
+		}
+		params.Status = &s
+	}
+	if cursor := cmd.String("cursor"); cursor != "" {
+		params.PageCursor = &cursor
+	}
+	runs, nextCursor, err := client.ListSimulationRuns(ctx, projectID, params)
 	if err != nil {
 		return cloudAPIError(err)
 	}

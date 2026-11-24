@@ -16,73 +16,12 @@ package public
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// CreateSimulationOptions configures a new simulation run. When ScenarioGroup
-// is not provided the server generates NumSimulations scenarios from the
-// uploaded agent source.
-type CreateSimulationOptions struct {
-	AgentName      string
-	NumSimulations int32
-	Concurrency    int32
-	Mode           string // "text" (default) or "audio"
-	Region         string
-}
-
-// parseSimulationMode maps a friendly mode name to the wire enum.
-func parseSimulationMode(s string) (oapi.LivekitSimulationMode, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "", "text":
-		return oapi.SIMULATIONMODETEXT, nil
-	case "audio":
-		return oapi.SIMULATIONMODEAUDIO, nil
-	default:
-		return "", fmt.Errorf("invalid simulation mode %q (expected \"text\" or \"audio\")", s)
-	}
-}
-
-// parseSimulationStatus maps a friendly status name to the wire enum.
-func parseSimulationStatus(s string) (oapi.LivekitSimulationRunStatus, error) {
-	switch "STATUS_" + strings.ToUpper(strings.TrimSpace(s)) {
-	case "STATUS_PENDING_UPLOAD":
-		return oapi.LivekitSimulationRunStatusSTATUSPENDINGUPLOAD, nil
-	case "STATUS_GENERATING":
-		return oapi.LivekitSimulationRunStatusSTATUSGENERATING, nil
-	case "STATUS_RUNNING":
-		return oapi.LivekitSimulationRunStatusSTATUSRUNNING, nil
-	case "STATUS_SUMMARIZING":
-		return oapi.LivekitSimulationRunStatusSTATUSSUMMARIZING, nil
-	case "STATUS_COMPLETED":
-		return oapi.LivekitSimulationRunStatusSTATUSCOMPLETED, nil
-	case "STATUS_FAILED":
-		return oapi.LivekitSimulationRunStatusSTATUSFAILED, nil
-	case "STATUS_CANCELLED":
-		return oapi.LivekitSimulationRunStatusSTATUSCANCELLED, nil
-	default:
-		return "", fmt.Errorf("invalid simulation status %q", s)
-	}
-}
-
-// ListSimulationRuns returns one page of the simulation runs for a project,
-// optionally filtered by status name (e.g. "running", "completed"). This
-// operation is cursor-paginated: cursor requests a specific page and the
-// returned nextCursor is non-empty when more pages remain.
-func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, cursor string) (runs []oapi.LivekitSimulationRun, nextCursor string, err error) {
-	params := &oapi.SimulationServiceListSimulationRunsParams{}
-	if status != "" {
-		s, perr := parseSimulationStatus(status)
-		if perr != nil {
-			return nil, "", perr
-		}
-		params.Status = &s
-	}
-	if cursor != "" {
-		params.PageCursor = ptr(cursor)
-	}
+// ListSimulationRuns returns one page of the simulation runs for a project.
+func (c *Client) ListSimulationRuns(ctx context.Context, projectID string, params *oapi.SimulationServiceListSimulationRunsParams) (runs []oapi.LivekitSimulationRun, nextCursor string, err error) {
 	resp, err := c.gen.SimulationServiceListSimulationRunsWithResponse(ctx, projectID, params)
 	if err != nil {
 		return nil, "", err
@@ -105,26 +44,9 @@ func (c *Client) GetSimulationRun(ctx context.Context, projectID, runID string) 
 	return requirePayload(resp.JSON200.Run, "simulation run")
 }
 
-// CreateSimulationRun starts a new simulation run. The response carries the run
-// id plus a presigned POST target the caller must upload the agent bundle to.
-func (c *Client) CreateSimulationRun(ctx context.Context, projectID string, opts CreateSimulationOptions) (*oapi.LivekitPublicapiSimulationsV1SimulationRunsCreateResponse, error) {
-	mode, err := parseSimulationMode(opts.Mode)
-	if err != nil {
-		return nil, err
-	}
-	body := oapi.SimulationServiceCreateSimulationRunJSONRequestBody{Mode: &mode}
-	if opts.AgentName != "" {
-		body.AgentName = ptr(opts.AgentName)
-	}
-	if opts.NumSimulations > 0 {
-		body.NumSimulations = ptr(opts.NumSimulations)
-	}
-	if opts.Concurrency > 0 {
-		body.Concurrency = ptr(opts.Concurrency)
-	}
-	if opts.Region != "" {
-		body.Region = ptr(opts.Region)
-	}
+// CreateSimulationRun starts a new simulation run. When ScenarioGroup is unset,
+// the response carries a presigned POST target for the agent source archive.
+func (c *Client) CreateSimulationRun(ctx context.Context, projectID string, body oapi.SimulationServiceCreateSimulationRunJSONRequestBody) (*oapi.LivekitPublicapiSimulationsV1SimulationRunsCreateResponse, error) {
 	resp, err := c.gen.SimulationServiceCreateSimulationRunWithResponse(ctx, projectID, body)
 	if err != nil {
 		return nil, err
