@@ -340,7 +340,7 @@ func cancelAfterUpload(t *testing.T, f *fakeBuild, cancel context.CancelFunc) *p
 // without them. Invalid secrets get a line each, by name. A deploy of an
 // Agent Builder agent points at Agent Builder.
 func TestUserAuthDeployAgentRefusals(t *testing.T) {
-	secrets := []*livekit.AgentSecret{{Name: "LIVEKIT_X", Value: []byte("v"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT}}
+	secrets := []*livekit.AgentSecret{{Name: "1KEY", Value: []byte("v"), Kind: livekit.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT}}
 	for name, tc := range map[string]struct {
 		refusal string
 		secrets []*livekit.AgentSecret
@@ -358,9 +358,9 @@ func TestUserAuthDeployAgentRefusals(t *testing.T) {
 			want:    "signed in with --user-auth, this command needs write access to the project. A project API key also works: re-run without --user-auth",
 		},
 		"invalid secrets": {
-			refusal: `400 {"code":3,"message":"secrets are invalid","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"secrets[0].name","description":"is reserved"}]}]}`,
+			refusal: `400 {"code":3,"message":"secrets are invalid","details":[{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[{"field":"secrets[0].name","description":"must have only letters, digits and _, and must not start with a digit"}]}]}`,
 			secrets: secrets,
-			want:    "invalid secrets:\n  secret LIVEKIT_X: name is reserved",
+			want:    "invalid secrets:\n  secret 1KEY: name must have only letters, digits and _, and must not start with a digit",
 		},
 		"an Agent Builder agent": {
 			refusal: `400 {"code":9,"message":"agent is an Agent Builder agent; deploy one of its versions with AgentBuilderService.DeployAgent"}`,
