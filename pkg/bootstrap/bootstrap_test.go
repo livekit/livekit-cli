@@ -616,3 +616,49 @@ func TestInstantiateDotEnv_PriorsAsSubstitutionsSkipPrompt(t *testing.T) {
 		t.Errorf("expected prompted value for OTHER, got %q", got["OTHER"])
 	}
 }
+
+// Regression test for https://github.com/livekit/livekit-cli/issues/911:
+// on Windows, task runs mktemp through u-root, which falls back to a
+// hardcoded /tmp when TMPDIR is unset.
+func TestTaskMktempWithoutTMPDIR(t *testing.T) {
+	t.Setenv("TMPDIR", "")
+	os.Unsetenv("TMPDIR")
+
+	dir := t.TempDir()
+	// Mirrors set_agent_name_if_present in livekit-examples/agent-starter-python.
+	taskfile := `version: '3'
+tasks:
+  mk:
+    cmds:
+      - |
+        tmp="$(mktemp)"
+        printf 'ok\n' >> "$tmp"
+        echo "$tmp" > out.txt
+`
+	if err := os.WriteFile(filepath.Join(dir, TaskFile), []byte(taskfile), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	run, err := NewTask(context.Background(), nil, dir, "mk", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := run(); err != nil {
+		t.Fatalf("mktemp task failed: %v", err)
+	}
+
+	out, err := os.ReadFile(filepath.Join(dir, "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp := strings.TrimSpace(string(out))
+	t.Cleanup(func() { os.Remove(tmp) })
+	// "/tmp\NNN" can still resolve on Windows if \tmp exists on the current
+	// drive, so require an absolute path rather than just a usable one.
+	if !filepath.IsAbs(tmp) {
+		t.Fatalf("mktemp output %q is not an absolute path", tmp)
+	}
+	if got, err := os.ReadFile(tmp); err != nil || string(got) != "ok\n" {
+		t.Fatalf("temp file %q: got %q, err %v", tmp, got, err)
+	}
+}
