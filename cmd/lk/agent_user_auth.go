@@ -404,9 +404,11 @@ func (a *userAuthAgentAPI) deploy(ctx context.Context, agentID string, source fs
 		return nil, fmt.Errorf("multipart upload failed: %w", err)
 	}
 	// lk reads a canceled ctx as a build that continues on LiveKit Cloud,
-	// which isn't so before StartAgentBuild.
+	// which isn't so before StartAgentBuild. DeployAgent has already set the
+	// secrets, and cloud agents shows production as Building from then.
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("interrupted before the build started, so nothing was deployed (%v)", err)
+		return nil, fmt.Errorf("interrupted before the build started: no version was built or deployed, "+
+			"but the secrets this deploy sent are set, and the agent's status may show Building (%v)", err)
 	}
 	if err := a.client.StartAgentBuild(ctx, a.projectID, agentID, deployment, d.Tag, attributes); err != nil {
 		return nil, agentServiceError(err, projectWriter)

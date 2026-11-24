@@ -289,8 +289,8 @@ func TestUserAuthDeployAgentTimeout(t *testing.T) {
 	require.NotContains(t, f.requests, "GET /v0/projects/p_1/agents/CA_1/versions/T1/build-log")
 }
 
-// ctx ending before StartAgentBuild is not a build that continues: nothing
-// was deployed.
+// ctx ending before StartAgentBuild is not a build that continues: no
+// version was built, though DeployAgent has set the secrets.
 func TestUserAuthDeployAgentCanceledBeforeBuild(t *testing.T) {
 	f := &fakeBuild{t: t}
 	a := f.start()
@@ -298,7 +298,8 @@ func TestUserAuthDeployAgentCanceledBeforeBuild(t *testing.T) {
 	a.client = cancelAfterUpload(t, f, cancel)
 
 	err := a.DeployAgentV2(ctx, "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
-	require.EqualError(t, err, "interrupted before the build started, so nothing was deployed (context canceled)")
+	require.EqualError(t, err, "interrupted before the build started: no version was built or deployed, "+
+		"but the secrets this deploy sent are set, and the agent's status may show Building (context canceled)")
 	require.False(t, errors.Is(err, context.Canceled), "lk would say the build continues")
 	require.NotContains(t, f.requests, "POST /v0/projects/p_1/agents/CA_1:startBuild")
 }
