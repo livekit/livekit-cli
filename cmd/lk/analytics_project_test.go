@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -411,6 +412,13 @@ func TestFetchLogPatterns(t *testing.T) {
 			},
 		},
 		{
+			name:       "one pattern",
+			body:       `{"items":[{"id":"42","template":"t","events":"12"}],"totalEvents":"12"}`,
+			wantQuery:  url.Values{},
+			wantOut:    []string{"12"},
+			wantStatus: []string{"1 pattern shown; the range holds 12 records in all patterns"},
+		},
+		{
 			name:       "none in the default range",
 			body:       `{}`,
 			opts:       logPatternRead{defaultRange: true},
@@ -582,6 +590,25 @@ func TestFetchAgentInsights(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestFetchAgentInsightsSTTRequests checks an STT's requests, which the API
+// always counts as 0, print as a dash.
+func TestFetchAgentInsightsSTTRequests(t *testing.T) {
+	const body = `{"summary":{"sessions":"1"},"models":[{"component":"MODEL_COMPONENT_STT","provider":"deepgram","model":"nova-3","requests":"0","sessions":"1"}]}`
+	client, _ := projectAPI(t, "/v0/projects/p1/agent-insights", http.StatusOK, body)
+	stdout, _ := captureOut(t)
+	require.NoError(t, fetchAgentInsights(context.Background(), client, "p1", agentInsightsRead{}, false))
+	for _, line := range strings.Split(stdout.String(), "\n") {
+		if !strings.Contains(line, "nova-3") {
+			continue
+		}
+		cells := strings.Split(line, "│")
+		require.Greater(t, len(cells), 4, line)
+		assert.Equal(t, "-", strings.TrimSpace(cells[4]), "the Requests cell: %s", line)
+		return
+	}
+	t.Fatalf("no row for the STT model in:\n%s", stdout.String())
 }
 
 // TestFetchAgentInsightsJSON checks --json prints the API's response, and

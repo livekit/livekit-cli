@@ -1351,16 +1351,23 @@ const (
 	projectAdminAccess
 )
 
-// sessionAPIError annotates a Public API error from a session read like
-// cloudAPIError, except a permission denial: cloudAPIError suggests API-key
-// credentials, which these Public-API-only reads can't use, so it says what
-// the read requires instead. what names what the read returns.
+// sessionAPIError annotates a Public API error from a session read as
+// readAPIError does. what names what the read returns.
 func sessionAPIError(err error, what string, access sessionReadAccess) error {
+	return readAPIError(err, "a session's "+what, access)
+}
+
+// readAPIError annotates a Public API error from a read like cloudAPIError,
+// except a permission denial: cloudAPIError suggests API-key credentials,
+// which these Public-API-only reads can't use, so it says what the read
+// requires instead. what names what the read returns, and whose, such as "a
+// session's transcript".
+func readAPIError(err error, what string, access sessionReadAccess) error {
 	if !public.IsPermissionDenied(err) {
 		return cloudAPIError(err)
 	}
 	if access == projectAdminAccess {
-		return fmt.Errorf("%w — reading a session's %s requires being a project admin", err, what)
+		return fmt.Errorf("%w — reading %s requires being a project admin", err, what)
 	}
 	return fmt.Errorf("%w — you don't have access to this project", err)
 }

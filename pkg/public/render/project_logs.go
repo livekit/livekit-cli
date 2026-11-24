@@ -112,7 +112,11 @@ func LogPatterns(p *util.Printer, asJSON bool, resp oapi.LivekitPublicapiObserva
 	if asJSON {
 		return nil
 	}
-	p.Statusf("%d patterns shown; the range holds %s records in all patterns", len(patterns), util.Dash(util.Deref(resp.TotalEvents)))
+	shown := "1 pattern shown"
+	if len(patterns) != 1 {
+		shown = fmt.Sprintf("%d patterns shown", len(patterns))
+	}
+	p.Statusf("%s; the range holds %s records in all patterns", shown, util.Dash(util.Deref(resp.TotalEvents)))
 	if util.Deref(resp.Estimated) {
 		p.Statusf("The counts are estimates: the API read the records of %s of the sessions, and scaled the counts",
 			formatPercent(util.Deref(resp.SampleShare)))

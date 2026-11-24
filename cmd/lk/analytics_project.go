@@ -45,13 +45,13 @@ var analyticsLogsCommand = &cli.Command{
 	Name:  "logs",
 	Usage: "Print a project's logs from its agents, client SDKs and LiveKit (requires --user-auth)",
 	UsageText: "lk analytics logs [--since DURATION | --start TIME [--end TIME]] [--log-level LEVEL ...] " +
-		"[--source SOURCE ...] [--session-id RM_ID] [--query QUERY]",
+		"[--source SOURCE ...] [--session-id RM_ID] [--query QUERY] [--sort-order asc|desc] [--limit N]",
 	Description: "Prints the log records that the logs page on the dashboard lists, newest first, one line per record: " +
 		"its time, level, source, session, logger and message. --json prints the records as the API sends them, " +
-		"attributes included.\n\n" +
-		"It reads the last 24 hours unless --since or --start says otherwise, up to and including --end, " +
-		"to the millisecond. Records are kept for 14 days, and one read returns at most the 7 days before the end " +
-		"of its range. Records from the last few minutes can still arrive.\n\n" +
+		"attributes included. Times print in local time.\n\n" +
+		"It reads the 24 hours before --end (default now), unless --since or --start sets the start, " +
+		"and includes --end, to the millisecond. Records are kept for 14 days, and one read returns at most " +
+		"the 7 days before the end of its range. Records from the last few minutes can still arrive.\n\n" +
 		logQueryHelp + "\n\n" +
 		"Reading a project's logs requires being a project admin.",
 	Action: projectRead(projectLogOptions, fetchProjectLogs),
@@ -164,7 +164,7 @@ func analyticsProjectLogFlags() []cli.Flag {
 		&cli.StringSliceFlag{
 			Name: "source",
 			Usage: "Print only records from `SOURCE`: agent, client (the client SDKs) or platform " +
-				"(LiveKit's own, such as API calls); repeatable, matches any (default every source)",
+				"(LiveKit's own, such as a participant joining); repeatable, matches any (default every source)",
 		},
 		&cli.StringFlag{
 			Name:  "session-id",
@@ -257,23 +257,17 @@ func emptyProjectLogsReason(opts projectLogRead) string {
 }
 
 // projectReadError explains why a read of a project's what failed: user data
-// recording is off, the caller lacks the access the read requires, or the
-// server can't parse the search query; and otherwise annotates the error like
-// the other Public API commands.
+// recording is off, or the server can't parse the search query; and otherwise
+// annotates the error as readAPIError does.
 func projectReadError(err error, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError("the project", what, dashboardURL)
 	}
 	if public.InvalidLogQuery(err) {
-		return fmt.Errorf("%w — an attribute needs an @ before its name, such as @lk.cloud_agent_id:CA_ID; --help describes the syntax", err)
+		return fmt.Errorf("%w — check the syntax: an attribute needs an @ before its name, "+
+			"such as @lk.cloud_agent_id:CA_ID, and --help describes the rest", err)
 	}
-	if !public.IsPermissionDenied(err) {
-		return cloudAPIError(err)
-	}
-	if access == projectAdminAccess {
-		return fmt.Errorf("%w — reading a project's %s requires being a project admin", err, what)
-	}
-	return fmt.Errorf("%w — you don't have access to this project", err)
+	return readAPIError(err, "a project's "+what, access)
 }
 
 // analyticsLogPatternsCommand reads a project's log patterns.
@@ -287,10 +281,11 @@ var analyticsLogPatternsCommand = &cli.Command{
 		"Its template is the message with each variable part, such as a number or an ID, replaced by a placeholder, " +
 		"such as <N> or <*>. It prints one row per pattern: its number of records, level, source, first and last record, " +
 		"and template. --json prints the API's response, with each pattern's counts over time, its variants, " +
-		"and its logger and code location.\n\n" +
-		"By default it lists the 50 patterns with the most records among the agents' records at WARN or higher " +
-		"of the last 24 hours. --rank first-seen or last-seen lists the patterns with the newest first or last record " +
-		"instead. The range doesn't include --end, and one read covers at most the 7 days before the end of its range. " +
+		"and its logger and code location. Times print in local time.\n\n" +
+		"By default it lists the 50 patterns with the most records among the agents' records at WARN or higher. " +
+		"--rank first-seen or last-seen lists the patterns with the newest first or last record instead. " +
+		"It reads the 24 hours before --end (default now), unless --since or --start sets the start. " +
+		"The range doesn't include --end, and one read covers at most the 7 days before the end of its range. " +
 		"The counts leave out the current minute (five minutes for a range of a day or more), and simulated sessions " +
 		"unless --session-id names one. On a project with many records the counts are estimates from a share of " +
 		"the sessions, as a note on stderr says.\n\n" +
@@ -417,8 +412,8 @@ var analyticsInsightsCommand = &cli.Command{
 		"that the project's agents recorded: their totals; the latencies that have measurements, such as end-to-end " +
 		"and LLM time to first token; one row for each agent and deployment, busiest first; and one row for each model " +
 		"that the agents used. --json prints the API's response.\n\n" +
-		"It reads the last 7 days unless --since or --start says otherwise. The range doesn't include --end, and can be " +
-		"at most 30 days. Simulated sessions are left out. --agent-id and --agent-name select agents, at most 25 " +
+		"It reads the 7 days before --end (default now), unless --since or --start sets the start. " +
+		"The range doesn't include --end, and can be at most 30 days. Simulated sessions are left out. --agent-id and --agent-name select agents, at most 25 " +
 		"together; a self-hosted agent has no ID, so select it by name.",
 	Action: projectRead(agentInsightsOptions, fetchAgentInsights),
 	Flags:  append([]cli.Flag{jsonFlag}, analyticsInsightsFlags()...),

@@ -169,9 +169,9 @@ type ProjectLogPage struct {
 // agents, its client SDKs and LiveKit: what the dashboard's logs page lists.
 // It is for project admins only (see IsPermissionDenied). Records are kept for
 // 14 days; a range that ends before then, or starts after now, is a 400. A
-// query the server can't parse is a 400 that InvalidLogQuery recognizes. An empty unfiltered first page
-// while the project's user data recording is off is a FailedPrecondition that
-// ObservabilityDisabled recognizes.
+// query the server can't parse is a 400 that InvalidLogQuery recognizes. An
+// empty unfiltered first page while the project's user data recording is off
+// is a FailedPrecondition that ObservabilityDisabled recognizes.
 func (c *Client) ListProjectLogs(ctx context.Context, projectID string, opts ProjectLogOptions) (*ProjectLogPage, error) {
 	params, err := listProjectLogsParams(opts)
 	if err != nil {

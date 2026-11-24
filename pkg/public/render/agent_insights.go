@@ -107,7 +107,12 @@ func AgentInsights(p *util.Printer, asJSON bool, resp oapi.LivekitPublicapiAnaly
 			if countOf(lat.Count) > 0 {
 				p50, p95 = latencyMs(lat.P50Ms), latencyMs(lat.P95Ms)
 			}
-			t.Row(modelKind(m.Component), dashText(m.Provider), dashText(m.Model), formatCount(m.Requests), formatCount(m.Sessions),
+			// The API counts no requests for an STT: they are always 0.
+			requests := formatCount(m.Requests)
+			if util.Deref(m.Component) == oapi.MODELCOMPONENTSTT {
+				requests = "-"
+			}
+			t.Row(modelKind(m.Component), dashText(m.Provider), dashText(m.Model), requests, formatCount(m.Sessions),
 				p50, p95, modelUsage(m))
 		}
 		p.Result(t)
