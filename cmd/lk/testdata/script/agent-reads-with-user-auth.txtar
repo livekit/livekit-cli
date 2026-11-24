@@ -1,0 +1,136 @@
+# Under --user-auth, lk agent list, status and config read the agents through
+# the Public API's AgentService, which a READ member may call, so they print
+# what they print with an API key for the same agents. They ask for no token:
+# here the Public API would refuse one, as it refuses a member below admin.
+# The Public API leaves out what cloud agents doesn't know (CA_2's version and
+# deploy time), and lk puts back cloud agents' placeholders.
+env LK_AGENTS_URL=http://agents.test
+respond POST http://publicapi.test/v0/projects/p_1/tokens 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+
+# Every agent.
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgents 200 '{"agents":[{"agentId":"CA_2","version":"---","deployedAt":"0001-01-01T00:00:00Z","agentDeployments":[{"region":"us-east","agentId":"CA_2","status":"Setting Up","minReplicas":1,"maxReplicas":3,"cpuReq":"500m","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","version":"---","deploymentEnabled":true}]},{"agentId":"CA_1","agentName":"support","version":"v20261120","deployedAt":"2026-11-20T10:00:00Z","agentDeployments":[{"region":"us-east","agentId":"CA_1","status":"Running","replicas":2,"minReplicas":1,"maxReplicas":5,"cpuReq":"500m","curCpu":"120m","curMem":"314572800","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","version":"v20261120","agentName":"support","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"},{"region":"us-east","agentId":"CA_1","status":"Sleeping","maxReplicas":2,"cpuReq":"500m","curCpu":"0","curMem":"0","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","deployment":"staging","version":"v20261121","agentName":"support-staging","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"}]}]}'
+respond GET http://publicapi.test/v0/projects/p_1/agents 200 '{"items":[{"info":{"agentId":"CA_1","agentName":"support","version":"v20261120","deployedAt":"2026-11-20T10:00:00Z","agentDeployments":[{"region":"us-east","agentId":"CA_1","status":"Running","replicas":2,"minReplicas":1,"maxReplicas":5,"cpuReq":"500m","curCpu":"120m","curMem":"314572800","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","version":"v20261120","agentName":"support","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"},{"region":"us-east","agentId":"CA_1","status":"Sleeping","maxReplicas":2,"cpuReq":"500m","curCpu":"0","curMem":"0","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","deployment":"staging","version":"v20261121","agentName":"support-staging","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"}]},"status":"DEPLOYMENT_STATUS_RUNNING"},{"info":{"agentId":"CA_2","agentDeployments":[{"region":"us-east","agentId":"CA_2","status":"Setting Up","minReplicas":1,"maxReplicas":3,"cpuReq":"500m","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","deploymentEnabled":true}]},"status":"DEPLOYMENT_STATUS_NOT_DEPLOYED"}],"pageInfo":{}}'
+exec lk agent list
+cmp stdout want-list
+exec lk --user-auth agent list
+cmp stdout want-list
+# protojson varies its spacing from build to build, so --json output is
+# checked against the other mode's, from the same build.
+exec lk agent list --json
+stdout '"agentId":\s+"CA_2",\s+"version":\s+"---"'
+stdout '"deployedAt":\s+"0001-01-01T00:00:00Z"'
+cp stdout list-api-key.json
+exec lk --user-auth agent list --json
+cmp stdout list-api-key.json
+
+# One agent.
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgents 200 '{"agents":[{"agentId":"CA_1","agentName":"support","version":"v20261120","deployedAt":"2026-11-20T10:00:00Z","agentDeployments":[{"region":"us-east","agentId":"CA_1","status":"Running","replicas":2,"minReplicas":1,"maxReplicas":5,"cpuReq":"500m","curCpu":"120m","curMem":"314572800","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","version":"v20261120","agentName":"support","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"},{"region":"us-east","agentId":"CA_1","status":"Sleeping","maxReplicas":2,"cpuReq":"500m","curCpu":"0","curMem":"0","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","deployment":"staging","version":"v20261121","agentName":"support-staging","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"}]}]}'
+respond GET http://publicapi.test/v0/projects/p_1/agents/CA_1 200 '{"agent":{"info":{"agentId":"CA_1","agentName":"support","version":"v20261120","deployedAt":"2026-11-20T10:00:00Z","agentDeployments":[{"region":"us-east","agentId":"CA_1","status":"Running","replicas":2,"minReplicas":1,"maxReplicas":5,"cpuReq":"500m","curCpu":"120m","curMem":"314572800","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","version":"v20261120","agentName":"support","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"},{"region":"us-east","agentId":"CA_1","status":"Sleeping","maxReplicas":2,"cpuReq":"500m","curCpu":"0","curMem":"0","memReq":"1Gi","memLimit":"2Gi","cpuLimit":"1","serverRegion":"osbxash1a","deployment":"staging","version":"v20261121","agentName":"support-staging","deploymentEnabled":true,"lastScrapedAt":"2026-11-22T09:30:00Z"}]},"status":"DEPLOYMENT_STATUS_RUNNING"}}'
+exec lk agent status --id CA_1
+cmp stdout want-status
+exec lk --user-auth agent status --id CA_1
+cmp stdout want-status
+exec lk agent status --id CA_1 --json
+stdout '"agentId":\s+"CA_1"'
+! stdout 'CA_2'
+cp stdout status-api-key.json
+exec lk --user-auth agent status --id CA_1 --json
+cmp stdout status-api-key.json
+exec lk agent list --id CA_1
+cmp stdout want-list-one
+exec lk --user-auth agent list --id CA_1
+cmp stdout want-list-one
+
+mkdir api-key user-auth
+cd api-key
+exec lk agent config --id CA_1
+cd ../user-auth
+exec lk --user-auth agent config --id CA_1
+cd ..
+cmp api-key/livekit.toml want-livekit.toml
+cmp user-auth/livekit.toml want-livekit.toml
+
+# An agent the project doesn't have: cloud agents lists none, and the Public
+# API answers NotFound.
+respond POST http://agents.test/twirp/livekit.CloudAgent/ListAgents 200 '{"agents":[]}'
+respond GET http://publicapi.test/v0/projects/p_1/agents/CA_9 404 '{"code":5,"message":"agent not found"}'
+! exec lk agent status --id CA_9
+stderr '^no agents found$'
+! exec lk --user-auth agent status --id CA_9
+stderr '^no agents found$'
+! exec lk agent config --id CA_9
+stderr '^agent not found$'
+! exec lk --user-auth agent config --id CA_9
+stderr '^agent not found$'
+exec lk agent list --id CA_9
+stderr 'No agents found'
+exec lk --user-auth agent list --id CA_9
+stderr 'No agents found'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-list --
+┌──────┬───────────────┬─────────┬────────────────────┬───────────┬──────────────────────┐
+│ ID   │ Dispatch Name │ Regions │ Deployments        │ Version   │ Deployed At          │
+├──────┼───────────────┼─────────┼────────────────────┼───────────┼──────────────────────┤
+│ CA_1 │ support       │ us-east │ production,staging │ v20261120 │ 2026-11-20T10:00:00Z │
+│ CA_2 │               │ us-east │ production         │ ---       │ ---                  │
+└──────┴───────────────┴─────────┴────────────────────┴───────────┴──────────────────────┘
+-- want-status --
+┌──────┬─────────────────┬───────────┬─────────┬────────────┬──────────┬──────────┬────────────┬───────────┬──────────────────────┬──────────────────────┐
+│ ID   │ Name            │ Version   │ Region  │ Deployment │ Status   │ CPU      │ Mem        │ Replicas  │ Deployed At          │ Last Observed        │
+├──────┼─────────────────┼───────────┼─────────┼────────────┼──────────┼──────────┼────────────┼───────────┼──────────────────────┼──────────────────────┤
+│ CA_1 │ support         │ v20261120 │ us-east │ production │ Running  │ 120m / 1 │ 0.29 / 2GB │ 2 / 1 / 5 │ 2026-11-20T10:00:00Z │ 2026-11-22T09:30:00Z │
+│ CA_1 │ support-staging │ v20261121 │ us-east │ staging    │ Sleeping │ 0m / 1   │ 0 / 2GB    │ 0 / 0 / 2 │ 2026-11-20T10:00:00Z │ 2026-11-22T09:30:00Z │
+└──────┴─────────────────┴───────────┴─────────┴────────────┴──────────┴──────────┴────────────┴───────────┴──────────────────────┴──────────────────────┘
+-- want-list-one --
+┌──────┬───────────────┬─────────┬────────────────────┬───────────┬──────────────────────┐
+│ ID   │ Dispatch Name │ Regions │ Deployments        │ Version   │ Deployed At          │
+├──────┼───────────────┼─────────┼────────────────────┼───────────┼──────────────────────┤
+│ CA_1 │ support       │ us-east │ production,staging │ v20261120 │ 2026-11-20T10:00:00Z │
+└──────┴───────────────┴─────────┴────────────────────┴───────────┴──────────────────────┘
+-- want-livekit.toml --
+[project]
+  subdomain = "one"
+
+[agent]
+  id = "CA_1"
+-- want-requests --
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_1 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_9 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_9 bearer=st_1 project=p_1
+POST http://agents.test/twirp/livekit.CloudAgent/ListAgents apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/agents/CA_9 bearer=st_1 project=p_1

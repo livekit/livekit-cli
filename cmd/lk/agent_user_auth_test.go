@@ -23,9 +23,12 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/twitchtv/twirp"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
@@ -78,7 +81,7 @@ func TestUserAuthAgentAPIRefusalNeedsAdmin(t *testing.T) {
 	require.NoError(t, err)
 	a := &userAuthAgentAPI{client: client, projectID: pc.ProjectId, bridge: bridge}
 
-	_, err = a.ListAgents(context.Background(), &livekit.ListAgentsRequest{})
+	_, err = a.ListAgentSecrets(context.Background(), &livekit.ListAgentSecretsRequest{AgentId: "CA_1"})
 	require.EqualError(t, err, wantAdminRefusal)
 	require.True(t, public.IsPermissionDenied(err), "the Public API's refusal stays the cause")
 
@@ -109,4 +112,60 @@ func TestBridgeErrorPassesOtherErrorsThrough(t *testing.T) {
 	require.Equal(t, plain, bridgeError(plain))
 
 	require.NoError(t, bridgeError(nil))
+}
+
+// cloudAgentsInfo puts back the placeholders cloud agents lists for a
+// version or deploy time it doesn't know, and keeps the values it knows.
+func TestCloudAgentsInfo(t *testing.T) {
+	deployedAt := timestamppb.New(time.Date(2026, 11, 20, 10, 0, 0, 0, time.UTC))
+	got := cloudAgentsInfo(&livekit.AgentInfo{
+		AgentId: "CA_1",
+		AgentDeployments: []*livekit.AgentDeployment{
+			{Region: "us-east"},
+			{Region: "eu-central", Version: "v2", Deployment: "staging"},
+		},
+	})
+	want := &livekit.AgentInfo{
+		AgentId:    "CA_1",
+		Version:    "---",
+		DeployedAt: timestamppb.New(time.Time{}),
+		AgentDeployments: []*livekit.AgentDeployment{
+			{Region: "us-east", Version: "---"},
+			{Region: "eu-central", Version: "v2", Deployment: "staging"},
+		},
+	}
+	require.True(t, proto.Equal(want, got), "got %v", got)
+
+	known := &livekit.AgentInfo{AgentId: "CA_2", AgentName: "support", Version: "v1", DeployedAt: deployedAt}
+	require.True(t, proto.Equal(proto.Clone(known), cloudAgentsInfo(known)))
+}
+
+// Only an agent the project doesn't have reads as an empty list. Any other
+// refusal of a get is an error, worded as every Public API refusal is.
+func TestUserAuthListAgentsErrors(t *testing.T) {
+	for name, tc := range map[string]struct {
+		status int
+		body   string
+		want   string
+	}{
+		"project not found": {http.StatusNotFound, `{"code":5,"message":"project not found"}`, "project not found"},
+		"refused": {http.StatusForbidden, `{"code":7,"message":"not authorized"}`,
+			"not authorized — your account doesn't have access to this project or action. To act with API-key credentials instead, re-run without `--user-auth`"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_, _ = io.WriteString(w, tc.body)
+			}))
+			t.Cleanup(srv.Close)
+			client, err := public.New(srv.URL, "st_1")
+			require.NoError(t, err)
+			a := &userAuthAgentAPI{client: client, projectID: "p_1"}
+
+			res, err := a.ListAgents(context.Background(), &livekit.ListAgentsRequest{AgentId: "CA_1"})
+			require.EqualError(t, err, tc.want)
+			require.Nil(t, res)
+		})
+	}
 }

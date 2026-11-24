@@ -21,8 +21,10 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"time"
 
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
@@ -36,9 +38,11 @@ import (
 // session_auth.go), which asks the Public API for a token with the Agent.Admin
 // grant. Each command takes one of the interfaces below, as the sip and number
 // commands do (see telephony_user_auth.go): the SDK client implements it with
-// an API key, and userAuthAgentAPI under --user-auth. userAuthAgentAPI sends
-// every call through the bridge for now. A method moves to the Public API's
-// AgentService by calling a.client in place of a.bridge.
+// an API key, and userAuthAgentAPI under --user-auth. userAuthAgentAPI calls
+// the Public API's AgentService, which checks the user's role on the project
+// itself, for ListAgents, and sends every other call through the bridge for
+// now. A method moves to AgentService by calling a.client in place of
+// a.bridge.
 
 // agentAPI is what the cloud agent commands call.
 type agentAPI interface {
@@ -102,8 +106,9 @@ func newAgentAPI(cmd *cli.Command, pc *config.ProjectConfig) (agentAPI, privateL
 }
 
 // userAuthAgentAPI is agentAPI and privateLinkAPI under --user-auth, for one
-// project. Each method calls bridge, the cloudagents client on the token
-// bridge, until the Public API serves it, and passes the error through
+// project. A method that the Public API serves calls client and passes the
+// error through cloudAPIError. Each other method calls bridge, the
+// cloudagents client on the token bridge, and passes the error through
 // bridgeError.
 type userAuthAgentAPI struct {
 	client    *public.Client
@@ -111,9 +116,58 @@ type userAuthAgentAPI struct {
 	bridge    *cloudagents.Client
 }
 
+// ListAgents lists the project's agents, or gets the one req.AgentId names,
+// through AgentService, which a READ member may call. An agent the project
+// doesn't have is an empty list, as cloud agents answers it. Each agent is
+// as cloud agents lists it (see cloudAgentsInfo), so the commands print the
+// same in both modes.
 func (a *userAuthAgentAPI) ListAgents(ctx context.Context, req *livekit.ListAgentsRequest) (*livekit.ListAgentsResponse, error) {
-	res, err := a.bridge.ListAgents(ctx, req)
-	return res, bridgeError(err)
+	var agents []*public.Agent
+	if id := req.GetAgentId(); id != "" {
+		agent, err := a.client.GetAgent(ctx, a.projectID, id)
+		if public.IsAgentNotFound(err) {
+			return &livekit.ListAgentsResponse{}, nil
+		}
+		if err != nil {
+			return nil, cloudAPIError(err)
+		}
+		agents = []*public.Agent{agent}
+	} else {
+		var err error
+		if agents, err = a.client.ListAgents(ctx, a.projectID); err != nil {
+			return nil, cloudAPIError(err)
+		}
+	}
+	res := &livekit.ListAgentsResponse{Agents: make([]*livekit.AgentInfo, 0, len(agents))}
+	for _, agent := range agents {
+		res.Agents = append(res.Agents, cloudAgentsInfo(agent.Info))
+	}
+	return res, nil
+}
+
+// noVersion is the version cloud agents lists for an agent or a deployment
+// whose version it doesn't know.
+const noVersion = "---"
+
+// cloudAgentsInfo returns info, an agent as the Public API returns it, as
+// cloud agents' ListAgents lists it. The Public API leaves out the version
+// and the deploy time that cloud agents doesn't know, where cloud agents
+// lists "---" and the zero time, so cloudAgentsInfo puts those back. It
+// can't put back the agent name "<Pending>" or "<Unavailable>", which the
+// Public API also leaves out: that name stays empty.
+func cloudAgentsInfo(info *livekit.AgentInfo) *livekit.AgentInfo {
+	if info.Version == "" {
+		info.Version = noVersion
+	}
+	if info.DeployedAt == nil {
+		info.DeployedAt = timestamppb.New(time.Time{})
+	}
+	for _, d := range info.AgentDeployments {
+		if d.Version == "" {
+			d.Version = noVersion
+		}
+	}
+	return info
 }
 
 func (a *userAuthAgentAPI) ListAgentVersions(ctx context.Context, req *livekit.ListAgentVersionsRequest) (*livekit.ListAgentVersionsResponse, error) {
