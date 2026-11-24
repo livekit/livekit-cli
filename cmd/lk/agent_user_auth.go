@@ -220,10 +220,14 @@ func (a *userAuthAgentAPI) UpdateAgentSecrets(ctx context.Context, req *livekit.
 	return &livekit.UpdateAgentSecretsResponse{Success: true}, nil
 }
 
-// UpdateAgent sets req.Secrets through AgentService, which, as cloud agents'
-// UpdateAgent, merges them and restarts the agent. With no secrets, cloud
-// agents' UpdateAgent only restarts the agent, and so does UpdateAgent. lk
-// sends no regions, which cloud agents ignores.
+// UpdateAgent merges req.Secrets into the agent's secrets through
+// AgentService's UpdateAgentSecrets, which a project admin may call, or,
+// with no secrets, restarts the agent through AgentService's RestartAgent,
+// which a WRITE member may call. Either rolls the agent, as cloud agents'
+// UpdateAgent does with an API key, but neither is that call: cloud agents'
+// UpdateAgent also saves the agent and marks its production deployment
+// Updating, with secrets or without. lk sends no regions, which cloud agents
+// ignores.
 func (a *userAuthAgentAPI) UpdateAgent(ctx context.Context, req *livekit.UpdateAgentRequest) (*livekit.UpdateAgentResponse, error) {
 	if len(req.GetSecrets()) == 0 {
 		if _, err := a.RestartAgent(ctx, &livekit.RestartAgentRequest{AgentId: req.GetAgentId()}); err != nil {
