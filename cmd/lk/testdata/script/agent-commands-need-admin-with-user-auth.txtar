@@ -1,0 +1,34 @@
+# Under --user-auth, an agent command that still goes through the token bridge
+# needs the Agent.Admin grant, which the Public API gives only to a project
+# admin. A member below it hears that, and that an API key works meanwhile,
+# not that they lack access to the project. Nothing reaches cloud agents.
+env LK_AGENTS_URL=http://agents.test
+respond POST http://publicapi.test/v0/projects/p_1/tokens 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+
+! exec lk --user-auth agent list
+! stdout .
+stderr '^unable to list agents: signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key works meanwhile: re-run without --user-auth$'
+! stderr 'access to this project'
+
+! exec lk --user-auth agent restart --id CA_1
+! stdout .
+stderr '^signed in with --user-auth, this command needs a project admin \(this needs ADMIN on the project\)\. A project API key works meanwhile: re-run without --user-auth$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1

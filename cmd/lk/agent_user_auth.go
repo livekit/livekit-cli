@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -101,7 +103,8 @@ func newAgentAPI(cmd *cli.Command, pc *config.ProjectConfig) (agentAPI, privateL
 
 // userAuthAgentAPI is agentAPI and privateLinkAPI under --user-auth, for one
 // project. Each method calls bridge, the cloudagents client on the token
-// bridge, until the Public API serves it.
+// bridge, until the Public API serves it, and passes the error through
+// bridgeError.
 type userAuthAgentAPI struct {
 	client    *public.Client
 	projectID string
@@ -109,61 +112,73 @@ type userAuthAgentAPI struct {
 }
 
 func (a *userAuthAgentAPI) ListAgents(ctx context.Context, req *livekit.ListAgentsRequest) (*livekit.ListAgentsResponse, error) {
-	return a.bridge.ListAgents(ctx, req)
+	res, err := a.bridge.ListAgents(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) ListAgentVersions(ctx context.Context, req *livekit.ListAgentVersionsRequest) (*livekit.ListAgentVersionsResponse, error) {
-	return a.bridge.ListAgentVersions(ctx, req)
+	res, err := a.bridge.ListAgentVersions(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) ListAgentSecrets(ctx context.Context, req *livekit.ListAgentSecretsRequest) (*livekit.ListAgentSecretsResponse, error) {
-	return a.bridge.ListAgentSecrets(ctx, req)
+	res, err := a.bridge.ListAgentSecrets(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) UpdateAgentSecrets(ctx context.Context, req *livekit.UpdateAgentSecretsRequest) (*livekit.UpdateAgentSecretsResponse, error) {
-	return a.bridge.UpdateAgentSecrets(ctx, req)
+	res, err := a.bridge.UpdateAgentSecrets(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) UpdateAgent(ctx context.Context, req *livekit.UpdateAgentRequest) (*livekit.UpdateAgentResponse, error) {
-	return a.bridge.UpdateAgent(ctx, req)
+	res, err := a.bridge.UpdateAgent(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) RestartAgent(ctx context.Context, req *livekit.RestartAgentRequest) (*livekit.RestartAgentResponse, error) {
-	return a.bridge.RestartAgent(ctx, req)
+	res, err := a.bridge.RestartAgent(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) RollbackAgent(ctx context.Context, req *livekit.RollbackAgentRequest) (*livekit.RollbackAgentResponse, error) {
-	return a.bridge.RollbackAgent(ctx, req)
+	res, err := a.bridge.RollbackAgent(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) PromoteAgent(ctx context.Context, agentID, srcDeployment, dstDeployment string) error {
-	return a.bridge.PromoteAgent(ctx, agentID, srcDeployment, dstDeployment)
+	return bridgeError(a.bridge.PromoteAgent(ctx, agentID, srcDeployment, dstDeployment))
 }
 
 func (a *userAuthAgentAPI) DeleteAgent(ctx context.Context, req *livekit.DeleteAgentRequest) (*livekit.DeleteAgentResponse, error) {
-	return a.bridge.DeleteAgent(ctx, req)
+	res, err := a.bridge.DeleteAgent(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) GetClientSettings(ctx context.Context, req *livekit.ClientSettingsRequest) (*livekit.ClientSettingsResponse, error) {
-	return a.bridge.GetClientSettings(ctx, req)
+	res, err := a.bridge.GetClientSettings(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) CreateAgent(ctx context.Context, source fs.FS, secrets []*livekit.AgentSecret, regions []string, attributes map[string]string, excludeFiles []string, buildLog io.Writer) (*livekit.CreateAgentResponse, error) {
-	return a.bridge.CreateAgent(ctx, source, secrets, regions, attributes, excludeFiles, buildLog)
+	res, err := a.bridge.CreateAgent(ctx, source, secrets, regions, attributes, excludeFiles, buildLog)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) DeployAgentV2(ctx context.Context, agentID string, source fs.FS, secrets []*livekit.AgentSecret, attributes map[string]string, deployment string, excludeFiles []string, buildLog io.Writer) error {
-	return a.bridge.DeployAgentV2(ctx, agentID, source, secrets, attributes, deployment, excludeFiles, buildLog)
+	return bridgeError(a.bridge.DeployAgentV2(ctx, agentID, source, secrets, attributes, deployment, excludeFiles, buildLog))
 }
 
 // RegisterAgent, GetPushTarget and NewRegistryTransport stay on the bridge:
 // the Public API does not front cloud agents' image registry.
 func (a *userAuthAgentAPI) RegisterAgent(ctx context.Context, secrets []*livekit.AgentSecret, regions []string) (string, error) {
-	return a.bridge.RegisterAgent(ctx, secrets, regions)
+	res, err := a.bridge.RegisterAgent(ctx, secrets, regions)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) GetPushTarget(ctx context.Context, agentID string) (*cloudagents.PushTarget, error) {
-	return a.bridge.GetPushTarget(ctx, agentID)
+	res, err := a.bridge.GetPushTarget(ctx, agentID)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) NewRegistryTransport(attributes map[string]string) http.RoundTripper {
@@ -171,21 +186,39 @@ func (a *userAuthAgentAPI) NewRegistryTransport(attributes map[string]string) ht
 }
 
 func (a *userAuthAgentAPI) StreamLogs(ctx context.Context, logType, agentID, deployment string, w io.Writer, serverRegion string) error {
-	return a.bridge.StreamLogs(ctx, logType, agentID, deployment, w, serverRegion)
+	return bridgeError(a.bridge.StreamLogs(ctx, logType, agentID, deployment, w, serverRegion))
 }
 
 func (a *userAuthAgentAPI) CreatePrivateLink(ctx context.Context, req *livekit.CreatePrivateLinkRequest) (*livekit.CreatePrivateLinkResponse, error) {
-	return a.bridge.CreatePrivateLink(ctx, req)
+	res, err := a.bridge.CreatePrivateLink(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) ListPrivateLinks(ctx context.Context, req *livekit.ListPrivateLinksRequest) (*livekit.ListPrivateLinksResponse, error) {
-	return a.bridge.ListPrivateLinks(ctx, req)
+	res, err := a.bridge.ListPrivateLinks(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) GetPrivateLinkStatus(ctx context.Context, req *livekit.GetPrivateLinkStatusRequest) (*livekit.GetPrivateLinkStatusResponse, error) {
-	return a.bridge.GetPrivateLinkStatus(ctx, req)
+	res, err := a.bridge.GetPrivateLinkStatus(ctx, req)
+	return res, bridgeError(err)
 }
 
 func (a *userAuthAgentAPI) DestroyPrivateLink(ctx context.Context, req *livekit.DestroyPrivateLinkRequest) (*livekit.DestroyPrivateLinkResponse, error) {
-	return a.bridge.DestroyPrivateLink(ctx, req)
+	res, err := a.bridge.DestroyPrivateLink(ctx, req)
+	return res, bridgeError(err)
+}
+
+// bridgeError is err from a call through the token bridge, or, when the
+// Public API refused the bridge's token, an error that says why. cloud agents
+// takes no grant narrower than Agent.Admin, and the Public API gives that one
+// only to a project admin, so the refusal says the command needs one, not
+// that the user lacks access to the project.
+func bridgeError(err error) error {
+	var refused *public.APIError
+	if !errors.As(err, &refused) || !public.IsPermissionDenied(refused) {
+		return err
+	}
+	return fmt.Errorf("signed in with --user-auth, this command needs a project admin (%w). "+
+		"A project API key works meanwhile: re-run without --user-auth", refused)
 }
