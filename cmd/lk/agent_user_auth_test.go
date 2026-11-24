@@ -81,11 +81,11 @@ func TestUserAuthAgentAPIRefusalNeedsAdmin(t *testing.T) {
 	require.NoError(t, err)
 	a := &userAuthAgentAPI{client: client, projectID: pc.ProjectId, bridge: bridge}
 
-	_, err = a.ListAgentSecrets(context.Background(), &livekit.ListAgentSecretsRequest{AgentId: "CA_1"})
+	_, err = a.ListPrivateLinks(context.Background(), &livekit.ListPrivateLinksRequest{})
 	require.EqualError(t, err, wantAdminRefusal)
 	require.True(t, public.IsPermissionDenied(err), "the Public API's refusal stays the cause")
 
-	err = a.StreamLogs(context.Background(), "build", "CA_1", "", io.Discard, "")
+	err = a.StreamLogs(context.Background(), "deploy", "CA_1", "", io.Discard, "")
 	require.EqualError(t, err, wantAdminRefusal)
 
 	mu.Lock()
@@ -168,4 +168,47 @@ func TestUserAuthListAgentsErrors(t *testing.T) {
 			require.Nil(t, res)
 		})
 	}
+}
+
+// The build log lk reads is the one cloud agents streams when lk names no
+// version: that of the version the deployment runs, or for production, the
+// agent's version.
+func TestDeployedVersion(t *testing.T) {
+	info := &livekit.AgentInfo{
+		Version: "v3",
+		AgentDeployments: []*livekit.AgentDeployment{
+			{Region: "us-east", Version: "v2"},
+			{Region: "us-east", Deployment: "staging"},
+			{Region: "eu-central", Deployment: "staging", Version: "v4"},
+			{Region: "eu-central", Deployment: "production", Version: "v2"},
+		},
+	}
+	for deployment, want := range map[string]string{
+		"":           "v2",
+		"production": "v2",
+		"staging":    "v4",
+		"canary":     "",
+	} {
+		require.Equal(t, want, deployedVersion(info, deployment), "deployment %q", deployment)
+	}
+	require.Equal(t, "v3", deployedVersion(&livekit.AgentInfo{Version: "v3"}, ""), "production falls back to the agent's version")
+	require.Empty(t, deployedVersion(&livekit.AgentInfo{Version: "v3"}, "staging"))
+}
+
+// AgentService's refusal of a member whose role is too low names who the
+// command needs. Any other error is worded as cloudAPIError words it.
+func TestAgentServiceError(t *testing.T) {
+	lacksRole := &public.APIError{Status: http.StatusForbidden, Message: "this needs ADMIN on the project"}
+	err := agentServiceError(lacksRole, projectAdmin)
+	require.EqualError(t, err, "signed in with --user-auth, this command needs a project admin (this needs ADMIN on the project). "+
+		"A project API key also works: re-run without --user-auth")
+	require.ErrorIs(t, err, lacksRole)
+
+	suspended := &public.APIError{Status: http.StatusForbidden, Message: "this project is suspended"}
+	require.Equal(t, cloudAPIError(suspended).Error(), agentServiceError(suspended, projectAdmin).Error())
+
+	notFound := &public.APIError{Status: http.StatusNotFound, Message: "agent not found"}
+	require.Equal(t, notFound, agentServiceError(notFound, projectAdmin))
+
+	require.NoError(t, agentServiceError(nil, projectAdmin))
 }

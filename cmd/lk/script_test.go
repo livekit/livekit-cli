@@ -414,6 +414,10 @@ var publicAPIRoutes = []struct {
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsListResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentsGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/versions$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentVersionsListResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/versions/[^/]+/build-log$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentBuildLogGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/[^/]+/secrets$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentSecretsListResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agent-client-settings$`), func() any { return new(oapi.LivekitPublicapiAgentsV1AgentClientSettingsGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
