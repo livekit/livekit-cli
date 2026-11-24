@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -110,31 +109,20 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	// a server older than the field names no run's persona model, and the column stays hidden
-	personaModels := slices.ContainsFunc(runs, func(run *livekit.SimulationRun) bool {
-		return run.GetPersonaModel() != ""
-	})
 	var rows [][]string
 	for _, run := range runs {
-		row := []string{
+		rows = append(rows, []string{
 			run.GetId(),
 			util.FormatRFC3339(run.GetCreatedAt().AsTime(), "---"),
 			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
 			strings.TrimPrefix(run.GetMode().String(), "SIMULATION_MODE_"),
 			run.GetAgentName(),
-		}
-		if personaModels {
-			row = append(row, run.GetPersonaModel())
-		}
-		rows = append(rows, row)
+			run.GetPersonaModel(),
+		})
 	}
 
-	headers := []string{"ID", "Created At", "Status", "Mode", "Agent"}
-	if personaModels {
-		headers = append(headers, "Persona Model")
-	}
 	t := util.CreateTable().
-		Headers(headers...).
+		Headers("ID", "Created At", "Status", "Mode", "Agent", "Persona Model").
 		Rows(rows...)
 	out.Result(t)
 	fmt.Fprintf(out.StatusWriter(), "To open a run: %s\n", viewCommandHint("<run-id>"))
