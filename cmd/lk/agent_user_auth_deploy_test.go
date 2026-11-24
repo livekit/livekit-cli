@@ -378,6 +378,41 @@ func TestUserAuthDeployAgentRefusals(t *testing.T) {
 	require.EqualError(t, err, "too many builds; try again later")
 }
 
+// A build that ends without making its version, such as one that a newer
+// deploy replaced, says so once buildEndGrace has passed since the
+// deployment stopped building, and doesn't poll until ctx ends.
+func TestUserAuthDeployAgentBuildEndsWithoutVersion(t *testing.T) {
+	f := &fakeBuild{t: t, statuses: []string{"Building", "Scheduling", "Running"}, versions: []string{""}}
+	a := f.start()
+	grace := buildEndGrace
+	buildEndGrace = 20 * time.Millisecond
+	t.Cleanup(func() { buildEndGrace = grace })
+
+	start := time.Now()
+	err := a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
+	require.EqualError(t, err, "the build of version T1 ended without making it: the deployment is no longer building (status Running), "+
+		"and version T1 isn't listed. A newer deploy may have replaced this one, or the build stopped. "+
+		"Run `lk agent versions` to see the agent's versions, and `lk agent logs --log-type=build` "+
+		"for the build log of the version that the deployment runs")
+	require.GreaterOrEqual(t, time.Since(start), buildEndGrace)
+
+	// A version listed within buildEndGrace is the build's.
+	f = &fakeBuild{t: t, statuses: []string{"Building", "Running"}, versions: []string{"", "", "", "Available"}}
+	a = f.start()
+	buildEndGrace = time.Hour
+	require.NoError(t, a.DeployAgentV2(context.Background(), "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard))
+
+	// A deployment that never shows a build, such as one that still runs
+	// the version before, isn't one whose build ended.
+	f = &fakeBuild{t: t, statuses: []string{"Running"}, versions: []string{""}}
+	a = f.start()
+	buildEndGrace = time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	err = a.DeployAgentV2(ctx, "CA_1", agentSource, nil, nil, "", agentExcludes, io.Discard)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
 // A poll that fails transiently is made again, a few times.
 func TestUserAuthDeployAgentRetriesPolls(t *testing.T) {
 	f := &fakeBuild{t: t, statuses: []string{"Building", "Running"}, versions: []string{"", "Available"},

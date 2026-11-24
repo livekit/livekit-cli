@@ -430,19 +430,41 @@ const (
 // agents lists it.
 const buildFailed = "Build Failed"
 
+// buildingStatuses are the statuses that cloud agents lists for a
+// deployment while it sets up, builds or schedules a version.
+var buildingStatuses = []string{"Setting Up", "Building", "Scheduling"}
+
+// buildEndGrace is how long awaitBuild waits for the version to be listed
+// once the deployment has left buildingStatuses, before it decides that the
+// build ended without making the version.
+var buildEndGrace = time.Minute
+
+// statusName is status, or "none" for "".
+func statusName(status string) string {
+	if status == "" {
+		return "none"
+	}
+	return status
+}
+
 // awaitBuild follows the build of the version tag that StartAgentBuild
 // started for deployment of the agent agentID. Every buildPollInterval it
 // reads the agent and its versions, and writes each new status of the
 // deployment to w. A read that fails transiently is made again a few times
-// (see retryPoll) before awaitBuild gives up on following the build. Once the version is available or failed, it writes the
-// version's build log to w, and returns the agent, or an error when the
-// build failed. When ctx is done first, it returns ctx's error: the build
-// continues on LiveKit Cloud.
+// (see retryPoll) before awaitBuild gives up on following the build. Once
+// the version is available or failed, it writes the version's build log to
+// w, and returns the agent, or an error when the build failed. When the
+// deployment leaves the building statuses and the version is still not
+// listed buildEndGrace later, the build ended without making the version,
+// and awaitBuild returns an error that says so. When ctx is done first, it
+// returns ctx's error: the build continues on LiveKit Cloud.
 func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, tag string, w io.Writer) (*livekit.AgentInfo, error) {
 	fmt.Fprintf(w, "Building version %s. This deploy continues even if you disconnect.\n", tag)
 	ticker := time.NewTicker(buildPollInterval)
 	defer ticker.Stop()
 	last := ""
+	sawBuilding := false
+	var endedAt time.Time // when the deployment left the building statuses with the version not listed
 	for {
 		agent, err := retryPoll(ctx, func(ctx context.Context) (*public.Agent, error) {
 			return a.client.GetAgent(ctx, a.projectID, agentID)
@@ -461,7 +483,8 @@ func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, 
 		if err != nil {
 			return nil, lostBuildError(tag, err)
 		}
-		switch versionStatus(versions, tag) {
+		version := versionStatus(versions, tag)
+		switch version {
 		case versionAvailable:
 			if err := a.writeBuildLog(ctx, agentID, tag, w); err != nil {
 				out.Warnf("Can't read the build log of version %s (%v): read it later with `lk agent logs --log-type=build`.", tag, err)
@@ -472,6 +495,19 @@ func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, 
 		}
 		if status == buildFailed {
 			return nil, a.buildFailedError(ctx, agentID, tag, w)
+		}
+		switch {
+		case slices.Contains(buildingStatuses, status):
+			sawBuilding = true
+			endedAt = time.Time{}
+		case !sawBuilding || version != "":
+		case endedAt.IsZero():
+			endedAt = time.Now()
+		case time.Since(endedAt) >= buildEndGrace:
+			return nil, fmt.Errorf("the build of version %s ended without making it: the deployment is no longer building (status %s), "+
+				"and version %s isn't listed. A newer deploy may have replaced this one, or the build stopped. "+
+				"Run `lk agent versions` to see the agent's versions, and `lk agent logs --log-type=build` "+
+				"for the build log of the version that the deployment runs", tag, statusName(status), tag)
 		}
 		select {
 		case <-ctx.Done():
