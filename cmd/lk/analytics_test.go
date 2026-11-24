@@ -268,7 +268,7 @@ func TestSessionListOptions(t *testing.T) {
 				"--limit", "25", "--cursor", "abc",
 				"--status", "active", "--status", "closed",
 				"--room", "demo-", "--tag", "a", "--tag", "b",
-				"--sort-order", "asc",
+				"--agent-id", "CA_abc", "--sort-order", "asc",
 			},
 			want: public.SessionListOptions{
 				Limit:      25,
@@ -276,8 +276,14 @@ func TestSessionListOptions(t *testing.T) {
 				Statuses:   []string{"active", "closed"},
 				RoomPrefix: "demo-",
 				Tags:       []string{"a", "b"},
+				AgentID:    "CA_abc",
 				SortOrder:  "asc",
 			},
+		},
+		{
+			name:    "agent name instead of an agent ID",
+			args:    []string{"--agent-id", "front-desk"},
+			wantErr: `invalid agent ID "front-desk"`,
 		},
 		{
 			name: "since counts back from now, to the second",
@@ -483,6 +489,7 @@ func TestAnalyticsListModeFlags(t *testing.T) {
 		{name: "status in API-key mode", args: []string{"--status", "active"}, wantErr: "--status is only supported with --user-auth"},
 		{name: "room in API-key mode", args: []string{"--room", "demo-"}, wantErr: "--room is only supported with --user-auth"},
 		{name: "tag in API-key mode", args: []string{"--tag", "a"}, wantErr: "--tag is only supported with --user-auth"},
+		{name: "agent ID in API-key mode", args: []string{"--agent-id", "CA_abc"}, wantErr: "--agent-id is only supported with --user-auth"},
 		{name: "sort order in API-key mode", args: []string{"--sort-order", "asc"}, wantErr: "--sort-order is only supported with --user-auth"},
 	}
 	for _, tt := range tests {

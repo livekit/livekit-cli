@@ -68,6 +68,11 @@ func TestListProjectSessionsQuery(t *testing.T) {
 			want: url.Values{"filter.roomName": {"demo-"}, "filter.tags": {"a", "b"}},
 		},
 		{
+			name: "agent ID",
+			opts: SessionListOptions{AgentID: "CA_abc"},
+			want: url.Values{"filter.agentId": {"CA_abc"}},
+		},
+		{
 			name: "sort order",
 			opts: SessionListOptions{SortOrder: "asc"},
 			want: url.Values{"sortOrder": {"SORT_ORDER_ASC"}},
