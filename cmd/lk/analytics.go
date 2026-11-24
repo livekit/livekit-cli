@@ -189,6 +189,9 @@ var (
 						},
 					},
 				},
+				analyticsLogsCommand,
+				analyticsLogPatternsCommand,
+				analyticsInsightsCommand,
 			},
 		},
 	}
@@ -1159,7 +1162,7 @@ func claimFreeName(path string) (string, error) {
 func sessionRecordingError(err error, projectID, sessionID, recording string) error {
 	label := render.RecordingLabel(recording)
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
-		return observabilityDisabledError(sessionID, label, dashboardURL)
+		return observabilityDisabledError("session "+sessionID, label, dashboardURL)
 	}
 	if public.IsNotFound(err) {
 		// The API answers an unknown session, or a mistyped --project, the same
@@ -1189,15 +1192,16 @@ func recordingNotYetError(sessionID, recording string, status *oapi.LivekitPubli
 	return exitError{fmt.Errorf("session %s has no %s yet: %s", sessionID, render.RecordingLabel(recording), why), exitTempFail}
 }
 
-// observabilityDisabledError says a session has nothing to read because the
-// project's user data recording is off, and where an admin turns it on.
-func observabilityDisabledError(sessionID, what, dashboardURL string) error {
+// observabilityDisabledError says a session or the project (subject) has
+// nothing to read because the project's user data recording is off, and where
+// an admin turns it on.
+func observabilityDisabledError(subject, what, dashboardURL string) error {
 	where := "in the project's settings on the LiveKit Cloud dashboard"
 	if dashboardURL != "" {
 		where = "at " + dashboardURL
 	}
-	return fmt.Errorf("session %s has no %s: user data recording is off for this project, so nothing was recorded. "+
-		"A project admin can turn it on %s; it records new sessions only", sessionID, what, where)
+	return fmt.Errorf("%s has no %s: user data recording is off for this project, so nothing was recorded. "+
+		"A project admin can turn it on %s; it records new sessions only", subject, what, where)
 }
 
 // pageOptions reads a session read's --limit and --cursor flags. A limit
@@ -1328,7 +1332,7 @@ func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID
 // is what the read requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
-		return observabilityDisabledError(sessionID, what, dashboardURL)
+		return observabilityDisabledError("session "+sessionID, what, dashboardURL)
 	}
 	if public.IsNotFound(err) {
 		return fmt.Errorf("no session %s in project %s (%w)", sessionID, projectID, err)
@@ -1347,16 +1351,23 @@ const (
 	projectAdminAccess
 )
 
-// sessionAPIError annotates a Public API error from a session read like
-// cloudAPIError, except a permission denial: cloudAPIError suggests API-key
-// credentials, which these Public-API-only reads can't use, so it says what
-// the read requires instead. what names what the read returns.
+// sessionAPIError annotates a Public API error from a session read as
+// readAPIError does. what names what the read returns.
 func sessionAPIError(err error, what string, access sessionReadAccess) error {
+	return readAPIError(err, "a session's "+what, access)
+}
+
+// readAPIError annotates a Public API error from a read like cloudAPIError,
+// except a permission denial: cloudAPIError suggests API-key credentials,
+// which these Public-API-only reads can't use, so it says what the read
+// requires instead. what names what the read returns, and whose, such as "a
+// session's transcript".
+func readAPIError(err error, what string, access sessionReadAccess) error {
 	if !public.IsPermissionDenied(err) {
 		return cloudAPIError(err)
 	}
 	if access == projectAdminAccess {
-		return fmt.Errorf("%w — reading a session's %s requires being a project admin", err, what)
+		return fmt.Errorf("%w — reading %s requires being a project admin", err, what)
 	}
 	return fmt.Errorf("%w — you don't have access to this project", err)
 }
