@@ -1228,7 +1228,10 @@ func restartAgent(ctx context.Context, cmd *cli.Command) error {
 		AgentId: agentID,
 	})
 	if err != nil {
-		return err
+		if twerr, ok := err.(twirp.Error); ok {
+			return fmt.Errorf("unable to restart agent: %s", twerr.Msg())
+		}
+		return fmt.Errorf("unable to restart agent: %w", err)
 	}
 	if !resp.Success {
 		return fmt.Errorf("failed to restart agent: %s", resp.Message)
