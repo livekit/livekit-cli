@@ -15,13 +15,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -45,10 +48,10 @@ import (
 // the Public API's AgentService, which checks the user's role on the project
 // itself, for the reads and writes it serves: the agents, their versions,
 // secret names and build logs, the project's client settings, and restart,
-// rollback, promote, delete and secret updates. It sends every other call,
-// such as create, deploy, a runtime log and private links, through the
-// bridge for now. A method moves to AgentService by calling a.client in
-// place of a.bridge.
+// rollback, promote, delete and secret updates, and create and deploy from
+// source. It sends every other call, such as a prebuilt image push, a
+// runtime log and private links, through the bridge for now. A method moves
+// to AgentService by calling a.client in place of a.bridge.
 
 // agentAPI is what the cloud agent commands call.
 type agentAPI interface {
@@ -271,9 +274,9 @@ type rewordedError struct {
 func (e *rewordedError) Error() string { return e.msg }
 func (e *rewordedError) Unwrap() error { return e.err }
 
-// secretFieldPattern matches a violation's field: set[i] or remove[i], then
-// the field of the secret in set, if any.
-var secretFieldPattern = regexp.MustCompile(`^(set|remove)\[(\d+)\](?:\.(\w+))?$`)
+// secretFieldPattern matches a violation's field: set[i] or secrets[i] (a
+// secret to set), or remove[i], then the field of the secret to set, if any.
+var secretFieldPattern = regexp.MustCompile(`^(set|secrets|remove)\[(\d+)\](?:\.(\w+))?$`)
 
 // secretViolation words v as "secret NAME: FIELD DESCRIPTION", such as
 // "secret 1KEY: name must have only letters, ...", or, for a field it
@@ -289,7 +292,7 @@ func secretViolation(v public.FieldViolation, set []*livekit.AgentSecret, remove
 		return asSent
 	}
 	switch {
-	case m[1] == "set" && m[3] != "" && i < len(set):
+	case m[1] != "remove" && m[3] != "" && i < len(set):
 		return fmt.Sprintf("secret %s: %s %s", set[i].GetName(), m[3], v.Description)
 	case m[1] == "remove" && m[3] == "" && i < len(remove):
 		return fmt.Sprintf("secret %s to remove: name %s", remove[i], v.Description)
@@ -356,13 +359,301 @@ func (a *userAuthAgentAPI) GetClientSettings(ctx context.Context, _ *livekit.Cli
 	return res, cloudAPIError(err)
 }
 
+// CreateAgent creates the agent in regions[0] through AgentService, then
+// deploys source to its production deployment as DeployAgentV2 does. A WRITE
+// member may create an agent; with secrets, AgentService needs a project
+// admin. The response has the agent's ID, and the server regions that lk
+// streams its runtime log from.
 func (a *userAuthAgentAPI) CreateAgent(ctx context.Context, source fs.FS, secrets []*livekit.AgentSecret, regions []string, attributes map[string]string, excludeFiles []string, buildLog io.Writer) (*livekit.CreateAgentResponse, error) {
-	res, err := a.bridge.CreateAgent(ctx, source, secrets, regions, attributes, excludeFiles, buildLog)
-	return res, bridgeError(err)
+	if len(regions) != 1 {
+		return nil, fmt.Errorf("an agent is created in one region, not %d", len(regions))
+	}
+	agentID, err := a.client.CreateAgent(ctx, a.projectID, regions[0], secrets)
+	if err != nil {
+		return nil, deployError(err, "", secrets)
+	}
+	info, err := a.deploy(ctx, agentID, source, nil, attributes, "", excludeFiles, buildLog)
+	if err != nil {
+		return nil, &agentCreatedError{agentID: agentID, err: err}
+	}
+	return &livekit.CreateAgentResponse{AgentId: agentID, ServerRegions: serverRegions(info, "")}, nil
 }
 
+// agentCreatedError is err, which stopped CreateAgent after it created the
+// agent agentID.
+type agentCreatedError struct {
+	agentID string
+	err     error
+}
+
+func (e *agentCreatedError) Error() string {
+	return fmt.Sprintf("created agent %s, but %v", e.agentID, e.err)
+}
+
+func (e *agentCreatedError) Unwrap() error { return e.err }
+
+// DeployAgentV2 deploys source to the agent's deployment, production when
+// "", through AgentService, which a WRITE member may call; with secrets, it
+// needs a project admin.
 func (a *userAuthAgentAPI) DeployAgentV2(ctx context.Context, agentID string, source fs.FS, secrets []*livekit.AgentSecret, attributes map[string]string, deployment string, excludeFiles []string, buildLog io.Writer) error {
-	return bridgeError(a.bridge.DeployAgentV2(ctx, agentID, source, secrets, attributes, deployment, excludeFiles, buildLog))
+	_, err := a.deploy(ctx, agentID, source, secrets, attributes, deployment, excludeFiles, buildLog)
+	return err
+}
+
+// deploy deploys source to deployment of the agent agentID, as cloud
+// agents' DeployAgentV2 does: it sets secrets and starts the deploy with
+// DeployAgent, uploads source as a tarball without excludeFiles, starts the
+// build with StartAgentBuild, and follows it with awaitBuild. It returns the
+// agent once the build succeeds.
+func (a *userAuthAgentAPI) deploy(ctx context.Context, agentID string, source fs.FS, secrets []*livekit.AgentSecret, attributes map[string]string, deployment string, excludeFiles []string, w io.Writer) (*livekit.AgentInfo, error) {
+	d, err := a.client.DeployAgent(ctx, a.projectID, agentID, deployment, secrets)
+	if err != nil {
+		return nil, deployError(err, agentID, secrets)
+	}
+	var tarball bytes.Buffer
+	if err := cloudagents.CreateSourceTarball(source, excludeFiles, &tarball); err != nil {
+		return nil, fmt.Errorf("failed to sanitize source: %w", err)
+	}
+	if err := cloudagents.MultipartUpload(d.UploadURL, d.UploadFields, &tarball); err != nil {
+		return nil, fmt.Errorf("multipart upload failed: %w", err)
+	}
+	// lk reads a canceled ctx as a build that continues on LiveKit Cloud,
+	// which isn't so before StartAgentBuild. DeployAgent has already set the
+	// secrets, and cloud agents shows production as Building from then.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("interrupted before the build started: no version was built or deployed, "+
+			"but the secrets this deploy sent are set, and the agent's status may show Building (%v)", err)
+	}
+	if err := a.client.StartAgentBuild(ctx, a.projectID, agentID, deployment, d.Tag, attributes); err != nil {
+		return nil, agentServiceError(err, projectWriter)
+	}
+	return a.awaitBuild(ctx, agentID, deployment, d.Tag, w)
+}
+
+// buildPollInterval is how often awaitBuild reads the status of a build.
+var buildPollInterval = 5 * time.Second
+
+// The statuses of a version that cloud agents lists once its build ends.
+const (
+	versionAvailable = "Available"
+	versionFailed    = "Failed"
+)
+
+// buildFailed is the status of a deployment whose build failed, as cloud
+// agents lists it.
+const buildFailed = "Build Failed"
+
+// buildingStatuses are the statuses that cloud agents lists for a
+// deployment while it sets up, builds or schedules a version.
+var buildingStatuses = []string{"Setting Up", "Building", "Scheduling"}
+
+// buildEndGrace is how long awaitBuild waits for the version to be listed
+// once the deployment has left buildingStatuses, before it decides that the
+// build ended without making the version.
+var buildEndGrace = time.Minute
+
+// statusName is status, or "none" for "".
+func statusName(status string) string {
+	if status == "" {
+		return "none"
+	}
+	return status
+}
+
+// awaitBuild follows the build of the version tag that StartAgentBuild
+// started for deployment of the agent agentID. Every buildPollInterval it
+// reads the agent and its versions, and writes each new status of the
+// deployment to w. A read that fails transiently is made again a few times
+// (see retryPoll) before awaitBuild gives up on following the build. Once
+// the version is available or failed, it writes the version's build log to
+// w, and returns the agent, or an error when the build failed. When the
+// deployment leaves the building statuses and the version is still not
+// listed buildEndGrace later, the build ended without making the version,
+// and awaitBuild returns an error that says so. When ctx is done first, it
+// returns ctx's error: the build continues on LiveKit Cloud.
+func (a *userAuthAgentAPI) awaitBuild(ctx context.Context, agentID, deployment, tag string, w io.Writer) (*livekit.AgentInfo, error) {
+	fmt.Fprintf(w, "Building version %s. This deploy continues even if you disconnect.\n", tag)
+	ticker := time.NewTicker(buildPollInterval)
+	defer ticker.Stop()
+	last := ""
+	sawBuilding := false
+	var endedAt time.Time // when the deployment left the building statuses with the version not listed
+	for {
+		agent, err := retryPoll(ctx, func(ctx context.Context) (*public.Agent, error) {
+			return a.client.GetAgent(ctx, a.projectID, agentID)
+		})
+		if err != nil {
+			return nil, lostBuildError(tag, err)
+		}
+		status := deploymentStatus(agent.Info, deployment)
+		if status != "" && status != last {
+			fmt.Fprintf(w, "Status: %s\n", status)
+			last = status
+		}
+		versions, err := retryPoll(ctx, func(ctx context.Context) ([]*livekit.AgentVersion, error) {
+			return a.client.ListAgentVersions(ctx, a.projectID, agentID)
+		})
+		if err != nil {
+			return nil, lostBuildError(tag, err)
+		}
+		version := versionStatus(versions, tag)
+		switch version {
+		case versionAvailable:
+			if err := a.writeBuildLog(ctx, agentID, tag, w); err != nil {
+				out.Warnf("Can't read the build log of version %s (%v): read it later with `lk agent logs --log-type=build`.", tag, err)
+			}
+			return agent.Info, nil
+		case versionFailed:
+			return nil, a.buildFailedError(ctx, agentID, tag, w)
+		}
+		if status == buildFailed {
+			return nil, a.buildFailedError(ctx, agentID, tag, w)
+		}
+		switch {
+		case slices.Contains(buildingStatuses, status):
+			sawBuilding = true
+			endedAt = time.Time{}
+		case !sawBuilding || version != "":
+		case endedAt.IsZero():
+			endedAt = time.Now()
+		case time.Since(endedAt) >= buildEndGrace:
+			return nil, fmt.Errorf("the build of version %s ended without making it: the deployment is no longer building (status %s), "+
+				"and version %s isn't listed. A newer deploy may have replaced this one, or the build stopped. "+
+				"Run `lk agent versions` to see the agent's versions, and `lk agent logs --log-type=build` "+
+				"for the build log of the version that the deployment runs", tag, statusName(status), tag)
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+		}
+	}
+}
+
+// pollAttempts is how many times awaitBuild makes a read that fails
+// transiently before it gives up on following the build.
+const pollAttempts = 4
+
+// pollRetryBackoff is how long awaitBuild waits before it makes a read that
+// failed transiently again. It doubles for each next attempt.
+var pollRetryBackoff = time.Second
+
+// retryPoll returns read(ctx), made again after a backoff while it fails
+// transiently (see transientPollError), up to pollAttempts times in all.
+func retryPoll[T any](ctx context.Context, read func(context.Context) (T, error)) (T, error) {
+	backoff := pollRetryBackoff
+	for attempt := 1; ; attempt++ {
+		v, err := read(ctx)
+		if err == nil || attempt == pollAttempts || !transientPollError(err) {
+			return v, err
+		}
+		select {
+		case <-ctx.Done():
+			return v, ctx.Err()
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+	}
+}
+
+// transientPollError reports whether err, from a read of the Public API,
+// can pass when the read is made again: the API answered 429 or a 5xx, or
+// lk got no answer. Any other refusal, such as a 401 or a 403, stays as it
+// is, and so does the error of a done ctx.
+func transientPollError(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	var refused *public.APIError
+	if errors.As(err, &refused) {
+		return refused.Status == http.StatusTooManyRequests || refused.Status >= http.StatusInternalServerError
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr)
+}
+
+// buildFailedError writes the build log of the version tag, whose build
+// failed, to w, and returns the error that says so.
+func (a *userAuthAgentAPI) buildFailedError(ctx context.Context, agentID, tag string, w io.Writer) error {
+	if err := a.writeBuildLog(ctx, agentID, tag, w); err != nil {
+		return fmt.Errorf("the build of version %s failed, and its build log can't be read: %w", tag, err)
+	}
+	return fmt.Errorf("the build of version %s failed: its build log is above", tag)
+}
+
+// lostBuildError is err, which stopped awaitBuild from reading the build of
+// the version tag, worded to say that the build continues. A done ctx's
+// error stays as it is, which lk reads as a disconnect.
+func lostBuildError(tag string, err error) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	return fmt.Errorf("can't follow the build of version %s, which continues on LiveKit Cloud: "+
+		"run `lk agent status` to follow it (%w)", tag, cloudAPIError(err))
+}
+
+// deploymentStatus is the status of deployment ("" for production) of the
+// agent info, as its first region lists it, or "" when it lists none.
+func deploymentStatus(info *livekit.AgentInfo, deployment string) string {
+	name := deploymentName(deployment)
+	for _, d := range info.GetAgentDeployments() {
+		if deploymentName(d.GetDeployment()) == name && d.GetStatus() != "" {
+			return d.GetStatus()
+		}
+	}
+	return ""
+}
+
+// versionStatus is the status of the version named version in versions, as
+// versionAvailable or versionFailed spell it when it is one of them, or ""
+// when versions doesn't have it.
+func versionStatus(versions []*livekit.AgentVersion, version string) string {
+	for _, v := range versions {
+		if v.GetVersion() != version {
+			continue
+		}
+		for _, s := range []string{versionAvailable, versionFailed} {
+			if strings.EqualFold(v.GetStatus(), s) {
+				return s
+			}
+		}
+		return v.GetStatus()
+	}
+	return ""
+}
+
+// serverRegions is the server region of each region of deployment ("" for
+// production) of the agent info, once each.
+func serverRegions(info *livekit.AgentInfo, deployment string) []string {
+	var regions []string
+	name := deploymentName(deployment)
+	for _, d := range info.GetAgentDeployments() {
+		if deploymentName(d.GetDeployment()) == name && d.GetServerRegion() != "" && !slices.Contains(regions, d.GetServerRegion()) {
+			regions = append(regions, d.GetServerRegion())
+		}
+	}
+	return regions
+}
+
+// deployError is err from CreateAgent or DeployAgent, worded as
+// agentServiceError words it for a WRITE member, except for refusals of
+// secrets: invalid ones get a line each, by name, and a member below admin
+// hears that a writer may deploy without secrets. A deploy of agentID, an
+// Agent Builder agent, points at Agent Builder.
+func deployError(err error, agentID string, secrets []*livekit.AgentSecret) error {
+	if violations := public.FieldViolations(err); len(violations) > 0 {
+		return secretsError(err, violations, secrets, nil)
+	}
+	if agentID != "" && public.IsAgentBuilderAgent(err) {
+		return fmt.Errorf("agent %s is an Agent Builder agent: deploy it in Agent Builder, in the LiveKit Cloud dashboard (%w)", agentID, err)
+	}
+	var refused *public.APIError
+	if len(secrets) > 0 && errors.As(err, &refused) && public.IsPermissionDenied(refused) && strings.HasPrefix(refused.Message, lacksRolePrefix) {
+		return needsError(refused, projectAdmin, "Write access to the project is enough without secrets "+
+			"(from --secrets, --secrets-file, --secret-mount or an env file): a project admin can set them with `lk agent update-secrets`. "+
+			"A project API key also works: re-run without --user-auth")
+	}
+	return agentServiceError(err, projectWriter)
 }
 
 // RegisterAgent, GetPushTarget and NewRegistryTransport stay on the bridge:
@@ -397,6 +688,12 @@ func (a *userAuthAgentAPI) StreamLogs(ctx context.Context, logType, agentID, dep
 	if version == "" {
 		return fmt.Errorf("no version deployed to the %s deployment of agent %s", deploymentName(deployment), agentID)
 	}
+	return a.writeBuildLog(ctx, agentID, version, w)
+}
+
+// writeBuildLog writes the build log of version of the agent agentID to w,
+// through AgentService, which a READ member may call.
+func (a *userAuthAgentAPI) writeBuildLog(ctx context.Context, agentID, version string, w io.Writer) error {
 	log, err := a.client.GetAgentBuildLog(ctx, a.projectID, agentID, version)
 	if err != nil {
 		return cloudAPIError(err)
@@ -413,6 +710,20 @@ func (a *userAuthAgentAPI) StreamLogs(ctx context.Context, logType, agentID, dep
 		out.Warnf("The build log of version %s is too long to show in full: this is its end.", version)
 	}
 	return nil
+}
+
+// tailCreatedAgentLogs writes the runtime log of the agent agentID, which
+// create just created, to w. Under --user-auth a runtime log goes through
+// the token bridge, which needs a project admin; the agent is created all
+// the same, so the bridge's refusal is a warning, not an error.
+func tailCreatedAgentLogs(ctx context.Context, api agentAPI, agentID, serverRegion string, w io.Writer) error {
+	err := api.StreamLogs(ctx, "deploy", agentID, "", w, serverRegion)
+	if _, userAuth := api.(*userAuthAgentAPI); userAuth && public.IsPermissionDenied(err) {
+		out.Warnf("Signed in with --user-auth, runtime logs need a project admin: a project admin can read them with `lk agent logs`, " +
+			"and so can a project API key, without --user-auth.")
+		return nil
+	}
+	return err
 }
 
 // buildLogType is the log type of a build log, as --log-type names it.

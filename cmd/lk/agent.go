@@ -785,6 +785,21 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, attrs, excludeFiles, os.Stderr)
 	if err != nil {
+		// Under --user-auth, CreateAgent can fail after it created the agent.
+		// Save its ID then, as the --image path does once it registers the
+		// agent, so that `lk agent deploy` and `lk agent status` find it.
+		var created *agentCreatedError
+		if errors.As(err, &created) {
+			lkConfig.Agent.ID = created.agentID
+			if saveErr := lkConfig.SaveTOMLFile(workingDir, tomlFilename); saveErr != nil {
+				return errors.Join(fmt.Errorf("unable to create agent: %w", err), saveErr)
+			}
+			out.Statusf("Created agent with ID [%s]", util.Accented(created.agentID))
+		}
+		if errors.Is(err, context.Canceled) && created != nil {
+			out.Status("Disconnected. The build continues on the server; run `lk agent status` to check.")
+			return nil
+		}
 		if errors.Is(err, context.Canceled) {
 			// The client disconnected (Ctrl-C). The agent is registered and its build runs
 			// to completion on the server, so this is not a failure. The agent ID was not
@@ -827,7 +842,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				return fmt.Errorf("agent [%s] was created, but no region was returned to stream its logs from; view them with `lk agent logs`", resp.AgentId)
 			}
 			out.Status("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
+			return tailCreatedAgentLogs(ctx, agentsClient, lkConfig.Agent.ID, resp.ServerRegions[0], os.Stdout)
 		}
 	}
 	return nil
