@@ -469,6 +469,7 @@ lk agent console                         # the project in the current directory,
 lk agent console src/my_agent.py         # an explicit entrypoint
 lk agent console agent.ts -- --env-file=.env   # arguments after -- go to node/python
 lk agent console --text                  # start typing instead of talking; STT/TTS stay off
+lk agent console --web                   # use a local browser for microphone, speakers, and transcript
 ```
 
 Keys while it runs: `m` mutes the microphone, `ctrl+t` switches between voice and text mode, `?` lists shortcuts, and `q` quits (`ctrl+c` in text mode). In text mode you type a turn and press enter; only your LLM and tools run, so it is the cheapest way to check conversational logic by hand.
@@ -479,7 +480,9 @@ Useful options:
 -   `--no-aec` turns off acoustic echo cancellation if you are on headphones and want the raw signal.
 -   `--record` saves the audio and a session report under `console-recordings/`.
 
-Console needs a terminal. If a program rather than a person is going to hold the conversation, use the agent debugger below.
+With `--web`, the CLI serves one browser tab on this computer without joining a LiveKit room. Click **Start talking** and allow microphone access, or use `--web --text` to start typing without the mic. An agent may still synthesize its initial greeting before it accepts text-mode controls. Use `--web --no-open` to print the URL without launching the browser. Select audio devices in your browser for web mode. On Windows, use the terminal console and Ctrl+C for `--record`; closing the browser cannot reliably finalize the recording.
+
+If a program rather than a person is going to hold the conversation, use the agent debugger below.
 
 ## Agent debugger
 

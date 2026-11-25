@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	SampleRate      = 48000
-	Channels        = 1
 	FrameDurationMs = 30
 	SamplesPerFrame = SampleRate * FrameDurationMs / 1000 // 1440
 	APMFrameSamples = SampleRate / 100                    // 480 (10ms)

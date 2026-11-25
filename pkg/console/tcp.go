@@ -11,6 +11,12 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
+// Console audio is 48 kHz mono PCM in both directions.
+const (
+	SampleRate = 48000
+	Channels   = 1
+)
+
 type TCPServer struct {
 	listener *ipc.Listener
 	conn     net.Conn

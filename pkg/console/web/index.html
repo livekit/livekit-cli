@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>lk-web</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body data-text-mode="{{.}}">
+  <header class="top">
+    <span class="dot" id="dot"></span>
+    <span class="name">lk-web</span>
+    <span id="status" role="status">starting</span>
+    <span class="you-speaking" id="youspeaking" hidden>you're speaking</span>
+  </header>
+
+  <main class="stage">
+    <canvas id="viz" aria-hidden="true"></canvas>
+    <div class="state" id="state"></div>
+    <div id="caption" dir="auto" aria-live="polite"></div>
+    <div class="welcome" id="welcome">
+      <h1>Talk to your agent</h1>
+      <p id="welcometext">Your agent is starting up.</p>
+      <button class="primary" id="start" hidden>Start talking</button>
+      <button class="secondary" id="start-text" hidden>Use typing instead</button>
+    </div>
+    <p class="error" id="error" role="alert" hidden></p>
+  </main>
+
+  <section class="dock" id="session" aria-label="Agent session" hidden>
+    <form class="composer" id="composer" hidden>
+      <input id="message" aria-label="Message" placeholder="Type to talk to your agent" dir="auto" maxlength="1000" autocomplete="off" required>
+      <button id="send">Send</button>
+    </form>
+    <div class="bar" id="controls">
+      <button class="ib" id="mute" aria-label="Mute microphone" aria-pressed="false" title="Mute microphone">
+        <span class="lvl" id="lvl"></span>
+        <svg id="micicon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/><path id="mute-slash" d="M3 3l18 18"/>
+        </svg>
+      </button>
+      <button class="ib" id="mode" aria-label="Switch to typing" title="Switch to typing">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>
+      </button>
+      <button class="ib" id="chat" aria-label="Open conversation" aria-expanded="false" title="Conversation and logs">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>
+      </button>
+      <button class="end" id="end" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 14.5c5-4.5 12-4.5 17 0l-2 2.5-3-1.5-1-2.2a15 15 0 0 0-6 0l-1 2.2-3 1.5z"/></svg>
+        End
+      </button>
+    </div>
+  </section>
+
+  <aside class="drawer" id="drawer" aria-label="Conversation and logs" inert>
+    <div class="tabs" role="tablist" aria-label="Session details">
+      <button class="tab" role="tab" id="tab-chat" aria-controls="transcript" aria-selected="true">Conversation</button>
+      <button class="tab" role="tab" id="tab-logs" aria-controls="logs" aria-selected="false">Agent logs</button>
+      <button class="ib close" id="closedrawer" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <ol class="pane" id="transcript" role="log" aria-label="Conversation"></ol>
+    <div class="pane" id="logs" hidden><pre id="agentlog"></pre></div>
+  </aside>
+
+  <div class="ended" id="ended" hidden>
+    <div><h2 id="endedtitle">Session ended</h2><p id="endedtext">You can close this tab.</p></div>
+  </div>
+</body>
+</html>
