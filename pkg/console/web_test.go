@@ -19,10 +19,11 @@ import (
 const webTestTimeout = 3 * time.Second
 
 type webTestSession struct {
-	page   *url.URL
-	agent  net.Conn
-	done   chan error
-	cancel context.CancelFunc
+	page      *url.URL
+	agent     net.Conn
+	done      chan error
+	cancel    context.CancelFunc
+	initialIO *agent.SessionRequest_UpdateIO
 }
 
 func startWebTest(t *testing.T, textMode bool) webTestSession {
@@ -45,11 +46,18 @@ func startWebTest(t *testing.T, textMode bool) webTestSession {
 			t.Error("web server did not stop")
 		}
 	})
+	s := webTestSession{agent: fakeAgent, done: done, cancel: cancel}
+	if textMode {
+		// The fake TCP agent must be able to read the request before the URL
+		// is even printed, not just before the browser sends a typed turn.
+		s.initialIO = s.readAgent(t).GetRequest().GetUpdateIo()
+	}
 	select {
 	case address := <-ready:
 		page, err := url.Parse(address)
 		require.NoError(t, err)
-		return webTestSession{page: page, agent: fakeAgent, done: done, cancel: cancel}
+		s.page = page
+		return s
 	case err := <-done:
 		t.Fatalf("web server exited before listening: %v", err)
 	case <-time.After(webTestTimeout):
@@ -151,7 +159,7 @@ func TestWebConsoleText(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(page), `data-text-mode="true"`)
 	ws := s.dial(t, s.origin(), s.key(), http.StatusSwitchingProtocols)
-	update := s.readAgent(t).GetRequest().GetUpdateIo()
+	update := s.initialIO
 	require.NotNil(t, update)
 	require.NotNil(t, update.Input.AudioEnabled)
 	require.False(t, update.Input.GetAudioEnabled())
@@ -253,5 +261,21 @@ func TestWebConsoleCancellation(t *testing.T) {
 		require.ErrorIs(t, err, context.Canceled)
 	case <-time.After(webTestTimeout):
 		t.Fatal("canceling did not end the session")
+	}
+}
+
+func TestWebConsoleAgentDisconnect(t *testing.T) {
+	s := startWebTest(t, false)
+	ws := s.dial(t, s.origin(), s.key(), http.StatusSwitchingProtocols)
+	require.NoError(t, s.agent.Close())
+	require.NoError(t, ws.SetReadDeadline(time.Now().Add(webTestTimeout)))
+	_, _, err := ws.ReadMessage()
+	require.Error(t, err)
+	select {
+	case err := <-s.done:
+		require.ErrorIs(t, err, ErrWebAgentDisconnected)
+		require.ErrorIs(t, err, io.EOF)
+	case <-time.After(webTestTimeout):
+		t.Fatal("losing the agent did not end the session")
 	}
 }

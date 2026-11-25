@@ -29,10 +29,26 @@ var webIndex = template.Must(template.ParseFS(webAssets, "web/index.html"))
 
 const webWriteTimeout = 5 * time.Second
 
+// ErrWebAgentDisconnected distinguishes loss of the agent stream from a tab
+// closing. The caller can wait for the agent's process status and log tail.
+var ErrWebAgentDisconnected = errors.New("agent connection closed")
+
 // RunWeb serves a single browser session on loopback. It owns conn and doesn't
 // read from it until the tab connects, so the opening greeting isn't discarded.
 func RunWeb(ctx context.Context, conn net.Conn, textMode bool, onListen func(string), recentLogs func() []string) error {
 	defer conn.Close()
+	stop := context.AfterFunc(ctx, func() { conn.Close() })
+	defer stop()
+	if textMode {
+		// Queue the request as soon as the agent connects, without waiting for
+		// a tab. SDKs can still run their opening greeting before accepting TCP.
+		if err := writeWebAgentMessage(conn, webAudioRequest("initial-io", false)); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return err
+		}
+	}
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		return fmt.Errorf("browser console: %w", err)
@@ -67,7 +83,7 @@ func RunWeb(ctx context.Context, conn net.Conn, textMode bool, onListen func(str
 			connected.Store(false)
 			return
 		}
-		tabDone <- exchangeWebMessages(ctx, ws, conn, textMode || r.URL.Query().Get("text") == "1")
+		tabDone <- exchangeWebMessages(ctx, ws, conn, textMode, !textMode && r.URL.Query().Get("text") == "1")
 	})
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		if !webKeyMatches(r, key) {
@@ -122,28 +138,28 @@ func webKeyMatches(r *http.Request, key string) bool {
 	return subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("k")), []byte(key)) == 1
 }
 
-func exchangeWebMessages(ctx context.Context, ws *websocket.Conn, conn net.Conn, textMode bool) error {
+func exchangeWebMessages(ctx context.Context, ws *websocket.Conn, conn net.Conn, textMode, typingFallback bool) error {
 	defer ws.Close()
-	stop := context.AfterFunc(ctx, func() {
-		ws.Close()
-		conn.Close()
-	})
+	stop := context.AfterFunc(ctx, func() { ws.Close() })
 	defer stop()
 	ws.SetReadLimit(1 << 20)
-	if textMode {
+	if typingFallback {
 		if err := writeWebAgentMessage(conn, webAudioRequest("initial-io", false)); err != nil {
 			return err
 		}
 	}
 	errs := make(chan error, 2)
 	go func() { errs <- webAgentToBrowser(ws, conn) }()
-	go func() { errs <- webBrowserToAgent(ws, conn, textMode) }()
+	go func() { errs <- webBrowserToAgent(ws, conn, textMode || typingFallback) }()
 	err := <-errs
 	ws.Close()
 	conn.Close()
 	<-errs // wait for the other relay, which may have been blocked on I/O
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+	if errors.Is(err, ErrWebAgentDisconnected) {
+		return err
 	}
 	if errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
 		return nil
@@ -163,7 +179,7 @@ func webAgentToBrowser(ws *websocket.Conn, conn net.Conn) error {
 	for {
 		msg, err := ReadSessionMessage(conn)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: %w", ErrWebAgentDisconnected, err)
 		}
 		_ = ws.SetWriteDeadline(time.Now().Add(webWriteTimeout))
 		if !ready {
@@ -255,7 +271,10 @@ func webBrowserToAgent(ws *websocket.Conn, conn net.Conn, textMode bool) error {
 
 func writeWebAgentMessage(conn net.Conn, msg *agent.AgentSessionMessage) error {
 	_ = conn.SetWriteDeadline(time.Now().Add(webWriteTimeout))
-	return WriteSessionMessage(conn, msg)
+	if err := WriteSessionMessage(conn, msg); err != nil {
+		return fmt.Errorf("%w: %w", ErrWebAgentDisconnected, err)
+	}
+	return nil
 }
 
 func webRequest(req *agent.SessionRequest) *agent.AgentSessionMessage {

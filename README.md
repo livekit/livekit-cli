@@ -480,7 +480,7 @@ Useful options:
 -   `--no-aec` turns off acoustic echo cancellation if you are on headphones and want the raw signal.
 -   `--record` saves the audio and a session report under `console-recordings/`.
 
-With `--web`, the CLI serves one browser tab on this computer without joining a LiveKit room. Click **Start talking** and allow microphone access, or use `--web --text` to start typing without the mic. Use `--web --no-open` to print the URL without launching the browser. Both interfaces accept `--record`; select audio devices in your browser for web mode.
+With `--web`, the CLI serves one browser tab on this computer without joining a LiveKit room. Click **Start talking** and allow microphone access, or use `--web --text` to start typing without the mic. An agent may still synthesize its initial greeting before it accepts text-mode controls. Use `--web --no-open` to print the URL without launching the browser. Select audio devices in your browser for web mode. On Windows, use the terminal console and Ctrl+C for `--record`; closing the browser cannot reliably finalize the recording.
 
 If a program rather than a person is going to hold the conversation, use the agent debugger below.
 

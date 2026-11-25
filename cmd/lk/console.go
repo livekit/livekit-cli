@@ -16,11 +16,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -67,8 +69,10 @@ default entrypoint, or the file you name:
    lk agent console agent.ts -- --env-file=.env   # args after -- go to node/python
 
 Use --web to talk from a browser tab on this computer instead of the terminal.
-Use --web --text to start without microphone access. For scripts and coding
-agents that drive a conversation one turn at a time, use "lk agent debugger".
+Use --web --text to start without microphone access. The agent may synthesize
+an opening greeting before it accepts text-mode controls. Browser recording
+is not supported on Windows. For scripts and coding agents that drive a
+conversation one turn at a time, use "lk agent debugger".
 
 ` + consoleCredentialsHelp,
 	// Hide the implicit `help` subcommand so shell completion falls back to
@@ -125,6 +129,9 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("--no-open requires --web")
 	}
 	if webMode {
+		if runtime.GOOS == "windows" && cmd.Bool("record") {
+			return fmt.Errorf("--web --record is not supported on Windows: closing the browser cannot reliably finalize the agent recording; use the terminal console and Ctrl+C")
+		}
 		for _, flag := range []string{"input-device", "output-device", "list-devices", "no-aec"} {
 			if cmd.IsSet(flag) {
 				return fmt.Errorf("--%s is not supported with --web; configure audio in your browser", flag)
@@ -326,10 +333,7 @@ func runBrowserConsole(ctx context.Context, conn net.Conn, agentProc *AgentProce
 	case err := <-agentProc.Done():
 		cancel()
 		<-webDone
-		if err != nil {
-			return fmt.Errorf("agent exited: %w\n\n%s", err, agentExitDetail(agentProc))
-		}
-		return nil
+		return browserAgentError(agentProc, err)
 	case <-agentProc.Failed():
 		cancel()
 		<-webDone
@@ -338,6 +342,22 @@ func runBrowserConsole(ctx context.Context, conn net.Conn, agentProc *AgentProce
 		cancel()
 		<-webDone
 	case err := <-webDone:
+		if errors.Is(err, console.ErrWebAgentDisconnected) && ctx.Err() == nil {
+			// TCP can close before startAgent finishes draining the process's
+			// logs. Don't signal it first: let its original exit status arrive.
+			err = waitBrowserAgentExit(agentProc.Done(), agentProc.Failed(), agentOutputDrainTimeout+time.Second)
+			if errors.Is(err, errBrowserAgentExitTimeout) {
+				// A session can close its transport without exiting the worker.
+				// Give it a chance to finish cleanup before the Kill fallback.
+				agentProc.Shutdown()
+				exitErr := waitBrowserAgentExit(agentProc.Done(), agentProc.Failed(), 5*time.Second)
+				if exitErr != nil && !errors.Is(exitErr, errBrowserAgentExitTimeout) {
+					return browserAgentError(agentProc, exitErr)
+				}
+				err = fmt.Errorf("agent disconnected without exiting: %w", err)
+			}
+			return browserAgentError(agentProc, err)
+		}
 		if err != nil && ctx.Err() == nil {
 			return err
 		}
@@ -346,11 +366,20 @@ func runBrowserConsole(ctx context.Context, conn net.Conn, agentProc *AgentProce
 	// Give the agent the same grace period as the terminal console so it can
 	// finish its session report before the outer Kill fallback.
 	agentProc.Shutdown()
-	select {
-	case <-agentProc.Done():
-	case <-time.After(5 * time.Second):
+	err := waitBrowserAgentExit(agentProc.Done(), agentProc.Failed(), 5*time.Second)
+	if runtime.GOOS == "windows" && errors.Is(err, errBrowserAgentExitTimeout) {
+		// No recording can be requested in this mode, and the existing
+		// Windows process helper cannot deliver a graceful interrupt.
+		return nil
 	}
-	return nil
+	return browserAgentError(agentProc, err)
+}
+
+func browserAgentError(agentProc *AgentProcess, err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("agent: %w\n\n%s", err, agentExitDetail(agentProc))
 }
 
 func listDevices() error {
