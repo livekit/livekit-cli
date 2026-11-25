@@ -1,13 +1,20 @@
 [
   {
-    "message": "LiveKit Cloud API (beta): your coding agent can now read your sessions' transcripts, logs and traces. Sign in with lk cloud auth --user-auth to try it. Docs: https://docs.livekit.io/intro/basics/cli/#improve",
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Your coding agent can set them up, through lk and the LiveKit MCP. Docs: https://docs.livekit.io/testing/evals/",
+    "versions": ">= 2.19.5",
+    "audiences": [
+      "user-auth"
+    ]
+  },
+  {
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Sign in with lk cloud auth --user-auth so your coding agent can use them too. Docs: https://docs.livekit.io/testing/evals/",
     "versions": ">= 2.19.5",
     "audiences": [
       "signed-out"
     ]
   },
   {
-    "message": "LiveKit Cloud API (beta): your coding agent can now read your sessions' transcripts, logs and traces. Update lk to try it. Docs: https://docs.livekit.io/intro/basics/cli/#improve",
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Update lk so your coding agent can use them too. Docs: https://docs.livekit.io/testing/evals/",
     "versions": "< 2.19.5"
   }
 ]
