@@ -27,6 +27,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/console"
@@ -65,8 +66,9 @@ default entrypoint, or the file you name:
    lk agent console src/my_agent.py
    lk agent console agent.ts -- --env-file=.env   # args after -- go to node/python
 
-Console needs a terminal. For scripts and coding agents that drive a
-conversation one command at a time, use "lk agent debugger" instead.
+Use --web to talk from a browser tab on this computer instead of the terminal.
+Use --web --text to start without microphone access. For scripts and coding
+agents that drive a conversation one turn at a time, use "lk agent debugger".
 
 ` + consoleCredentialsHelp,
 	// Hide the implicit `help` subcommand so shell completion falls back to
@@ -104,15 +106,34 @@ conversation one command at a time, use "lk agent debugger" instead.
 			Name:  "record",
 			Usage: "Record audio and a session report to console-recordings/.",
 		},
+		&cli.BoolFlag{
+			Name:  "web",
+			Usage: "Use a local browser tab instead of the terminal console.",
+		},
+		&cli.BoolFlag{
+			Name:  "no-open",
+			Usage: "Print the browser console URL without opening it (with --web).",
+		},
 	},
 	Action: runConsole,
 }
 
 func runConsole(ctx context.Context, cmd *cli.Command) error {
 	textMode := cmd.Bool("text")
+	webMode := cmd.Bool("web")
+	if !webMode && cmd.Bool("no-open") {
+		return fmt.Errorf("--no-open requires --web")
+	}
+	if webMode {
+		for _, flag := range []string{"input-device", "output-device", "list-devices", "no-aec"} {
+			if cmd.IsSet(flag) {
+				return fmt.Errorf("--%s is not supported with --web; configure audio in your browser", flag)
+			}
+		}
+	}
 
 	var inputDev, outputDev *portaudio.DeviceInfo
-	if !textMode {
+	if !textMode && !webMode {
 		if err := portaudio.Initialize(); err != nil {
 			return fmt.Errorf("failed to initialize PortAudio: %w", err)
 		}
@@ -190,8 +211,10 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	}
 	defer agentProc.Kill()
 
-	// Stream agent logs to the TUI
-	agentProc.LogStream = make(chan string, 1024)
+	if !webMode {
+		// Stream agent logs to the TUI.
+		agentProc.LogStream = make(chan string, 1024)
+	}
 
 	// Wait for TCP connection, agent crash, timeout, or cancellation
 	type acceptResult struct {
@@ -230,6 +253,10 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		stopSpinner()
 		return ctx.Err()
 	}
+	if webMode {
+		return runBrowserConsole(ctx, conn, agentProc, textMode, cmd.Bool("no-open"))
+	}
+
 	pipeline, err := console.NewPipeline(console.PipelineConfig{
 		InputDevice:  inputDev,
 		OutputDevice: outputDev,
@@ -269,6 +296,60 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	return nil
+}
+
+func runBrowserConsole(ctx context.Context, conn net.Conn, agentProc *AgentProcess, textMode, noOpen bool) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	out.Statusf("Agent logs: %s", agentProc.LogPath)
+	webDone := make(chan error, 1)
+	go func() {
+		webDone <- console.RunWeb(ctx, conn, textMode, func(url string) {
+			out.Resultf("Open the local agent console: %s\n", url)
+			if !noOpen {
+				if err := browser.OpenURL(url); err != nil {
+					out.Warnf("Could not open the browser automatically: %v", err)
+				}
+			}
+		}, func() []string {
+			lines := agentProc.RecentLogs(200)
+			for i, line := range lines {
+				lines[i] = ansiEscapeRe.ReplaceAllString(line, "")
+			}
+			return lines
+		})
+	}()
+
+	select {
+	case err := <-agentProc.Done():
+		cancel()
+		<-webDone
+		if err != nil {
+			return fmt.Errorf("agent exited: %w\n\n%s", err, agentExitDetail(agentProc))
+		}
+		return nil
+	case <-agentProc.Failed():
+		cancel()
+		<-webDone
+		return fmt.Errorf("agent job crashed.\n\n%s", agentExitDetail(agentProc))
+	case <-ctx.Done():
+		cancel()
+		<-webDone
+	case err := <-webDone:
+		if err != nil && ctx.Err() == nil {
+			return err
+		}
+	}
+
+	// Give the agent the same grace period as the terminal console so it can
+	// finish its session report before the outer Kill fallback.
+	agentProc.Shutdown()
+	select {
+	case <-agentProc.Done():
+	case <-time.After(5 * time.Second):
+	}
 	return nil
 }
 
