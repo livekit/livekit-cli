@@ -31,3 +31,26 @@ func TestWaitBrowserAgentExit(t *testing.T) {
 		require.ErrorIs(t, waitBrowserAgentExit(nil, nil, time.Millisecond), errBrowserAgentExitTimeout)
 	})
 }
+
+func TestFinishDisconnectedBrowserAgent(t *testing.T) {
+	t.Run("original exit failure does not cause shutdown", func(t *testing.T) {
+		done := make(chan error, 1)
+		exitErr := errors.New("exit status 1")
+		done <- exitErr
+		err := finishDisconnectedBrowserAgent(done, nil, func() {
+			t.Fatal("must not signal an agent that already exited")
+		}, time.Second, time.Second)
+		require.ErrorIs(t, err, exitErr)
+	})
+	t.Run("clean exit after shutdown", func(t *testing.T) {
+		done := make(chan error, 1)
+		err := finishDisconnectedBrowserAgent(done, nil, func() { done <- nil }, 0, time.Second)
+		require.NoError(t, err)
+	})
+	t.Run("timeout after shutdown", func(t *testing.T) {
+		shutdownCalled := false
+		err := finishDisconnectedBrowserAgent(nil, nil, func() { shutdownCalled = true }, 0, 0)
+		require.True(t, shutdownCalled)
+		require.ErrorIs(t, err, errBrowserAgentExitTimeout)
+	})
+}

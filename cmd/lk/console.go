@@ -343,17 +343,8 @@ func runBrowserConsole(ctx context.Context, conn net.Conn, agentProc *AgentProce
 		<-webDone
 	case err := <-webDone:
 		if errors.Is(err, console.ErrWebAgentDisconnected) && ctx.Err() == nil {
-			// TCP can close before startAgent finishes draining the process's
-			// logs. Don't signal it first: let its original exit status arrive.
-			err = waitBrowserAgentExit(agentProc.Done(), agentProc.Failed(), agentOutputDrainTimeout+time.Second)
+			err = finishDisconnectedBrowserAgent(agentProc.Done(), agentProc.Failed(), agentProc.Shutdown, agentOutputDrainTimeout+time.Second, 5*time.Second)
 			if errors.Is(err, errBrowserAgentExitTimeout) {
-				// A session can close its transport without exiting the worker.
-				// Give it a chance to finish cleanup before the Kill fallback.
-				agentProc.Shutdown()
-				exitErr := waitBrowserAgentExit(agentProc.Done(), agentProc.Failed(), 5*time.Second)
-				if exitErr != nil && !errors.Is(exitErr, errBrowserAgentExitTimeout) {
-					return browserAgentError(agentProc, exitErr)
-				}
 				err = fmt.Errorf("agent disconnected without exiting: %w", err)
 			}
 			return browserAgentError(agentProc, err)
