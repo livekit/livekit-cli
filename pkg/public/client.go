@@ -229,6 +229,25 @@ func errorDetail(err error, fullName string, v any) bool {
 	return false
 }
 
+// FieldViolation is one field that a request got wrong, as the API names it in
+// a google.rpc.BadRequest detail.
+type FieldViolation struct {
+	Field       string `json:"field"`
+	Description string `json:"description"`
+}
+
+// FieldViolations returns the fields that err, an APIError, names as wrong, in
+// the order the API gave them. It returns nil for any other error.
+func FieldViolations(err error) []FieldViolation {
+	var badRequest struct {
+		FieldViolations []FieldViolation `json:"fieldViolations"`
+	}
+	if !errorDetail(err, "google.rpc.BadRequest", &badRequest) {
+		return nil
+	}
+	return badRequest.FieldViolations
+}
+
 // okOrError returns nil for a 200 response and a classified APIError otherwise.
 // Used by delete/remove/cancel operations whose success payload is empty.
 func okOrError(status int, body []byte) error {

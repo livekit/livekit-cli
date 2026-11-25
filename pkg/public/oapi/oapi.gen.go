@@ -155,6 +155,51 @@ func (e CloudProtocolPIIRedactionCategory) Valid() bool {
 	}
 }
 
+// Defines values for LivekitAgentEventType.
+const (
+	AGENTEVENTTYPEAPPLICATIONCRASHED       LivekitAgentEventType = "AGENT_EVENT_TYPE_APPLICATION_CRASHED"
+	AGENTEVENTTYPERESTARTEDHIGHDISKUSAGE   LivekitAgentEventType = "AGENT_EVENT_TYPE_RESTARTED_HIGH_DISK_USAGE"
+	AGENTEVENTTYPERESTARTEDHIGHMEMORYUSAGE LivekitAgentEventType = "AGENT_EVENT_TYPE_RESTARTED_HIGH_MEMORY_USAGE"
+	AGENTEVENTTYPEUNKNOWN                  LivekitAgentEventType = "AGENT_EVENT_TYPE_UNKNOWN"
+)
+
+// Valid indicates whether the value is a known member of the LivekitAgentEventType enum.
+func (e LivekitAgentEventType) Valid() bool {
+	switch e {
+	case AGENTEVENTTYPEAPPLICATIONCRASHED:
+		return true
+	case AGENTEVENTTYPERESTARTEDHIGHDISKUSAGE:
+		return true
+	case AGENTEVENTTYPERESTARTEDHIGHMEMORYUSAGE:
+		return true
+	case AGENTEVENTTYPEUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitAgentSecretKind.
+const (
+	AGENTSECRETKINDENVIRONMENT LivekitAgentSecretKind = "AGENT_SECRET_KIND_ENVIRONMENT"
+	AGENTSECRETKINDFILE        LivekitAgentSecretKind = "AGENT_SECRET_KIND_FILE"
+	AGENTSECRETKINDUNKNOWN     LivekitAgentSecretKind = "AGENT_SECRET_KIND_UNKNOWN"
+)
+
+// Valid indicates whether the value is a known member of the LivekitAgentSecretKind enum.
+func (e LivekitAgentSecretKind) Valid() bool {
+	switch e {
+	case AGENTSECRETKINDENVIRONMENT:
+		return true
+	case AGENTSECRETKINDFILE:
+		return true
+	case AGENTSECRETKINDUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitAudioCodec.
 const (
 	AAC       LivekitAudioCodec = "AAC"
@@ -413,6 +458,36 @@ func (e LivekitPhoneNumberType) Valid() bool {
 	case PHONENUMBERTYPETOLLFREE:
 		return true
 	case PHONENUMBERTYPEUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPrivateLinkStatusStatus.
+const (
+	PRIVATELINKSTATUSAPPROVED        LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_APPROVED"
+	PRIVATELINKSTATUSHEALTHY         LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_HEALTHY"
+	PRIVATELINKSTATUSPENDINGAPPROVAL LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_PENDING_APPROVAL"
+	PRIVATELINKSTATUSPROVISIONING    LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_PROVISIONING"
+	PRIVATELINKSTATUSUNHEALTHY       LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_UNHEALTHY"
+	PRIVATELINKSTATUSUNKNOWN         LivekitPrivateLinkStatusStatus = "PRIVATE_LINK_STATUS_UNKNOWN"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPrivateLinkStatusStatus enum.
+func (e LivekitPrivateLinkStatusStatus) Valid() bool {
+	switch e {
+	case PRIVATELINKSTATUSAPPROVED:
+		return true
+	case PRIVATELINKSTATUSHEALTHY:
+		return true
+	case PRIVATELINKSTATUSPENDINGAPPROVAL:
+		return true
+	case PRIVATELINKSTATUSPROVISIONING:
+		return true
+	case PRIVATELINKSTATUSUNHEALTHY:
+		return true
+	case PRIVATELINKSTATUSUNKNOWN:
 		return true
 	default:
 		return false
@@ -1058,41 +1133,41 @@ func (e LivekitAgentChatRole) Valid() bool {
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio.
 const (
-	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg   LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "city-ambience.ogg"
-	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg    LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "crowded-room.ogg"
-	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "forest-ambience.ogg"
-	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone              LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "none"
-	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "office-ambience.ogg"
+	LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioCityAmbienceOgg   LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio = "city-ambience.ogg"
+	LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioCrowdedRoomOgg    LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio = "crowded-room.ogg"
+	LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioForestAmbienceOgg LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio = "forest-ambience.ogg"
+	LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioNone              LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio = "none"
+	LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioOfficeAmbienceOgg LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio = "office-ambience.ogg"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio) Valid() bool {
 	switch e {
-	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg:
+	case LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioCityAmbienceOgg:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg:
+	case LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioCrowdedRoomOgg:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg:
+	case LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioForestAmbienceOgg:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone:
+	case LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioNone:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg:
+	case LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudioOfficeAmbienceOgg:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode.
 const (
-	DataCollection     LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "data_collection"
-	PromptInstructions LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "prompt_instructions"
+	DataCollection     LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode = "data_collection"
+	PromptInstructions LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode = "prompt_instructions"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode) Valid() bool {
 	switch e {
 	case DataCollection:
 		return true
@@ -1103,14 +1178,14 @@ func (e LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode) Valid() bool
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigModelMode.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigModelMode.
 const (
-	Pipeline LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "pipeline"
-	Realtime LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "realtime"
+	Pipeline LivekitPublicapiAgentbuilderV1AgentConfigModelMode = "pipeline"
+	Realtime LivekitPublicapiAgentbuilderV1AgentConfigModelMode = "realtime"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigModelMode enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigModelMode) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigModelMode enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigModelMode) Valid() bool {
 	switch e {
 	case Pipeline:
 		return true
@@ -1121,47 +1196,47 @@ func (e LivekitPublicapiAgentsV1BuilderAgentConfigModelMode) Valid() bool {
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation.
 const (
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc-telephony"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc           LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-nc"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone              LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "none"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL            LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-l"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-l"
-	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-s"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispBvc          LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "krisp-bvc"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispBvcTelephony LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "krisp-bvc-telephony"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispNc           LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "krisp-nc"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationNone              LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "none"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailL            LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "quail-l"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailVfL          LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "quail-vf-l"
+	LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailVfS          LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation = "quail-vf-s"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation) Valid() bool {
 	switch e {
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispBvc:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispBvcTelephony:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationKrispNc:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationNone:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailL:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailVfL:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS:
+	case LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellationQuailVfS:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType.
 const (
-	Custom  LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "custom"
-	Default LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "default"
+	Custom  LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType = "custom"
+	Default LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType = "default"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType) Valid() bool {
 	switch e {
 	case Custom:
 		return true
@@ -1172,38 +1247,38 @@ func (e LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType) Valid() bool {
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType.
 const (
-	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "boolean"
-	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "number"
-	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "string"
+	LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeBoolean LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType = "boolean"
+	LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeNumber  LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType = "number"
+	LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeString  LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType = "string"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType) Valid() bool {
 	switch e {
-	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean:
+	case LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeBoolean:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber:
+	case LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeNumber:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString:
+	case LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsTypeString:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod.
 const (
-	DELETE LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "DELETE"
-	GET    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "GET"
-	PATCH  LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PATCH"
-	POST   LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "POST"
-	PUT    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PUT"
+	DELETE LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod = "DELETE"
+	GET    LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod = "GET"
+	PATCH  LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod = "PATCH"
+	POST   LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod = "POST"
+	PUT    LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod = "PUT"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod) Valid() bool {
 	switch e {
 	case DELETE:
 		return true
@@ -1220,72 +1295,72 @@ func (e LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod) Valid() bool {
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort.
 const (
-	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "high"
-	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow    LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "low"
-	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "medium"
-	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "none"
-	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh  LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "xhigh"
+	LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortHigh   LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort = "high"
+	LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortLow    LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort = "low"
+	LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortMedium LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort = "medium"
+	LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortNone   LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort = "none"
+	LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortXhigh  LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort = "xhigh"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort) Valid() bool {
 	switch e {
-	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh:
+	case LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortHigh:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow:
+	case LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortLow:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium:
+	case LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortMedium:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone:
+	case LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortNone:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh:
+	case LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffortXhigh:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType.
+// Defines values for LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType.
 const (
-	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "boolean"
-	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "integer"
-	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "number"
-	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "string"
+	LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeBoolean LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType = "boolean"
+	LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeInteger LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType = "integer"
+	LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeNumber  LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType = "number"
+	LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeString  LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType = "string"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType enum.
-func (e LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType enum.
+func (e LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType) Valid() bool {
 	switch e {
-	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean:
+	case LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeBoolean:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger:
+	case LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeInteger:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber:
+	case LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeNumber:
 		return true
-	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString:
+	case LivekitPublicapiAgentbuilderV1AgentConfigToolParameterTypeString:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for LivekitPublicapiAgentsV1DeploymentStatus.
+// Defines values for LivekitPublicapiAgentbuilderV1DeploymentStatus.
 const (
-	DEPLOYMENTSTATUSBUILDFAILED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILD_FAILED"
-	DEPLOYMENTSTATUSBUILDING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILDING"
-	DEPLOYMENTSTATUSDELETING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_DELETING"
-	DEPLOYMENTSTATUSFAILED      LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_FAILED"
-	DEPLOYMENTSTATUSNOTDEPLOYED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_NOT_DEPLOYED"
-	DEPLOYMENTSTATUSRUNNING     LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_RUNNING"
-	DEPLOYMENTSTATUSSLEEPING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_SLEEPING"
-	DEPLOYMENTSTATUSSTARTING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_STARTING"
-	DEPLOYMENTSTATUSUNSPECIFIED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_UNSPECIFIED"
+	DEPLOYMENTSTATUSBUILDFAILED LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILD_FAILED"
+	DEPLOYMENTSTATUSBUILDING    LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILDING"
+	DEPLOYMENTSTATUSDELETING    LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_DELETING"
+	DEPLOYMENTSTATUSFAILED      LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_FAILED"
+	DEPLOYMENTSTATUSNOTDEPLOYED LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_NOT_DEPLOYED"
+	DEPLOYMENTSTATUSRUNNING     LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_RUNNING"
+	DEPLOYMENTSTATUSSLEEPING    LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_SLEEPING"
+	DEPLOYMENTSTATUSSTARTING    LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_STARTING"
+	DEPLOYMENTSTATUSUNSPECIFIED LivekitPublicapiAgentbuilderV1DeploymentStatus = "DEPLOYMENT_STATUS_UNSPECIFIED"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1DeploymentStatus enum.
-func (e LivekitPublicapiAgentsV1DeploymentStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentbuilderV1DeploymentStatus enum.
+func (e LivekitPublicapiAgentbuilderV1DeploymentStatus) Valid() bool {
 	switch e {
 	case DEPLOYMENTSTATUSBUILDFAILED:
 		return true
@@ -1304,6 +1379,33 @@ func (e LivekitPublicapiAgentsV1DeploymentStatus) Valid() bool {
 	case DEPLOYMENTSTATUSSTARTING:
 		return true
 	case DEPLOYMENTSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAnalyticsV1ModelComponent.
+const (
+	MODELCOMPONENTLLM         LivekitPublicapiAnalyticsV1ModelComponent = "MODEL_COMPONENT_LLM"
+	MODELCOMPONENTREALTIME    LivekitPublicapiAnalyticsV1ModelComponent = "MODEL_COMPONENT_REALTIME"
+	MODELCOMPONENTSTT         LivekitPublicapiAnalyticsV1ModelComponent = "MODEL_COMPONENT_STT"
+	MODELCOMPONENTTTS         LivekitPublicapiAnalyticsV1ModelComponent = "MODEL_COMPONENT_TTS"
+	MODELCOMPONENTUNSPECIFIED LivekitPublicapiAnalyticsV1ModelComponent = "MODEL_COMPONENT_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAnalyticsV1ModelComponent enum.
+func (e LivekitPublicapiAnalyticsV1ModelComponent) Valid() bool {
+	switch e {
+	case MODELCOMPONENTLLM:
+		return true
+	case MODELCOMPONENTREALTIME:
+		return true
+	case MODELCOMPONENTSTT:
+		return true
+	case MODELCOMPONENTTTS:
+		return true
+	case MODELCOMPONENTUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -1352,6 +1454,45 @@ func (e LivekitPublicapiAnalyticsV1SessionStatus) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPublicapiCloudagentsV1CloudAgentStatus.
+const (
+	CLOUDAGENTSTATUSBUILDFAILED LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_BUILD_FAILED"
+	CLOUDAGENTSTATUSBUILDING    LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_BUILDING"
+	CLOUDAGENTSTATUSDELETING    LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_DELETING"
+	CLOUDAGENTSTATUSFAILED      LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_FAILED"
+	CLOUDAGENTSTATUSNOTDEPLOYED LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_NOT_DEPLOYED"
+	CLOUDAGENTSTATUSRUNNING     LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_RUNNING"
+	CLOUDAGENTSTATUSSLEEPING    LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_SLEEPING"
+	CLOUDAGENTSTATUSSTARTING    LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_STARTING"
+	CLOUDAGENTSTATUSUNSPECIFIED LivekitPublicapiCloudagentsV1CloudAgentStatus = "CLOUD_AGENT_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiCloudagentsV1CloudAgentStatus enum.
+func (e LivekitPublicapiCloudagentsV1CloudAgentStatus) Valid() bool {
+	switch e {
+	case CLOUDAGENTSTATUSBUILDFAILED:
+		return true
+	case CLOUDAGENTSTATUSBUILDING:
+		return true
+	case CLOUDAGENTSTATUSDELETING:
+		return true
+	case CLOUDAGENTSTATUSFAILED:
+		return true
+	case CLOUDAGENTSTATUSNOTDEPLOYED:
+		return true
+	case CLOUDAGENTSTATUSRUNNING:
+		return true
+	case CLOUDAGENTSTATUSSLEEPING:
+		return true
+	case CLOUDAGENTSTATUSSTARTING:
+		return true
+	case CLOUDAGENTSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitPublicapiCommonV1SortOrder.
 const (
 	SORTORDERASC         LivekitPublicapiCommonV1SortOrder = "SORT_ORDER_ASC"
@@ -1367,6 +1508,417 @@ func (e LivekitPublicapiCommonV1SortOrder) Valid() bool {
 	case SORTORDERDESC:
 		return true
 	case SORTORDERUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer.
+const (
+	LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerBoolean     LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer = "boolean"
+	LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerCategorical LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer = "categorical"
+	LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerNumeric     LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer = "numeric"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer) Valid() bool {
+	switch e {
+	case LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerBoolean:
+		return true
+	case LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerCategorical:
+		return true
+	case LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswerNumeric:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate.
+const (
+	Always LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate = "always"
+	Auto   LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate = "auto"
+	Never  LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate = "never"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate) Valid() bool {
+	switch e {
+	case Always:
+		return true
+	case Auto:
+		return true
+	case Never:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade.
+const (
+	Session LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade = "session"
+	Turn    LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade = "turn"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade) Valid() bool {
+	switch e {
+	case Session:
+		return true
+	case Turn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionCriterionType.
+const (
+	Code LivekitPublicapiEvalsV1EvalDefinitionCriterionType = "code"
+	Llm  LivekitPublicapiEvalsV1EvalDefinitionCriterionType = "llm"
+	Rule LivekitPublicapiEvalsV1EvalDefinitionCriterionType = "rule"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionCriterionType enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionCriterionType) Valid() bool {
+	switch e {
+	case Code:
+		return true
+	case Llm:
+		return true
+	case Rule:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict.
+const (
+	Fail LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict = "fail"
+	Pass LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict = "pass"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict) Valid() bool {
+	switch e {
+	case Fail:
+		return true
+	case Pass:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar.
+const (
+	Handoffs                    LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "handoffs"
+	Intent                      LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "intent"
+	LatencyE2eLatencyMax        LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.e2e_latency.max"
+	LatencyE2eLatencyMean       LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.e2e_latency.mean"
+	LatencyEotDelayMax          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.eot_delay.max"
+	LatencyEotDelayMean         LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.eot_delay.mean"
+	LatencyLlmTtftMax           LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.llm_ttft.max"
+	LatencyLlmTtftMean          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.llm_ttft.mean"
+	LatencyRealtimeTtftMax      LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.realtime_ttft.max"
+	LatencyRealtimeTtftMean     LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.realtime_ttft.mean"
+	LatencySttDelayMax          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.stt_delay.max"
+	LatencySttDelayMean         LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.stt_delay.mean"
+	LatencyToolCallDurationMax  LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.tool_call_duration.max"
+	LatencyToolCallDurationMean LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.tool_call_duration.mean"
+	LatencyTtsTtfbMax           LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.tts_ttfb.max"
+	LatencyTtsTtfbMean          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "latency.tts_ttfb.mean"
+	Outcome                     LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "outcome"
+	OutcomeRating               LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "outcome_rating"
+	Tags                        LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "tags"
+	ToolCalls                   LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "tool_calls"
+	UsageBackchannels           LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.backchannels"
+	UsageCachedTokens           LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.cached_tokens"
+	UsageInputTokens            LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.input_tokens"
+	UsageInterruptions          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.interruptions"
+	UsageOutputTokens           LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.output_tokens"
+	UsageSessionDuration        LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.session_duration"
+	UsageTtsCharacters          LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.tts_characters"
+	UsageTurns                  LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar = "usage.turns"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar) Valid() bool {
+	switch e {
+	case Handoffs:
+		return true
+	case Intent:
+		return true
+	case LatencyE2eLatencyMax:
+		return true
+	case LatencyE2eLatencyMean:
+		return true
+	case LatencyEotDelayMax:
+		return true
+	case LatencyEotDelayMean:
+		return true
+	case LatencyLlmTtftMax:
+		return true
+	case LatencyLlmTtftMean:
+		return true
+	case LatencyRealtimeTtftMax:
+		return true
+	case LatencyRealtimeTtftMean:
+		return true
+	case LatencySttDelayMax:
+		return true
+	case LatencySttDelayMean:
+		return true
+	case LatencyToolCallDurationMax:
+		return true
+	case LatencyToolCallDurationMean:
+		return true
+	case LatencyTtsTtfbMax:
+		return true
+	case LatencyTtsTtfbMean:
+		return true
+	case Outcome:
+		return true
+	case OutcomeRating:
+		return true
+	case Tags:
+		return true
+	case ToolCalls:
+		return true
+	case UsageBackchannels:
+		return true
+	case UsageCachedTokens:
+		return true
+	case UsageInputTokens:
+		return true
+	case UsageInterruptions:
+		return true
+	case UsageOutputTokens:
+		return true
+	case UsageSessionDuration:
+		return true
+	case UsageTtsCharacters:
+		return true
+	case UsageTurns:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled.
+const (
+	Include LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled = "include"
+	Skip    LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled = "skip"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled enum.
+func (e LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled) Valid() bool {
+	switch e {
+	case Include:
+		return true
+	case Skip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalFieldChangeKind.
+const (
+	EVALFIELDCHANGEKINDADDED       LivekitPublicapiEvalsV1EvalFieldChangeKind = "EVAL_FIELD_CHANGE_KIND_ADDED"
+	EVALFIELDCHANGEKINDCHANGED     LivekitPublicapiEvalsV1EvalFieldChangeKind = "EVAL_FIELD_CHANGE_KIND_CHANGED"
+	EVALFIELDCHANGEKINDREMOVED     LivekitPublicapiEvalsV1EvalFieldChangeKind = "EVAL_FIELD_CHANGE_KIND_REMOVED"
+	EVALFIELDCHANGEKINDUNSPECIFIED LivekitPublicapiEvalsV1EvalFieldChangeKind = "EVAL_FIELD_CHANGE_KIND_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalFieldChangeKind enum.
+func (e LivekitPublicapiEvalsV1EvalFieldChangeKind) Valid() bool {
+	switch e {
+	case EVALFIELDCHANGEKINDADDED:
+		return true
+	case EVALFIELDCHANGEKINDCHANGED:
+		return true
+	case EVALFIELDCHANGEKINDREMOVED:
+		return true
+	case EVALFIELDCHANGEKINDUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalHistoryKind.
+const (
+	EVALHISTORYKINDDELETED        LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_DELETED"
+	EVALHISTORYKINDDETAILSCHANGED LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_DETAILS_CHANGED"
+	EVALHISTORYKINDPUBLISHED      LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_PUBLISHED"
+	EVALHISTORYKINDROLLEDBACK     LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_ROLLED_BACK"
+	EVALHISTORYKINDUNDELETED      LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_UNDELETED"
+	EVALHISTORYKINDUNSPECIFIED    LivekitPublicapiEvalsV1EvalHistoryKind = "EVAL_HISTORY_KIND_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalHistoryKind enum.
+func (e LivekitPublicapiEvalsV1EvalHistoryKind) Valid() bool {
+	switch e {
+	case EVALHISTORYKINDDELETED:
+		return true
+	case EVALHISTORYKINDDETAILSCHANGED:
+		return true
+	case EVALHISTORYKINDPUBLISHED:
+		return true
+	case EVALHISTORYKINDROLLEDBACK:
+		return true
+	case EVALHISTORYKINDUNDELETED:
+		return true
+	case EVALHISTORYKINDUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1EvalSource.
+const (
+	EVALSOURCEAPI         LivekitPublicapiEvalsV1EvalSource = "EVAL_SOURCE_API"
+	EVALSOURCEDASHBOARD   LivekitPublicapiEvalsV1EvalSource = "EVAL_SOURCE_DASHBOARD"
+	EVALSOURCEMCP         LivekitPublicapiEvalsV1EvalSource = "EVAL_SOURCE_MCP"
+	EVALSOURCEUNSPECIFIED LivekitPublicapiEvalsV1EvalSource = "EVAL_SOURCE_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1EvalSource enum.
+func (e LivekitPublicapiEvalsV1EvalSource) Valid() bool {
+	switch e {
+	case EVALSOURCEAPI:
+		return true
+	case EVALSOURCEDASHBOARD:
+		return true
+	case EVALSOURCEMCP:
+		return true
+	case EVALSOURCEUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence.
+const (
+	Agreement   LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence = "agreement"
+	Probability LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence = "probability"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence enum.
+func (e LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence) Valid() bool {
+	switch e {
+	case Agreement:
+		return true
+	case Probability:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide.
+const (
+	Majority  LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide = "majority"
+	Unanimous LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide = "unanimous"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide enum.
+func (e LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide) Valid() bool {
+	switch e {
+	case Majority:
+		return true
+	case Unanimous:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit.
+const (
+	Human     LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit = "human"
+	Uncertain LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit = "uncertain"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit enum.
+func (e LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit) Valid() bool {
+	switch e {
+	case Human:
+		return true
+	case Uncertain:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel.
+const (
+	Balanced LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel = "balanced"
+	Fast     LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel = "fast"
+	Thorough LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel = "thorough"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel enum.
+func (e LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel) Valid() bool {
+	switch e {
+	case Balanced:
+		return true
+	case Fast:
+		return true
+	case Thorough:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1SessionLabelKind.
+const (
+	SESSIONLABELKINDINTENT      LivekitPublicapiEvalsV1SessionLabelKind = "SESSION_LABEL_KIND_INTENT"
+	SESSIONLABELKINDOUTCOME     LivekitPublicapiEvalsV1SessionLabelKind = "SESSION_LABEL_KIND_OUTCOME"
+	SESSIONLABELKINDUNSPECIFIED LivekitPublicapiEvalsV1SessionLabelKind = "SESSION_LABEL_KIND_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1SessionLabelKind enum.
+func (e LivekitPublicapiEvalsV1SessionLabelKind) Valid() bool {
+	switch e {
+	case SESSIONLABELKINDINTENT:
+		return true
+	case SESSIONLABELKINDOUTCOME:
+		return true
+	case SESSIONLABELKINDUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiEvalsV1SessionLabelRating.
+const (
+	SESSIONLABELRATINGBAD         LivekitPublicapiEvalsV1SessionLabelRating = "SESSION_LABEL_RATING_BAD"
+	SESSIONLABELRATINGGOOD        LivekitPublicapiEvalsV1SessionLabelRating = "SESSION_LABEL_RATING_GOOD"
+	SESSIONLABELRATINGNEUTRAL     LivekitPublicapiEvalsV1SessionLabelRating = "SESSION_LABEL_RATING_NEUTRAL"
+	SESSIONLABELRATINGUNSPECIFIED LivekitPublicapiEvalsV1SessionLabelRating = "SESSION_LABEL_RATING_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiEvalsV1SessionLabelRating enum.
+func (e LivekitPublicapiEvalsV1SessionLabelRating) Valid() bool {
+	switch e {
+	case SESSIONLABELRATINGBAD:
+		return true
+	case SESSIONLABELRATINGGOOD:
+		return true
+	case SESSIONLABELRATINGNEUTRAL:
+		return true
+	case SESSIONLABELRATINGUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -1391,6 +1943,36 @@ func (e LivekitPublicapiObservabilityV1DataState) Valid() bool {
 	case DATASTATESETTLING:
 		return true
 	case DATASTATEUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiObservabilityV1EvalVerdict.
+const (
+	EVALVERDICTERROR         LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_ERROR"
+	EVALVERDICTFAIL          LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_FAIL"
+	EVALVERDICTNOTAPPLICABLE LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_NOT_APPLICABLE"
+	EVALVERDICTPASS          LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_PASS"
+	EVALVERDICTUNDECIDED     LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_UNDECIDED"
+	EVALVERDICTUNSPECIFIED   LivekitPublicapiObservabilityV1EvalVerdict = "EVAL_VERDICT_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1EvalVerdict enum.
+func (e LivekitPublicapiObservabilityV1EvalVerdict) Valid() bool {
+	switch e {
+	case EVALVERDICTERROR:
+		return true
+	case EVALVERDICTFAIL:
+		return true
+	case EVALVERDICTNOTAPPLICABLE:
+		return true
+	case EVALVERDICTPASS:
+		return true
+	case EVALVERDICTUNDECIDED:
+		return true
+	case EVALVERDICTUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -1424,6 +2006,54 @@ func (e LivekitPublicapiObservabilityV1LogLevel) Valid() bool {
 	case LOGLEVELUNSPECIFIED:
 		return true
 	case LOGLEVELWARN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiObservabilityV1LogPatternRank.
+const (
+	LOGPATTERNRANKEVENTS      LivekitPublicapiObservabilityV1LogPatternRank = "LOG_PATTERN_RANK_EVENTS"
+	LOGPATTERNRANKFIRSTSEEN   LivekitPublicapiObservabilityV1LogPatternRank = "LOG_PATTERN_RANK_FIRST_SEEN"
+	LOGPATTERNRANKLASTSEEN    LivekitPublicapiObservabilityV1LogPatternRank = "LOG_PATTERN_RANK_LAST_SEEN"
+	LOGPATTERNRANKUNSPECIFIED LivekitPublicapiObservabilityV1LogPatternRank = "LOG_PATTERN_RANK_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1LogPatternRank enum.
+func (e LivekitPublicapiObservabilityV1LogPatternRank) Valid() bool {
+	switch e {
+	case LOGPATTERNRANKEVENTS:
+		return true
+	case LOGPATTERNRANKFIRSTSEEN:
+		return true
+	case LOGPATTERNRANKLASTSEEN:
+		return true
+	case LOGPATTERNRANKUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiObservabilityV1LogSource.
+const (
+	LOGSOURCEAGENT       LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_AGENT"
+	LOGSOURCECLIENT      LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_CLIENT"
+	LOGSOURCEPLATFORM    LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_PLATFORM"
+	LOGSOURCEUNSPECIFIED LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1LogSource enum.
+func (e LivekitPublicapiObservabilityV1LogSource) Valid() bool {
+	switch e {
+	case LOGSOURCEAGENT:
+		return true
+	case LOGSOURCECLIENT:
+		return true
+	case LOGSOURCEPLATFORM:
+		return true
+	case LOGSOURCEUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -1620,6 +2250,75 @@ type GoogleRpcStatus struct {
 
 	// Message A developer-facing error message.
 	Message *string `json:"message,omitempty"`
+}
+
+// LivekitAgentDeployment defines model for livekit.AgentDeployment.
+type LivekitAgentDeployment struct {
+	AgentId           *string                  `json:"agentId,omitempty"`
+	AgentName         *string                  `json:"agentName,omitempty"`
+	CpuLimit          *string                  `json:"cpuLimit,omitempty"`
+	CpuReq            *string                  `json:"cpuReq,omitempty"`
+	CurCpu            *string                  `json:"curCpu,omitempty"`
+	CurMem            *string                  `json:"curMem,omitempty"`
+	Deployment        *string                  `json:"deployment,omitempty"`
+	DeploymentEnabled *bool                    `json:"deploymentEnabled,omitempty"`
+	Events            *[]LivekitAgentEvent     `json:"events,omitempty"`
+	LastScrapedAt     *GoogleProtobufTimestamp `json:"lastScrapedAt,omitempty"`
+	MaxReplicas       *int32                   `json:"maxReplicas,omitempty"`
+	MemLimit          *string                  `json:"memLimit,omitempty"`
+	MemReq            *string                  `json:"memReq,omitempty"`
+	MinReplicas       *int32                   `json:"minReplicas,omitempty"`
+	Region            *string                  `json:"region,omitempty"`
+	Replicas          *int32                   `json:"replicas,omitempty"`
+	ServerRegion      *string                  `json:"serverRegion,omitempty"`
+	Status            *string                  `json:"status,omitempty"`
+	Version           *string                  `json:"version,omitempty"`
+}
+
+// LivekitAgentEvent defines model for livekit.AgentEvent.
+type LivekitAgentEvent struct {
+	Count     *int32                   `json:"count,omitempty"`
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	Type      *LivekitAgentEventType   `json:"type,omitempty"`
+}
+
+// LivekitAgentEventType defines model for livekit.AgentEventType.
+type LivekitAgentEventType string
+
+// LivekitAgentInfo defines model for livekit.AgentInfo.
+type LivekitAgentInfo struct {
+	AgentDeployments *[]LivekitAgentDeployment `json:"agentDeployments,omitempty"`
+	AgentId          *string                   `json:"agentId,omitempty"`
+	AgentName        *string                   `json:"agentName,omitempty"`
+	DeployedAt       *GoogleProtobufTimestamp  `json:"deployedAt,omitempty"`
+	Secrets          *[]LivekitAgentSecret     `json:"secrets,omitempty"`
+	Version          *string                   `json:"version,omitempty"`
+}
+
+// LivekitAgentSecret defines model for livekit.AgentSecret.
+type LivekitAgentSecret struct {
+	CreatedAt   *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+	Deployments *[]string                `json:"deployments,omitempty"`
+	Kind        *LivekitAgentSecretKind  `json:"kind,omitempty"`
+	Name        *string                  `json:"name,omitempty"`
+	UpdatedAt   *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+	Value       *[]byte                  `json:"value,omitempty"`
+}
+
+// LivekitAgentSecretKind defines model for livekit.AgentSecretKind.
+type LivekitAgentSecretKind string
+
+// LivekitAgentVersion defines model for livekit.AgentVersion.
+type LivekitAgentVersion struct {
+	Active     *bool                    `json:"active,omitempty"`
+	Attributes *map[string]string       `json:"attributes,omitempty"`
+	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+	Current    *bool                    `json:"current,omitempty"`
+	DeployedAt *GoogleProtobufTimestamp `json:"deployedAt,omitempty"`
+	Draining   *bool                    `json:"draining,omitempty"`
+	Owner      *string                  `json:"owner,omitempty"`
+	Status     *string                  `json:"status,omitempty"`
+	Version    *string                  `json:"version,omitempty"`
 }
 
 // LivekitAliOSSUpload defines model for livekit.AliOSSUpload.
@@ -2050,6 +2749,41 @@ type LivekitPresignedPostRequest struct {
 	Url    *string            `json:"url,omitempty"`
 	Values *map[string]string `json:"values,omitempty"`
 }
+
+// LivekitPrivateLink defines model for livekit.PrivateLink.
+type LivekitPrivateLink struct {
+	CloudRegion        *string `json:"cloudRegion,omitempty"`
+	ConnectionEndpoint *string `json:"connectionEndpoint,omitempty"`
+	Endpoint           *string `json:"endpoint,omitempty"`
+	Name               *string `json:"name,omitempty"`
+	Port               *int    `json:"port,omitempty"`
+	PrivateLinkId      *string `json:"privateLinkId,omitempty"`
+	Region             *string `json:"region,omitempty"`
+	union              json.RawMessage
+}
+
+// LivekitPrivateLink0 defines model for LivekitPrivateLink.0.
+type LivekitPrivateLink0 struct {
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Aws *LivekitPrivateLinkAWSConfig `json:"aws,omitempty"`
+}
+
+// LivekitPrivateLinkAWSConfig defines model for livekit.PrivateLink.AWSConfig.
+type LivekitPrivateLinkAWSConfig struct {
+	// Endpoint Use the generic "endpoint" instead
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Endpoint *string `json:"endpoint,omitempty"`
+}
+
+// LivekitPrivateLinkStatus defines model for livekit.PrivateLinkStatus.
+type LivekitPrivateLinkStatus struct {
+	Reason    *string                         `json:"reason,omitempty"`
+	Status    *LivekitPrivateLinkStatusStatus `json:"status,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp        `json:"updatedAt,omitempty"`
+}
+
+// LivekitPrivateLinkStatusStatus defines model for livekit.PrivateLinkStatus.Status.
+type LivekitPrivateLinkStatusStatus string
 
 // LivekitProxyConfig defines model for livekit.ProxyConfig.
 type LivekitProxyConfig struct {
@@ -3257,19 +3991,21 @@ type LivekitAgentMetricsReport struct {
 	TtsNodeTtfb              *float64                 `json:"ttsNodeTtfb,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgent An agent made from a configuration.
-type LivekitPublicapiAgentsV1BuilderAgent struct {
-	// AgentId The ID of the agent on LiveKit Cloud, as other agent APIs and the `lk`
-	//  CLI show it.
-	AgentId *string `json:"agentId,omitempty"`
+// LivekitPublicapiAgentbuilderV1Agent An agent made from a configuration.
+type LivekitPublicapiAgentbuilderV1Agent struct {
+	// CloudAgentId The ID of the agent on LiveKit Cloud (`CA_...`), as other agent APIs and
+	//  the `lk` CLI show it.
+	CloudAgentId *string `json:"cloudAgentId,omitempty"`
 
-	// Config The current configuration. `ListBuilderAgents` does not set it.
-	Config    *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
-	CreatedAt *GoogleProtobufTimestamp                    `json:"createdAt,omitempty"`
+	// Config The current configuration. `ListAgents` does not set it.
+	Config    *LivekitPublicapiAgentbuilderV1AgentConfig `json:"config,omitempty"`
+	CreatedAt *GoogleProtobufTimestamp                   `json:"createdAt,omitempty"`
 
 	// Deployment The deployment of the agent. Unset when the API cannot read the status.
-	Deployment *LivekitPublicapiAgentsV1Deployment `json:"deployment,omitempty"`
-	Id         *string                             `json:"id,omitempty"`
+	Deployment *LivekitPublicapiAgentbuilderV1Deployment `json:"deployment,omitempty"`
+
+	// Id The ID of the Agent Builder agent (`AB_...`), as the dashboard shows it.
+	Id *string `json:"id,omitempty"`
 
 	// Name The name the agent registers under. Dispatch this name to send the agent
 	//  to a room.
@@ -3281,40 +4017,40 @@ type LivekitPublicapiAgentsV1BuilderAgent struct {
 	VersionId *string `json:"versionId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfig The configuration of a builder agent. LiveKit generates the agent's code
+// LivekitPublicapiAgentbuilderV1AgentConfig The configuration of an Agent Builder agent. LiveKit generates the agent's code
 // from it when you deploy the agent. Unset properties take their default.
 //
 // In instructions, greetingInstructions and header values, a
 // {{metadata.<name>}} placeholder takes its value from the JSON metadata
 // of the agent dispatch. The server ignores unknown properties, and does
 // not store them.
-type LivekitPublicapiAgentsV1BuilderAgentConfig struct {
+type LivekitPublicapiAgentbuilderV1AgentConfig struct {
 	// AllowGreetingInterrupt If true, the user can interrupt the greeting.
 	AllowGreetingInterrupt *bool `json:"allowGreetingInterrupt,omitempty"`
 
 	// BackgroundAudio A sound that plays behind the agent's voice.
-	BackgroundAudio *LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio `json:"backgroundAudio,omitempty"`
+	BackgroundAudio *LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio `json:"backgroundAudio,omitempty"`
 
 	// BuilderAgentMode prompt_instructions makes an agent that follows instructions in an
 	// open conversation. data_collection makes an agent that collects the
 	// data in dataCollectionFields, one task at a time.
-	BuilderAgentMode *LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode `json:"builderAgentMode,omitempty"`
+	BuilderAgentMode *LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode `json:"builderAgentMode,omitempty"`
 
 	// ClientTools Functions the agent can call on the user's frontend, through an RPC
 	// to the user's participant.
-	ClientTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigClientTool `json:"clientTools,omitempty"`
+	ClientTools *[]LivekitPublicapiAgentbuilderV1AgentConfigClientTool `json:"clientTools,omitempty"`
 
 	// DataCollectionFields The data to collect, one task for each item, in order. Used only
 	// when builderAgentMode is data_collection.
-	DataCollectionFields *[]LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField `json:"dataCollectionFields,omitempty"`
+	DataCollectionFields *[]LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionField `json:"dataCollectionFields,omitempty"`
 
 	// EndCallTool A tool the agent can use to end the call.
-	EndCallTool *LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool `json:"endCallTool,omitempty"`
+	EndCallTool *LivekitPublicapiAgentbuilderV1AgentConfigEndCallTool `json:"endCallTool,omitempty"`
 
 	// EndOfCall A report that the agent sends to your URL when a call ends. It
 	// contains a summary of the conversation, and for a data_collection
 	// agent, the collected data.
-	EndOfCall *LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall `json:"endOfCall,omitempty"`
+	EndOfCall *LivekitPublicapiAgentbuilderV1AgentConfigEndOfCall `json:"endOfCall,omitempty"`
 
 	// Expressive If true, the agent speaks with more expression, where the tts model supports it.
 	Expressive *bool `json:"expressive,omitempty"`
@@ -3327,7 +4063,7 @@ type LivekitPublicapiAgentsV1BuilderAgentConfig struct {
 	GreetingInstructions *string `json:"greetingInstructions,omitempty"`
 
 	// HttpTools HTTP requests the agent can make during the conversation.
-	HttpTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool `json:"httpTools,omitempty"`
+	HttpTools *[]LivekitPublicapiAgentbuilderV1AgentConfigHttpTool `json:"httpTools,omitempty"`
 
 	// Instructions The system prompt of the agent. Can contain {{metadata.<name>}}
 	// placeholders. Unset uses a general voice-assistant prompt.
@@ -3341,77 +4077,77 @@ type LivekitPublicapiAgentsV1BuilderAgentConfig struct {
 	Keyterms *string `json:"keyterms,omitempty"`
 
 	// Llm The language model. Pipeline mode only.
-	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+	Llm *LivekitPublicapiAgentbuilderV1AgentConfigModelId `json:"llm,omitempty"`
 
 	// LlmReasoningEffort The reasoning effort of llm, for a model that supports it.
-	LlmReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"llmReasoningEffort,omitempty"`
+	LlmReasoningEffort *LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort `json:"llmReasoningEffort,omitempty"`
 
 	// McpServers MCP servers whose tools the agent can use.
-	McpServers *[]LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer `json:"mcpServers,omitempty"`
+	McpServers *[]LivekitPublicapiAgentbuilderV1AgentConfigMcpServer `json:"mcpServers,omitempty"`
 
 	// Metadata The placeholders that instructions, greetingInstructions and header
 	// values can use, by name. A default applies when the dispatch
 	// metadata does not set the value.
-	Metadata *map[string]LivekitPublicapiAgentsV1BuilderAgentConfigVariable `json:"metadata,omitempty"`
+	Metadata *map[string]LivekitPublicapiAgentbuilderV1AgentConfigVariable `json:"metadata,omitempty"`
 
 	// ModelMode pipeline uses separate speech-to-text (stt), language (llm) and
 	// text-to-speech (tts) models. realtime uses one speech-to-speech
 	// model, set in tts.
-	ModelMode *LivekitPublicapiAgentsV1BuilderAgentConfigModelMode `json:"modelMode,omitempty"`
+	ModelMode *LivekitPublicapiAgentbuilderV1AgentConfigModelMode `json:"modelMode,omitempty"`
 
 	// NoiseCancellation The noise cancellation applied to the user's audio. Use
 	// krisp-bvc-telephony for phone calls. none turns it off.
-	NoiseCancellation *LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation `json:"noiseCancellation,omitempty"`
+	NoiseCancellation *LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation `json:"noiseCancellation,omitempty"`
 
 	// Stt The speech-to-text model. Pipeline mode only.
-	Stt *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"stt,omitempty"`
+	Stt *LivekitPublicapiAgentbuilderV1AgentConfigModelId `json:"stt,omitempty"`
 
 	// SttLanguage The language the user speaks. Pipeline mode only.
-	SttLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"sttLanguage,omitempty"`
+	SttLanguage *LivekitPublicapiAgentbuilderV1AgentConfigLanguageCode `json:"sttLanguage,omitempty"`
 
 	// Tts In pipeline mode, the text-to-speech model. In realtime mode, the
 	// speech-to-speech model, for example "openai/gpt-realtime-2.1".
-	Tts *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"tts,omitempty"`
+	Tts *LivekitPublicapiAgentbuilderV1AgentConfigModelId `json:"tts,omitempty"`
 
 	// TtsLanguage The language the agent speaks.
-	TtsLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"ttsLanguage,omitempty"`
+	TtsLanguage *LivekitPublicapiAgentbuilderV1AgentConfigLanguageCode `json:"ttsLanguage,omitempty"`
 
 	// TtsVoice The voice of the tts model. Each model has its own voice IDs.
 	TtsVoice *string `json:"ttsVoice,omitempty"`
 
 	// TtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
-	TtsVoiceType *LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType `json:"ttsVoiceType,omitempty"`
+	TtsVoiceType *LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType `json:"ttsVoiceType,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio A sound that plays behind the agent's voice.
-type LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio string
+// LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio A sound that plays behind the agent's voice.
+type LivekitPublicapiAgentbuilderV1AgentConfigBackgroundAudio string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode prompt_instructions makes an agent that follows instructions in an
+// LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode prompt_instructions makes an agent that follows instructions in an
 // open conversation. data_collection makes an agent that collects the
 // data in dataCollectionFields, one task at a time.
-type LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode string
+type LivekitPublicapiAgentbuilderV1AgentConfigBuilderAgentMode string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigModelMode pipeline uses separate speech-to-text (stt), language (llm) and
+// LivekitPublicapiAgentbuilderV1AgentConfigModelMode pipeline uses separate speech-to-text (stt), language (llm) and
 // text-to-speech (tts) models. realtime uses one speech-to-speech
 // model, set in tts.
-type LivekitPublicapiAgentsV1BuilderAgentConfigModelMode string
+type LivekitPublicapiAgentbuilderV1AgentConfigModelMode string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation The noise cancellation applied to the user's audio. Use
+// LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation The noise cancellation applied to the user's audio. Use
 // krisp-bvc-telephony for phone calls. none turns it off.
-type LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation string
+type LivekitPublicapiAgentbuilderV1AgentConfigNoiseCancellation string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
-type LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType string
+// LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
+type LivekitPublicapiAgentbuilderV1AgentConfigTtsVoiceType string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigClientTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ClientTool.
-type LivekitPublicapiAgentsV1BuilderAgentConfigClientTool struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigClientTool defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.ClientTool.
+type LivekitPublicapiAgentbuilderV1AgentConfigClientTool struct {
 	// Description Tells the model when to use the tool.
 	Description string `json:"description"`
 
 	// Name The tool name the model sees, and the RPC method the agent calls
 	// on the frontend. Unique in the agent.
-	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
-	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+	Name       LivekitPublicapiAgentbuilderV1AgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentbuilderV1AgentConfigToolParameter `json:"parameters,omitempty"`
 
 	// PreviewResponse A sample response, used when you preview the agent in the dashboard.
 	PreviewResponse *string `json:"previewResponse,omitempty"`
@@ -3420,33 +4156,33 @@ type LivekitPublicapiAgentsV1BuilderAgentConfigClientTool struct {
 	Silent *bool `json:"silent,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.DataCollectionField.
-type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionField defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.DataCollectionField.
+type LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionField struct {
 	// HasManyResults If true, the agent collects a list of results, until the user says the list is complete.
 	HasManyResults *bool `json:"hasManyResults,omitempty"`
 
 	// Name The task name. Unique in the agent.
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigFieldName `json:"name"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigFieldName `json:"name"`
 
 	// ResultFields The values that one result contains.
 	ResultFields []struct {
 		Description string `json:"description"`
 
 		// Name Unique in the field.
-		Name     LivekitPublicapiAgentsV1BuilderAgentConfigFieldName                            `json:"name"`
-		Optional *bool                                                                          `json:"optional,omitempty"`
-		Type     *LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType `json:"type,omitempty"`
+		Name     LivekitPublicapiAgentbuilderV1AgentConfigFieldName                            `json:"name"`
+		Optional *bool                                                                         `json:"optional,omitempty"`
+		Type     *LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType `json:"type,omitempty"`
 	} `json:"resultFields"`
 
 	// TaskInstructions How the agent collects this data.
 	TaskInstructions string `json:"taskInstructions"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField.ResultFields.Type.
-type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType string
+// LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType defines model for LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionField.ResultFields.Type.
+type LivekitPublicapiAgentbuilderV1AgentConfigDataCollectionFieldResultFieldsType string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool A tool the agent can use to end the call.
-type LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigEndCallTool A tool the agent can use to end the call.
+type LivekitPublicapiAgentbuilderV1AgentConfigEndCallTool struct {
 	// DeleteRoom If true, ending the call also closes the room for all participants.
 	DeleteRoom *bool `json:"deleteRoom,omitempty"`
 
@@ -3458,21 +4194,21 @@ type LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool struct {
 	Instructions *string `json:"instructions,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall A report that the agent sends to your URL when a call ends. It
+// LivekitPublicapiAgentbuilderV1AgentConfigEndOfCall A report that the agent sends to your URL when a call ends. It
 // contains a summary of the conversation, and for a data_collection
 // agent, the collected data.
-type LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall struct {
+type LivekitPublicapiAgentbuilderV1AgentConfigEndOfCall struct {
 	// Enabled If true, the agent writes a summary and sends the report. A
 	// data_collection agent sends the collected data to url even when
 	// this is false.
-	Enabled bool                                               `json:"enabled"`
-	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+	Enabled bool                                              `json:"enabled"`
+	Headers *LivekitPublicapiAgentbuilderV1AgentConfigHeaders `json:"headers,omitempty"`
 
 	// Llm The model that writes the summary.
-	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+	Llm *LivekitPublicapiAgentbuilderV1AgentConfigModelId `json:"llm,omitempty"`
 
 	// ReasoningEffort The reasoning effort of llm. Unset is low when enabled is true, and none when it is false.
-	ReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"reasoningEffort,omitempty"`
+	ReasoningEffort *LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort `json:"reasoningEffort,omitempty"`
 
 	// SummaryInstructions Instructions for the summary, added to the default ones.
 	SummaryInstructions *string `json:"summaryInstructions,omitempty"`
@@ -3481,169 +4217,354 @@ type LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall struct {
 	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigFieldName Lowercase snake_case, for example customer_name. Not a Python keyword.
-type LivekitPublicapiAgentsV1BuilderAgentConfigFieldName = string
+// LivekitPublicapiAgentbuilderV1AgentConfigFieldName Lowercase snake_case, for example customer_name. Not a Python keyword.
+type LivekitPublicapiAgentbuilderV1AgentConfigFieldName = string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigHeader defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Header.
-type LivekitPublicapiAgentsV1BuilderAgentConfigHeader struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigHeader defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.Header.
+type LivekitPublicapiAgentbuilderV1AgentConfigHeader struct {
 	// Name Starts with a letter, then letters, digits, "_" and "-".
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
 
-	// Value Can contain {{metadata.<name>}} placeholders.
+	// Value Can contain {{metadata.<name>}} placeholders. A caller who cannot
+	// update the agent reads `********` in place of the value.
+	// The API rejects `********` as a value.
 	Value string `json:"value"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigHeaders defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Headers.
-type LivekitPublicapiAgentsV1BuilderAgentConfigHeaders = []LivekitPublicapiAgentsV1BuilderAgentConfigHeader
+// LivekitPublicapiAgentbuilderV1AgentConfigHeaders defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.Headers.
+type LivekitPublicapiAgentbuilderV1AgentConfigHeaders = []LivekitPublicapiAgentbuilderV1AgentConfigHeader
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.HttpTool.
-type LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigHttpTool defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.HttpTool.
+type LivekitPublicapiAgentbuilderV1AgentConfigHttpTool struct {
 	// Description Tells the model when to use the tool.
-	Description string                                                    `json:"description"`
-	Headers     *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders        `json:"headers,omitempty"`
-	Method      *LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod `json:"method,omitempty"`
+	Description string                                                   `json:"description"`
+	Headers     *LivekitPublicapiAgentbuilderV1AgentConfigHeaders        `json:"headers,omitempty"`
+	Method      *LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod `json:"method,omitempty"`
 
 	// Name The tool name the model sees. Unique in the agent.
-	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
-	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+	Name       LivekitPublicapiAgentbuilderV1AgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentbuilderV1AgentConfigToolParameter `json:"parameters,omitempty"`
 
 	// Silent If true, the agent does not tell the user that it uses the tool.
 	Silent *bool `json:"silent,omitempty"`
 
 	// Url The request URL. A path segment that starts with a colon
 	// (/users/:userId) takes the value of the parameter with that name.
-	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
+	Url LivekitPublicapiAgentbuilderV1AgentConfigUrl `json:"url"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod defines model for LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool.Method.
-type LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod string
+// LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod defines model for LivekitPublicapiAgentbuilderV1AgentConfigHttpTool.Method.
+type LivekitPublicapiAgentbuilderV1AgentConfigHttpToolMethod string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode A language code, for example "en".
-type LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode = string
+// LivekitPublicapiAgentbuilderV1AgentConfigLanguageCode A language code, for example "en".
+type LivekitPublicapiAgentbuilderV1AgentConfigLanguageCode = string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.McpServer.
-type LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer struct {
-	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+// LivekitPublicapiAgentbuilderV1AgentConfigMcpServer defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.McpServer.
+type LivekitPublicapiAgentbuilderV1AgentConfigMcpServer struct {
+	Headers *LivekitPublicapiAgentbuilderV1AgentConfigHeaders `json:"headers,omitempty"`
 
 	// Name Starts with a letter, then letters, digits, "_" and "-".
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
 
 	// Url The URL of the MCP server.
-	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
+	Url LivekitPublicapiAgentbuilderV1AgentConfigUrl `json:"url"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigModelId A LiveKit Inference model ID, as "<provider>/<model>".
-type LivekitPublicapiAgentsV1BuilderAgentConfigModelId = string
+// LivekitPublicapiAgentbuilderV1AgentConfigModelId A LiveKit Inference model ID, as "<provider>/<model>".
+type LivekitPublicapiAgentbuilderV1AgentConfigModelId = string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigName Starts with a letter, then letters, digits, "_" and "-".
-type LivekitPublicapiAgentsV1BuilderAgentConfigName = string
+// LivekitPublicapiAgentbuilderV1AgentConfigName Starts with a letter, then letters, digits, "_" and "-".
+type LivekitPublicapiAgentbuilderV1AgentConfigName = string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ReasoningEffort.
-type LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort string
+// LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.ReasoningEffort.
+type LivekitPublicapiAgentbuilderV1AgentConfigReasoningEffort string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ToolParameter.
-type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigToolParameter defines model for livekit.publicapi.agentbuilder.v1.AgentConfig.ToolParameter.
+type LivekitPublicapiAgentbuilderV1AgentConfigToolParameter struct {
 	// Description Tells the model what value to give.
 	Description string `json:"description"`
 
 	// Name The parameter name. An HTTP tool sends a parameter that its url
 	// names as a path segment (":name") in the path, and all others in
 	// the query (GET) or the JSON body.
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
 
 	// Required If false, the model can omit the parameter.
-	Required *bool                                                        `json:"required,omitempty"`
-	Type     *LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType `json:"type,omitempty"`
+	Required *bool                                                       `json:"required,omitempty"`
+	Type     *LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType `json:"type,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter.Type.
-type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType string
+// LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType defines model for LivekitPublicapiAgentbuilderV1AgentConfigToolParameter.Type.
+type LivekitPublicapiAgentbuilderV1AgentConfigToolParameterType string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigUrl An http or https URL.
-type LivekitPublicapiAgentsV1BuilderAgentConfigUrl = string
+// LivekitPublicapiAgentbuilderV1AgentConfigUrl An http or https URL.
+type LivekitPublicapiAgentbuilderV1AgentConfigUrl = string
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigVariable A placeholder. type is string, number or boolean; with no type, the
+// LivekitPublicapiAgentbuilderV1AgentConfigVariable A placeholder. type is string, number or boolean; with no type, the
 // type of default decides.
-type LivekitPublicapiAgentsV1BuilderAgentConfigVariable struct {
+type LivekitPublicapiAgentbuilderV1AgentConfigVariable struct {
 	union json.RawMessage
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.0.
-type LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigVariable0 defines model for LivekitPublicapiAgentbuilderV1AgentConfigVariable.0.
+type LivekitPublicapiAgentbuilderV1AgentConfigVariable0 struct {
 	Default *string `json:"default,omitempty"`
 
 	// Name Starts with a letter, then letters, digits, "_" and "-".
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
-	Type interface{}                                    `json:"type"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
+	Type interface{}                                   `json:"type"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.1.
-type LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigVariable1 defines model for LivekitPublicapiAgentbuilderV1AgentConfigVariable.1.
+type LivekitPublicapiAgentbuilderV1AgentConfigVariable1 struct {
 	Default *float32 `json:"default,omitempty"`
 
 	// Name Starts with a letter, then letters, digits, "_" and "-".
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
-	Type interface{}                                    `json:"type,omitempty"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
+	Type interface{}                                   `json:"type,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.2.
-type LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 struct {
+// LivekitPublicapiAgentbuilderV1AgentConfigVariable2 defines model for LivekitPublicapiAgentbuilderV1AgentConfigVariable.2.
+type LivekitPublicapiAgentbuilderV1AgentConfigVariable2 struct {
 	Default *bool `json:"default,omitempty"`
 
 	// Name Starts with a letter, then letters, digits, "_" and "-".
-	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
-	Type interface{}                                    `json:"type,omitempty"`
+	Name LivekitPublicapiAgentbuilderV1AgentConfigName `json:"name"`
+	Type interface{}                                   `json:"type,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentsCreateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Create.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsCreateResponse struct {
-	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+// LivekitPublicapiAgentbuilderV1AgentVersion A saved configuration of an Agent Builder agent. Creating the agent makes
+//
+//	its first version, and each update makes a new one.
+type LivekitPublicapiAgentbuilderV1AgentVersion struct {
+	// Config The configuration that the version holds.
+	Config    *LivekitPublicapiAgentbuilderV1AgentConfig `json:"config,omitempty"`
+	CreatedAt *GoogleProtobufTimestamp                   `json:"createdAt,omitempty"`
+
+	// DeployedAt When the last deployment of this version finished its build. Unset when
+	//  there is no record that a deployment of this version finished. To learn
+	//  which version runs, read `deployment.versionId` from `GetAgent`.
+	DeployedAt *GoogleProtobufTimestamp `json:"deployedAt,omitempty"`
+	Id         *string                  `json:"id,omitempty"`
+
+	// OwnerId The ID of the user who saved the version. Empty when it is not known.
+	OwnerId *string `json:"ownerId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Delete.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse = map[string]interface{}
+// LivekitPublicapiAgentbuilderV1AgentVersionsListResponse defines model for livekit.publicapi.agentbuilder.v1.AgentVersions.List.Response.
+type LivekitPublicapiAgentbuilderV1AgentVersionsListResponse struct {
+	Items    *[]LivekitPublicapiAgentbuilderV1AgentVersion `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
+}
 
-// LivekitPublicapiAgentsV1BuilderAgentsDeployResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Deploy.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsDeployResponse struct {
+// LivekitPublicapiAgentbuilderV1AgentsCreateResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.Create.Response.
+type LivekitPublicapiAgentbuilderV1AgentsCreateResponse struct {
+	Agent *LivekitPublicapiAgentbuilderV1Agent `json:"agent,omitempty"`
+}
+
+// LivekitPublicapiAgentbuilderV1AgentsDeleteResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.Delete.Response.
+type LivekitPublicapiAgentbuilderV1AgentsDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiAgentbuilderV1AgentsDeployResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.Deploy.Response.
+type LivekitPublicapiAgentbuilderV1AgentsDeployResponse struct {
 	// Status The deployment status, which is `DEPLOYMENT_STATUS_BUILDING`.
-	//  Call `GetBuilderAgent` to follow the deployment.
-	Status *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+	//  Call `GetAgent` to follow the deployment.
+	Status *LivekitPublicapiAgentbuilderV1DeploymentStatus `json:"status,omitempty"`
 
 	// VersionId The version that the deployment builds.
 	VersionId *string `json:"versionId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentsGetResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Get.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsGetResponse struct {
-	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+// LivekitPublicapiAgentbuilderV1AgentsGetResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.Get.Response.
+type LivekitPublicapiAgentbuilderV1AgentsGetResponse struct {
+	Agent *LivekitPublicapiAgentbuilderV1Agent `json:"agent,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentsListResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.List.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsListResponse struct {
-	Items    *[]LivekitPublicapiAgentsV1BuilderAgent `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo       `json:"pageInfo,omitempty"`
+// LivekitPublicapiAgentbuilderV1AgentsGetCodeURLResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.GetCodeURL.Response.
+type LivekitPublicapiAgentbuilderV1AgentsGetCodeURLResponse struct {
+	// ExpiresAt The time that the URL stops working: the time of the request plus the
+	//  granted expiry, after the 15-minute clamp.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// Url A signed URL that downloads the agent code as a zip file. The URL
+	//  needs no credentials and is valid until `expiresAt`.
+	Url *string `json:"url,omitempty"`
+
+	// VersionId The version that the zip file holds.
+	VersionId *string `json:"versionId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Update.Response.
-type LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse struct {
-	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+// LivekitPublicapiAgentbuilderV1AgentsListResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.List.Response.
+type LivekitPublicapiAgentbuilderV1AgentsListResponse struct {
+	Items    *[]LivekitPublicapiAgentbuilderV1Agent `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1Deployment What runs on LiveKit Cloud for a builder agent.
-type LivekitPublicapiAgentsV1Deployment struct {
+// LivekitPublicapiAgentbuilderV1AgentsUpdateResponse defines model for livekit.publicapi.agentbuilder.v1.Agents.Update.Response.
+type LivekitPublicapiAgentbuilderV1AgentsUpdateResponse struct {
+	Agent *LivekitPublicapiAgentbuilderV1Agent `json:"agent,omitempty"`
+}
+
+// LivekitPublicapiAgentbuilderV1Deployment What runs on LiveKit Cloud for an Agent Builder agent.
+type LivekitPublicapiAgentbuilderV1Deployment struct {
 	// DeployedAt When the running agent was deployed.
-	DeployedAt *GoogleProtobufTimestamp                  `json:"deployedAt,omitempty"`
-	Status     *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+	DeployedAt *GoogleProtobufTimestamp                        `json:"deployedAt,omitempty"`
+	Status     *LivekitPublicapiAgentbuilderV1DeploymentStatus `json:"status,omitempty"`
 
 	// VersionId The version that the running agent was built from. Empty when it is not
 	//  known, or when the agent is not deployed.
 	VersionId *string `json:"versionId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1DeploymentStatus The deployment state of a builder agent. When the agent runs in more
+// LivekitPublicapiAgentbuilderV1DeploymentStatus The deployment state of an Agent Builder agent. When the agent runs in
 //
-//	than one region, the status is the one that needs attention first.
-type LivekitPublicapiAgentsV1DeploymentStatus string
+//	more than one region, the status is the one that needs attention first.
+type LivekitPublicapiAgentbuilderV1DeploymentStatus string
+
+// LivekitPublicapiAnalyticsV1AgentInsightsGetResponse defines model for livekit.publicapi.analytics.v1.AgentInsights.Get.Response.
+type LivekitPublicapiAnalyticsV1AgentInsightsGetResponse struct {
+	// Agents One item for each agent and deployment, busiest first: by
+	//  `sessions`, then by `turns`. The maximum is 500.
+	Agents *[]LivekitPublicapiAnalyticsV1AgentInsightsAgent `json:"agents,omitempty"`
+
+	// Models One item for each model that the selected agents used. The `LLM`,
+	//  `TTS`, and `REALTIME` items come first, by `requests` in descending
+	//  order. The `STT` items come after them, by `sttAudioSeconds` in
+	//  descending order. The maximum is 500 items of each group.
+	Models *[]LivekitPublicapiAnalyticsV1AgentInsightsModel `json:"models,omitempty"`
+
+	// Summary The totals and latencies of the selected agents.
+	Summary *LivekitPublicapiAnalyticsV1AgentInsightsSummary `json:"summary,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1AgentInsightsAgent The totals of one agent and deployment over a time range.
+type LivekitPublicapiAnalyticsV1AgentInsightsAgent struct {
+	// AgentId The cloud agent ID (`CA_...`). Empty for a self-hosted agent.
+	AgentId *string `json:"agentId,omitempty"`
+
+	// AgentName The agent name.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// DeploymentId The ID of the deployment of the agent. Empty for the production
+	//  deployment.
+	DeploymentId *string `json:"deploymentId,omitempty"`
+
+	// E2eLatency The end-to-end latency of the turns of the agent.
+	E2eLatency *LivekitPublicapiAnalyticsV1LatencyStats `json:"e2eLatency,omitempty"`
+
+	// InputTokens The number of input tokens of the LLM and realtime model requests of the
+	//  agent.
+	InputTokens *string `json:"inputTokens,omitempty"`
+
+	// Interruptions The number of turns of the agent that the user interrupted.
+	Interruptions *string `json:"interruptions,omitempty"`
+
+	// OutputTokens The number of output tokens of the LLM and realtime model requests of the
+	//  agent.
+	OutputTokens *string `json:"outputTokens,omitempty"`
+
+	// Sessions The number of distinct sessions in which the agent recorded data. The
+	//  count is an estimate, as in `sessions` of the summary.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// Turns The number of turns of the agent.
+	Turns *string `json:"turns,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1AgentInsightsModel The usage of one model over a time range.
+type LivekitPublicapiAnalyticsV1AgentInsightsModel struct {
+	// CachedInputTokens The number of input tokens that the provider read from its cache. Set for
+	//  `LLM` and `REALTIME`.
+	CachedInputTokens *string `json:"cachedInputTokens,omitempty"`
+
+	// Component The kind of model.
+	Component *LivekitPublicapiAnalyticsV1ModelComponent `json:"component,omitempty"`
+
+	// InputTokens The number of input tokens. Set for `LLM` and `REALTIME`.
+	InputTokens *string `json:"inputTokens,omitempty"`
+
+	// Latency The latency of the requests to the model: the time to first token for
+	//  `LLM` and `REALTIME`, and the time to first byte of audio for `TTS`. For
+	//  `STT`, `count` is `0`.
+	Latency *LivekitPublicapiAnalyticsV1LatencyStats `json:"latency,omitempty"`
+
+	// Model The name of the model, such as `gpt-4.1`. For a TTS that reports no model
+	//  name, the label of the TTS plugin.
+	Model *string `json:"model,omitempty"`
+
+	// OutputTokens The number of output tokens. Set for `LLM` and `REALTIME`.
+	OutputTokens *string `json:"outputTokens,omitempty"`
+
+	// Provider The provider of the model, such as `openai`.
+	Provider *string `json:"provider,omitempty"`
+
+	// Requests The number of requests to the model. `0` for `STT`.
+	Requests *string `json:"requests,omitempty"`
+
+	// Sessions The number of distinct sessions that used the model. The count is an
+	//  estimate, as in `sessions` of the summary.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// SttAudioSeconds The seconds of audio that the agents sent to the model. Set for `STT`.
+	SttAudioSeconds *float64 `json:"sttAudioSeconds,omitempty"`
+
+	// TtsCharacters The number of characters that the agents sent to the model. Set for
+	//  `TTS`.
+	TtsCharacters *string `json:"ttsCharacters,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1AgentInsightsSummary The totals and latencies of the agents of a project over a time range.
+type LivekitPublicapiAnalyticsV1AgentInsightsSummary struct {
+	// CachedInputTokens The number of input tokens that the model provider read from its cache.
+	//  These tokens are also in `inputTokens`.
+	CachedInputTokens *string `json:"cachedInputTokens,omitempty"`
+
+	// E2eLatency The end-to-end latency of agent turns: the time from the end of the
+	//  speech of the user to the start of the response of the agent.
+	E2eLatency *LivekitPublicapiAnalyticsV1LatencyStats `json:"e2eLatency,omitempty"`
+
+	// EndOfUtteranceDelay The end-of-utterance delay of user turns: the end-of-turn delay minus
+	//  the transcription delay. This is the time from the final transcript to
+	//  the decision of the agent that the turn ended.
+	EndOfUtteranceDelay *LivekitPublicapiAnalyticsV1LatencyStats `json:"endOfUtteranceDelay,omitempty"`
+
+	// InputTokens The number of input tokens of the LLM and realtime model requests.
+	InputTokens *string `json:"inputTokens,omitempty"`
+
+	// Interruptions The number of agent turns that the user interrupted.
+	Interruptions *string `json:"interruptions,omitempty"`
+
+	// LlmTtft The LLM time to first token of agent turns that use an LLM and a TTS.
+	LlmTtft *LivekitPublicapiAnalyticsV1LatencyStats `json:"llmTtft,omitempty"`
+
+	// OutputTokens The number of output tokens of the LLM and realtime model requests.
+	OutputTokens *string `json:"outputTokens,omitempty"`
+
+	// RealtimeTtft The time to first token of agent turns that use a realtime model.
+	RealtimeTtft *LivekitPublicapiAnalyticsV1LatencyStats `json:"realtimeTtft,omitempty"`
+
+	// Sessions The number of distinct sessions in which the agents recorded data. The
+	//  count is an estimate, and can differ slightly from the exact count when
+	//  the count is large.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// ToolDuration The duration of the tool calls of the agents.
+	ToolDuration *LivekitPublicapiAnalyticsV1LatencyStats `json:"toolDuration,omitempty"`
+
+	// TranscriptionDelay The transcription delay of user turns: the time from the end of the
+	//  speech of the user to the final transcript.
+	TranscriptionDelay *LivekitPublicapiAnalyticsV1LatencyStats `json:"transcriptionDelay,omitempty"`
+
+	// TtsCharacters The number of characters that the agents sent to TTS.
+	TtsCharacters *string `json:"ttsCharacters,omitempty"`
+
+	// TtsTtfb The TTS time to first byte of audio of agent turns that use an LLM and a
+	//  TTS.
+	TtsTtfb *LivekitPublicapiAnalyticsV1LatencyStats `json:"ttsTtfb,omitempty"`
+
+	// Turns The number of agent turns: each response of an agent to the user.
+	Turns *string `json:"turns,omitempty"`
+}
 
 // LivekitPublicapiAnalyticsV1DataPoint A point of a session time series, such as quality, bandwidth, or frame rate.
 type LivekitPublicapiAnalyticsV1DataPoint struct {
@@ -3653,6 +4574,229 @@ type LivekitPublicapiAnalyticsV1DataPoint struct {
 	// Value The value over that interval.
 	Value *float64 `json:"value,omitempty"`
 }
+
+// LivekitPublicapiAnalyticsV1EvalAgentResult The eval results of one agent over a time range. Each count is a number of
+//
+//	sessions, summed over the evals.
+type LivekitPublicapiAnalyticsV1EvalAgentResult struct {
+	// AgentName The agent name.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// Errors The number of sessions in which an eval failed with an error.
+	Errors *string `json:"errors,omitempty"`
+
+	// Fail The number of sessions in which an eval failed.
+	Fail *string `json:"fail,omitempty"`
+
+	// NotApplicable The number of sessions to which an eval did not apply.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which an eval passed.
+	Pass *string `json:"pass,omitempty"`
+
+	// Sessions The number of sessions of the agent with at least one eval result.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide an eval.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalCriterionResult The results of one criterion of an eval over a time range. Each count is a
+//
+//	number of sessions.
+type LivekitPublicapiAnalyticsV1EvalCriterionResult struct {
+	// CriterionId The ID of the criterion in the definition of the eval.
+	CriterionId *string `json:"criterionId,omitempty"`
+
+	// Errors The number of sessions in which the criterion failed with an error.
+	Errors *string `json:"errors,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// Fail The number of sessions in which the criterion failed.
+	Fail *string `json:"fail,omitempty"`
+
+	// FailInFailedEval The number of sessions in which the criterion failed and the eval
+	//  failed.
+	FailInFailedEval *string `json:"failInFailedEval,omitempty"`
+
+	// NotApplicable The number of sessions to which the criterion did not apply.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which the criterion passed.
+	Pass *string `json:"pass,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide the criterion.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalErrorCount The sessions in which one eval failed with one error code.
+type LivekitPublicapiAnalyticsV1EvalErrorCount struct {
+	// ErrorCode The error code, such as `judge_timeout`.
+	ErrorCode *string `json:"errorCode,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// Sessions The number of sessions.
+	Sessions *string `json:"sessions,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalResult The results of one eval over a time range. Each count is a number of
+//
+//	sessions.
+type LivekitPublicapiAnalyticsV1EvalResult struct {
+	// Deleted True when the eval is deleted. A deleted eval keeps its results.
+	Deleted *bool `json:"deleted,omitempty"`
+
+	// Errors The number of sessions in which the eval failed with an error.
+	Errors *string `json:"errors,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// Fail The number of sessions in which the eval failed.
+	Fail *string `json:"fail,omitempty"`
+
+	// Name The name of the eval. Empty when `evalNamesUnavailable` is true.
+	Name *string `json:"name,omitempty"`
+
+	// NotApplicable The number of sessions to which the eval did not apply.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which the eval passed.
+	Pass *string `json:"pass,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide the eval.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalResultsGetResponse defines model for livekit.publicapi.analytics.v1.EvalResults.Get.Response.
+type LivekitPublicapiAnalyticsV1EvalResultsGetResponse struct {
+	// Agents One item for each agent, the most sessions first, then by
+	//  `agentName`.
+	Agents *[]LivekitPublicapiAnalyticsV1EvalAgentResult `json:"agents,omitempty"`
+
+	// Criteria The criteria of the eval in `evalIds`, the most failed first. Empty
+	//  unless `evalIds` has exactly one ID. The maximum is 50.
+	Criteria *[]LivekitPublicapiAnalyticsV1EvalCriterionResult `json:"criteria,omitempty"`
+
+	// CriteriaTotal The number of criteria with results in the range. When it is more
+	//  than the number of items in `criteria`, the list is cut.
+	CriteriaTotal *string `json:"criteriaTotal,omitempty"`
+
+	// Errors One item for each eval and error code, the most sessions first.
+	Errors *[]LivekitPublicapiAnalyticsV1EvalErrorCount `json:"errors,omitempty"`
+
+	// EvalNamesUnavailable True when LiveKit could not read the names of the evals. The counts
+	//  are complete, and each `name` is empty.
+	EvalNamesUnavailable *bool `json:"evalNamesUnavailable,omitempty"`
+
+	// Evals One item for each eval with results in the range, by `evalId`.
+	Evals *[]LivekitPublicapiAnalyticsV1EvalResult `json:"evals,omitempty"`
+
+	// PreviousSummary The totals of the period of the same length just before the range.
+	//  Unset when that period starts more than 60 days ago, because LiveKit
+	//  keeps eval results for 60 days.
+	PreviousSummary *LivekitPublicapiAnalyticsV1EvalTotals `json:"previousSummary,omitempty"`
+
+	// Summary The totals of the range.
+	Summary *LivekitPublicapiAnalyticsV1EvalTotals `json:"summary,omitempty"`
+
+	// Versions One item for each version of each eval with results in the range, by
+	//  `evalId`, then by `firstEndedAt`.
+	Versions *[]LivekitPublicapiAnalyticsV1EvalVersionResult `json:"versions,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalTotals The eval totals of a time range. Each count is a number of sessions.
+type LivekitPublicapiAnalyticsV1EvalTotals struct {
+	// Errors The number of sessions in which an eval failed with an error, such as a
+	//  judge timeout, summed over the evals.
+	Errors *string `json:"errors,omitempty"`
+
+	// Fail The number of sessions in which an eval failed, summed over the evals.
+	Fail *string `json:"fail,omitempty"`
+
+	// FailedSessions The number of sessions in which at least one eval failed.
+	FailedSessions *string `json:"failedSessions,omitempty"`
+
+	// JudgedSessions The number of sessions in which at least one eval has a result that is
+	//  not an error.
+	JudgedSessions *string `json:"judgedSessions,omitempty"`
+
+	// NotApplicable The number of sessions to which an eval did not apply, summed over the
+	//  evals.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which an eval passed, summed over the evals.
+	Pass *string `json:"pass,omitempty"`
+
+	// Sessions The number of sessions with at least one eval result.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide an eval,
+	//  summed over the evals.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1EvalVersionResult The results of one version of an eval over a time range. A version is the
+//
+//	hash of the fields of a revision that change its scores.
+type LivekitPublicapiAnalyticsV1EvalVersionResult struct {
+	// Errors The number of sessions in which the version failed with an error.
+	Errors *string `json:"errors,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// EvalVersion The hash of the version.
+	EvalVersion *string `json:"evalVersion,omitempty"`
+
+	// Fail The number of sessions in which the version failed.
+	Fail *string `json:"fail,omitempty"`
+
+	// FirstEndedAt The end time of the first session in the range that this version scored.
+	FirstEndedAt *GoogleProtobufTimestamp `json:"firstEndedAt,omitempty"`
+
+	// LastEndedAt The end time of the last session in the range that this version scored.
+	LastEndedAt *GoogleProtobufTimestamp `json:"lastEndedAt,omitempty"`
+
+	// NotApplicable The number of sessions to which the version did not apply.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which the version passed.
+	Pass *string `json:"pass,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide the version.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1LatencyStats The statistics of one latency over a time range, in milliseconds. When
+//
+//	`count` is `0`, every value is `0`.
+type LivekitPublicapiAnalyticsV1LatencyStats struct {
+	// Count The number of measurements.
+	Count *string `json:"count,omitempty"`
+
+	// MaxMs The maximum.
+	MaxMs *float64 `json:"maxMs,omitempty"`
+
+	// MeanMs The mean.
+	MeanMs *float64 `json:"meanMs,omitempty"`
+
+	// P50Ms The median. The percentiles are estimates, accurate to about 1%.
+	P50Ms *float64 `json:"p50Ms,omitempty"`
+
+	// P95Ms The 95th percentile.
+	P95Ms *float64 `json:"p95Ms,omitempty"`
+
+	// P99Ms The 99th percentile.
+	P99Ms *float64 `json:"p99Ms,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1ModelComponent The kind of model that an agent used.
+type LivekitPublicapiAnalyticsV1ModelComponent string
 
 // LivekitPublicapiAnalyticsV1ParticipantInfo A participant identity of a room session.
 type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
@@ -3902,6 +5046,129 @@ type LivekitPublicapiAnalyticsV1SessionEventsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiAnalyticsV1SessionLabelCount The sessions with one intent or one outcome over a time range.
+type LivekitPublicapiAnalyticsV1SessionLabelCount struct {
+	// Deleted True when the label is deleted. A deleted label keeps its results.
+	Deleted *bool `json:"deleted,omitempty"`
+
+	// LabelId The label ID (`LBL_...`). `other` when no label matched the session.
+	//  Empty when LiveKit did not label the session, for example because the
+	//  label settings exclude it.
+	LabelId *string `json:"labelId,omitempty"`
+
+	// Name The name of the label. Empty for `other`, for an empty `labelId`, and
+	//  when `labelNamesUnavailable` is true.
+	Name *string `json:"name,omitempty"`
+
+	// Rating The rating of an outcome. Unspecified for an intent, and when the name
+	//  is empty.
+	Rating *LivekitPublicapiEvalsV1SessionLabelRating `json:"rating,omitempty"`
+
+	// Sessions The number of sessions with the label.
+	Sessions *string `json:"sessions,omitempty"`
+
+	// Share The fraction of the sessions that LiveKit analyzed for labels in the
+	//  range that have the label, the unlabeled sessions included. From `0` to
+	//  `1`.
+	Share *float64 `json:"share,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1SessionLabelEvalResult The results of one eval in the sessions with one label over a time range.
+//
+//	Each count is a number of sessions. The pass rate of the eval for the label
+//	is `pass / (pass + fail)`.
+type LivekitPublicapiAnalyticsV1SessionLabelEvalResult struct {
+	// Errors The number of sessions in which the eval failed with an error.
+	Errors *string `json:"errors,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// Fail The number of sessions in which the eval failed.
+	Fail *string `json:"fail,omitempty"`
+
+	// Kind Whether `labelId` is an intent or an outcome.
+	Kind *LivekitPublicapiEvalsV1SessionLabelKind `json:"kind,omitempty"`
+
+	// LabelId The label ID (`LBL_...`), `other`, or empty, as in `labelId` of a
+	//  `SessionLabelCount`.
+	LabelId *string `json:"labelId,omitempty"`
+
+	// NotApplicable The number of sessions to which the eval did not apply.
+	NotApplicable *string `json:"notApplicable,omitempty"`
+
+	// Pass The number of sessions in which the eval passed.
+	Pass *string `json:"pass,omitempty"`
+
+	// Undecided The number of sessions in which the judge could not decide the eval.
+	Undecided *string `json:"undecided,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1SessionLabelFlow The sessions with one pair of intent and outcome over a time range.
+type LivekitPublicapiAnalyticsV1SessionLabelFlow struct {
+	// IntentId The intent ID (`LBL_...`), `other`, or empty, as in `labelId` of a
+	//  `SessionLabelCount`.
+	IntentId *string `json:"intentId,omitempty"`
+
+	// OutcomeId The outcome ID (`LBL_...`), `other`, or empty, as in `labelId` of a
+	//  `SessionLabelCount`.
+	OutcomeId *string `json:"outcomeId,omitempty"`
+
+	// Sessions The number of sessions with the intent and the outcome.
+	Sessions *string `json:"sessions,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1SessionLabelResultsGetResponse defines model for livekit.publicapi.analytics.v1.SessionLabelResults.Get.Response.
+type LivekitPublicapiAnalyticsV1SessionLabelResultsGetResponse struct {
+	// Evals The eval results of the sessions with each label: the intents first,
+	//  then the outcomes, each by `labelId` and then by `evalId`.
+	Evals *[]LivekitPublicapiAnalyticsV1SessionLabelEvalResult `json:"evals,omitempty"`
+
+	// Flows One item for each pair of intent and outcome, the most sessions
+	//  first.
+	Flows *[]LivekitPublicapiAnalyticsV1SessionLabelFlow `json:"flows,omitempty"`
+
+	// Intents One item for each intent, the most sessions first, then by
+	//  `labelId`.
+	Intents *[]LivekitPublicapiAnalyticsV1SessionLabelCount `json:"intents,omitempty"`
+
+	// LabelNamesUnavailable True when LiveKit could not read the names of the labels. The counts
+	//  are complete, and each `name` is empty.
+	LabelNamesUnavailable *bool `json:"labelNamesUnavailable,omitempty"`
+
+	// Outcomes One item for each outcome, the most sessions first, then by
+	//  `labelId`.
+	Outcomes *[]LivekitPublicapiAnalyticsV1SessionLabelCount `json:"outcomes,omitempty"`
+
+	// Totals The eval outcome of the sessions with each label, over the evals in
+	//  `evalIds`, or every eval when it is empty: the intents first, then
+	//  the outcomes, each the most sessions first, then by `labelId`.
+	Totals *[]LivekitPublicapiAnalyticsV1SessionLabelTotal `json:"totals,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1SessionLabelTotal The eval outcome of the sessions with one label over a time range, over all
+//
+//	evals. Only sessions with at least one eval result count.
+type LivekitPublicapiAnalyticsV1SessionLabelTotal struct {
+	// DecidedSessions The number of those sessions in which at least one eval passed or failed.
+	DecidedSessions *string `json:"decidedSessions,omitempty"`
+
+	// FailedSessions The number of those sessions in which at least one eval failed.
+	//  `failedSessions / decidedSessions` is the share of decided sessions with
+	//  the label in which an eval failed.
+	FailedSessions *string `json:"failedSessions,omitempty"`
+
+	// Kind Whether `labelId` is an intent or an outcome.
+	Kind *LivekitPublicapiEvalsV1SessionLabelKind `json:"kind,omitempty"`
+
+	// LabelId The label ID (`LBL_...`), `other`, or empty, as in `labelId` of a
+	//  `SessionLabelCount`.
+	LabelId *string `json:"labelId,omitempty"`
+
+	// Sessions The number of sessions with the label and at least one eval result.
+	Sessions *string `json:"sessions,omitempty"`
+}
+
 // LivekitPublicapiAnalyticsV1SessionParticipantsListResponse defines model for livekit.publicapi.analytics.v1.SessionParticipants.List.Response.
 type LivekitPublicapiAnalyticsV1SessionParticipantsListResponse struct {
 	Items    *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"items,omitempty"`
@@ -3925,6 +5192,186 @@ type LivekitPublicapiAnalyticsV1SessionsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo     `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiCloudagentsV1CloudAgent A cloud agent with its deployments.
+type LivekitPublicapiCloudagentsV1CloudAgent struct {
+	// AgentBuilderId The ID of the Agent Builder agent (`AB_...`) that owns this cloud agent.
+	//  Empty for an agent that you deployed from code. A call that changes an
+	//  Agent Builder agent through this service returns `FailedPrecondition`:
+	//  use `AgentBuilderService`.
+	AgentBuilderId *string `json:"agentBuilderId,omitempty"`
+
+	// Info The agent, with a deployment for each region where it runs. `version`,
+	//  `agentName` and `deployedAt` are empty when LiveKit does not know them,
+	//  such as before the first deploy. `secrets` is always empty.
+	Info *LivekitAgentInfo `json:"info,omitempty"`
+
+	// Status The deployment status of the agent. `info.agentDeployments` gives the
+	//  status of each deployment.
+	Status *LivekitPublicapiCloudagentsV1CloudAgentStatus `json:"status,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentBuildLogsGetResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentBuildLogs.Get.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentBuildLogsGetResponse struct {
+	// Log The text of the build log, at most 1 MiB. When `truncated` is true, this
+	//  is the end of the log.
+	Log *string `json:"log,omitempty"`
+
+	// Truncated True when the build log is longer than `log`.
+	Truncated *bool `json:"truncated,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentPrivateLink A private link with its health.
+type LivekitPublicapiCloudagentsV1CloudAgentPrivateLink struct {
+	// Link The private link. Agents reach the service at its `connectionEndpoint`.
+	Link *LivekitPrivateLink `json:"link,omitempty"`
+
+	// Status The health of the private link. Unset when LiveKit could not read it. Call
+	//  `GetCloudAgentPrivateLinkStatus` to read it again.
+	Status *LivekitPrivateLinkStatus `json:"status,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksCreateResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentPrivateLinks.Create.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksCreateResponse struct {
+	// PrivateLink The new private link.
+	PrivateLink *LivekitPrivateLink `json:"privateLink,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksDeleteResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentPrivateLinks.Delete.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksGetStatusResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentPrivateLinks.GetStatus.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksGetStatusResponse struct {
+	// Status The health of the private link.
+	Status *LivekitPrivateLinkStatus `json:"status,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksListResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentPrivateLinks.List.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksListResponse struct {
+	// Items The private links, each with its health.
+	Items *[]LivekitPublicapiCloudagentsV1CloudAgentPrivateLink `json:"items,omitempty"`
+
+	// PageInfo The paging fields of the list.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentSecretValue A secret to set on a cloud agent, with its value.
+type LivekitPublicapiCloudagentsV1CloudAgentSecretValue struct {
+	// Kind How the agent gets the secret: `AGENT_SECRET_KIND_ENVIRONMENT` or
+	//  `AGENT_SECRET_KIND_FILE`. Unset means `AGENT_SECRET_KIND_ENVIRONMENT`.
+	Kind *LivekitAgentSecretKind `json:"kind,omitempty"`
+
+	// Name The name of the secret, at most 70 characters. The name of an environment
+	//  variable has letters, digits, and `_`, and does not start with a digit.
+	//  The name of a file has letters, digits, `.`, `-`, and `_`. LiveKit Cloud
+	//  sets some variables on each agent itself, such as `LIVEKIT_URL`, and
+	//  ignores a secret with one of their names.
+	Name *string `json:"name,omitempty"`
+
+	// Value The value of the secret, from 1 byte to 16 KiB. In JSON, the value is
+	//  base64 text.
+	Value *[]byte `json:"value,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentSecretsListResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentSecrets.List.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentSecretsListResponse struct {
+	// Items The secrets, without their values.
+	Items *[]LivekitAgentSecret `json:"items,omitempty"`
+
+	// PageInfo The paging fields of the list.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentSecretsUpdateResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentSecrets.Update.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentSecretsUpdateResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentSettingsGetResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentSettings.Get.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentSettingsGetResponse struct {
+	// AvailableRegions The regions that the project can create agents in.
+	AvailableRegions *[]string `json:"availableRegions,omitempty"`
+
+	// ProjectDataRegion The data region of the project.
+	ProjectDataRegion *string `json:"projectDataRegion,omitempty"`
+
+	// ResidencyWarningRegions The regions with a data residency caveat for the project. The project
+	//  can use them, and a client asks you to confirm before it deploys to
+	//  one.
+	ResidencyWarningRegions *[]string `json:"residencyWarningRegions,omitempty"`
+
+	// Settings The other settings, such as the minimum versions of the agent SDKs.
+	Settings *map[string]string `json:"settings,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentSourceUpload Where to upload the source of a cloud agent for a deploy. Send the source as
+//
+//	a gzipped tar file of the agent directory, with a `Dockerfile` at its root,
+//	in a `multipart/form-data` `POST` to `url`: first each of the `fields`, then
+//	the file in a field named `file`.
+type LivekitPublicapiCloudagentsV1CloudAgentSourceUpload struct {
+	// Fields The form fields to send before the file, with their values as they are.
+	Fields *map[string]string `json:"fields,omitempty"`
+
+	// Url The URL to send the source to.
+	Url *string `json:"url,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentStatus The deployment state of a cloud agent.
+type LivekitPublicapiCloudagentsV1CloudAgentStatus string
+
+// LivekitPublicapiCloudagentsV1CloudAgentVersionsListResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgentVersions.List.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentVersionsListResponse struct {
+	// Items The versions, newest first.
+	Items *[]LivekitAgentVersion `json:"items,omitempty"`
+
+	// PageInfo The paging fields of the list.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsBuildResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Build.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsBuildResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsCreateResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Create.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsCreateResponse struct {
+	// AgentId The ID of the new agent (`CA_...`).
+	AgentId *string `json:"agentId,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsDeleteResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Delete.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsDeployResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Deploy.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsDeployResponse struct {
+	// Tag The tag of the new version. Send it to `BuildCloudAgent`.
+	Tag *string `json:"tag,omitempty"`
+
+	// Upload Where to upload the source archive. The upload expires 10 minutes
+	//  after this call returns.
+	Upload *LivekitPublicapiCloudagentsV1CloudAgentSourceUpload `json:"upload,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsGetResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Get.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsGetResponse struct {
+	// Agent The cloud agent.
+	Agent *LivekitPublicapiCloudagentsV1CloudAgent `json:"agent,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsListResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.List.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsListResponse struct {
+	// Items The cloud agents.
+	Items *[]LivekitPublicapiCloudagentsV1CloudAgent `json:"items,omitempty"`
+
+	// PageInfo The paging fields of the list.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsPromoteResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Promote.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsPromoteResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsRestartResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Restart.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsRestartResponse = map[string]interface{}
+
+// LivekitPublicapiCloudagentsV1CloudAgentsRollbackResponse defines model for livekit.publicapi.cloudagents.v1.CloudAgents.Rollback.Response.
+type LivekitPublicapiCloudagentsV1CloudAgentsRollbackResponse = map[string]interface{}
+
 // LivekitPublicapiCommonV1PageInfo The paging state of a list response.
 type LivekitPublicapiCommonV1PageInfo struct {
 	// HasMore True when another page follows this one.
@@ -3937,6 +5384,669 @@ type LivekitPublicapiCommonV1PageInfo struct {
 
 // LivekitPublicapiCommonV1SortOrder The sort direction of a list.
 type LivekitPublicapiCommonV1SortOrder string
+
+// LivekitPublicapiEvalsV1Eval An eval of a project. The definition of the eval is in its revisions and its
+//
+//	draft.
+type LivekitPublicapiEvalsV1Eval struct {
+	// Active When false, the eval is deleted, and LiveKit does not score sessions
+	//  with it.
+	Active *bool `json:"active,omitempty"`
+
+	// Agents The names of the agents that the live revision runs on. When empty, the
+	//  eval runs on every agent of the project.
+	Agents *[]string `json:"agents,omitempty"`
+
+	// Description The description of the eval.
+	Description *string `json:"description,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// HasDraft True when the eval has a draft.
+	HasDraft *bool `json:"hasDraft,omitempty"`
+
+	// Name The name of the eval. It is unique among the evals of the project.
+	Name *string `json:"name,omitempty"`
+
+	// PublishedRevision The number of the live revision. 0 until the first publish.
+	PublishedRevision *int `json:"publishedRevision,omitempty"`
+
+	// ScopeKey The `scope.key` of the definition, such as `tenant=acme`. From the draft
+	//  when the eval has one, else from the live revision. Empty when unset.
+	ScopeKey *string `json:"scopeKey,omitempty"`
+
+	// UpdatedAt When the eval last changed.
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// UpdatedBy The ID of the user who last changed the eval.
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+
+	// UpdatedSource The tool that last changed the eval.
+	UpdatedSource *LivekitPublicapiEvalsV1EvalSource `json:"updatedSource,omitempty"`
+
+	// UsesJudge True when a criterion asks an LLM judge a question. From the draft when
+	//  the eval has one, else from the live revision.
+	UsesJudge *bool `json:"usesJudge,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefaultsGetResponse defines model for livekit.publicapi.evals.v1.EvalDefaults.Get.Response.
+type LivekitPublicapiEvalsV1EvalDefaultsGetResponse struct {
+	Defaults *LivekitPublicapiEvalsV1JudgeDefaults `json:"defaults,omitempty"`
+
+	// JudgeModels The IDs of the judge models that a definition can name, such as in
+	//  `judge.cheap.model` or `judge.panel.members`.
+	JudgeModels *[]string `json:"judgeModels,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefaultsUpdateResponse defines model for livekit.publicapi.evals.v1.EvalDefaults.Update.Response.
+type LivekitPublicapiEvalsV1EvalDefaultsUpdateResponse struct {
+	Defaults *LivekitPublicapiEvalsV1JudgeDefaults `json:"defaults,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinition The definition of an eval: the sessions that it runs on, what the judge
+// reads, the judge settings, and the criteria with their points. The ID, the
+// name and the description of the eval are not part of it. No property is
+// required, because a draft can be partial. Publishing checks that the
+// definition is complete, and ValidateEval lists what is missing.
+type LivekitPublicapiEvalsV1EvalDefinition struct {
+	Criteria      *[]LivekitPublicapiEvalsV1EvalDefinitionCriterion `json:"criteria,omitempty"`
+	Inputs        *LivekitPublicapiEvalsV1EvalDefinitionInputs      `json:"inputs,omitempty"`
+	Judge         *LivekitPublicapiEvalsV1EvalDefinitionJudge       `json:"judge,omitempty"`
+	PassThreshold *float32                                          `json:"pass_threshold,omitempty"`
+	Run           *LivekitPublicapiEvalsV1EvalDefinitionRun         `json:"run,omitempty"`
+	Scope         *LivekitPublicapiEvalsV1EvalDefinitionScope       `json:"scope,omitempty"`
+	TotalPoints   *int                                              `json:"total_points,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionChoice defines model for livekit.publicapi.evals.v1.EvalDefinition.choice.
+type LivekitPublicapiEvalsV1EvalDefinitionChoice struct {
+	Credit      *float32 `json:"credit,omitempty"`
+	Description *string  `json:"description,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterion defines model for livekit.publicapi.evals.v1.EvalDefinition.criterion.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterion struct {
+	Answer      *LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer `json:"answer,omitempty"`
+	AppliesWhen *string                                               `json:"applies_when,omitempty"`
+	AutoFail    *bool                                                 `json:"auto_fail,omitempty"`
+	Check       *string                                               `json:"check,omitempty"`
+
+	// Choices categorical: a map of choice ID to {description, credit}. numeric: level descriptions, ordered low to high.
+	Choices         *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices `json:"choices,omitempty"`
+	Context         *string                                                 `json:"context,omitempty"`
+	Escalate        *LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate `json:"escalate,omitempty"`
+	FollowUps       *[]LivekitPublicapiEvalsV1EvalDefinitionCriterion       `json:"follow_ups,omitempty"`
+	Grade           *LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade    `json:"grade,omitempty"`
+	Id              *string                                                 `json:"id,omitempty"`
+	MinTurnPassRate *float32                                                `json:"min_turn_pass_rate,omitempty"`
+	On              *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On      `json:"on,omitempty"`
+
+	// PassAt numeric: the lowest passing level, 1-based.
+	PassAt      *int      `json:"pass_at,omitempty"`
+	PassChoices *[]string `json:"pass_choices,omitempty"`
+	Points      *int      `json:"points,omitempty"`
+	Question    *string   `json:"question,omitempty"`
+
+	// Rule A type: rule criterion's rule: a JsonLogic expression (jsonlogic.com) over the session variables in rule_var. Only the operations listed here are allowed. tool_called_before is a custom operation.
+	Rule *LivekitPublicapiEvalsV1EvalDefinitionRule          `json:"rule,omitempty"`
+	Type *LivekitPublicapiEvalsV1EvalDefinitionCriterionType `json:"type,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Answer.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionAnswer string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0 defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Choices.0.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0 map[string]LivekitPublicapiEvalsV1EvalDefinitionChoice
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1 defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Choices.1.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1 = []string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices categorical: a map of choice ID to {description, credit}. numeric: level descriptions, ordered low to high.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices struct {
+	union json.RawMessage
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Escalate.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionEscalate string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Grade.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionGrade string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0 defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.On.0.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0 = string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1 defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.On.1.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1 = []string
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterion_On defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.On.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterion_On struct {
+	union json.RawMessage
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionCriterionType defines model for LivekitPublicapiEvalsV1EvalDefinitionCriterion.Type.
+type LivekitPublicapiEvalsV1EvalDefinitionCriterionType string
+
+// LivekitPublicapiEvalsV1EvalDefinitionInputs defines model for livekit.publicapi.evals.v1.EvalDefinition.inputs.
+type LivekitPublicapiEvalsV1EvalDefinitionInputs struct {
+	AgentInstructions *bool `json:"agent_instructions,omitempty"`
+	Handoffs          *bool `json:"handoffs,omitempty"`
+
+	// MaxTokens Truncate the oldest turns first above this many tokens. Unset means no limit.
+	MaxTokens  *int      `json:"max_tokens,omitempty"`
+	Metadata   *[]string `json:"metadata,omitempty"`
+	Metrics    *bool     `json:"metrics,omitempty"`
+	ToolCalls  *bool     `json:"tool_calls,omitempty"`
+	Transcript *bool     `json:"transcript,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionJudge defines model for livekit.publicapi.evals.v1.EvalDefinition.judge.
+type LivekitPublicapiEvalsV1EvalDefinitionJudge struct {
+	Cheap    *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheap `json:"cheap,omitempty"`
+	Context  *string                                              `json:"context,omitempty"`
+	Examples *[]struct {
+		Criterion *string                                                    `json:"criterion,omitempty"`
+		Session   *string                                                    `json:"session,omitempty"`
+		Verdict   *LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict `json:"verdict,omitempty"`
+		Why       *string                                                    `json:"why,omitempty"`
+	} `json:"examples,omitempty"`
+	Panel       *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel       `json:"panel,omitempty"`
+	ReviewLevel *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel `json:"review_level,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict defines model for LivekitPublicapiEvalsV1EvalDefinitionJudge.Examples.Verdict.
+type LivekitPublicapiEvalsV1EvalDefinitionJudgeExamplesVerdict string
+
+// LivekitPublicapiEvalsV1EvalDefinitionRule A type: rule criterion's rule: a JsonLogic expression (jsonlogic.com) over the session variables in rule_var. Only the operations listed here are allowed. tool_called_before is a custom operation.
+type LivekitPublicapiEvalsV1EvalDefinitionRule struct {
+	// A type: rule criterion's rule: a JsonLogic expression (jsonlogic.com) over the session variables in rule_var. Only the operations listed here are allowed. tool_called_before is a custom operation.
+	*LivekitPublicapiEvalsV1EvalDefinitionRule `json:"!,omitempty"`
+
+	// LessThan [a, b], or [low, x, high] for a range (JsonLogic's between). One operand is a latency or usage variable, the others numbers.
+	LessThan *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare `json:"<,omitempty"`
+
+	// LessThanEqual [a, b], or [low, x, high] for a range (JsonLogic's between). One operand is a latency or usage variable, the others numbers.
+	LessThanEqual *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare `json:"<=,omitempty"`
+
+	// GreaterThan [a, b], or [low, x, high] for a range (JsonLogic's between). One operand is a latency or usage variable, the others numbers.
+	GreaterThan *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare `json:">,omitempty"`
+
+	// GreaterThanEqual [a, b], or [low, x, high] for a range (JsonLogic's between). One operand is a latency or usage variable, the others numbers.
+	GreaterThanEqual *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare `json:">=,omitempty"`
+	And              *[]LivekitPublicapiEvalsV1EvalDefinitionRule      `json:"and,omitempty"`
+
+	// In [name, {"var": "tool_calls" | "handoffs" | "tags"}]: the list holds name. Or [{"var": "intent" | "outcome" | "outcome_rating"}, [names]]: the session's value is one of names.
+	In *[]interface{}                               `json:"in,omitempty"`
+	Or *[]LivekitPublicapiEvalsV1EvalDefinitionRule `json:"or,omitempty"`
+
+	// ToolCalledBefore [tool, later_tool]: tool was called, and before any call to later_tool.
+	ToolCalledBefore *[]string `json:"tool_called_before,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionRuleCompare [a, b], or [low, x, high] for a range (JsonLogic's between). One operand is a latency or usage variable, the others numbers.
+type LivekitPublicapiEvalsV1EvalDefinitionRuleCompare = []LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item
+
+// LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0 defines model for LivekitPublicapiEvalsV1EvalDefinitionRuleCompare.0.
+type LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0 = float32
+
+// LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item defines model for livekit.publicapi.evals.v1.EvalDefinition.rule_compare.Item.
+type LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item struct {
+	union json.RawMessage
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionRuleVar A session variable. tool_calls, handoffs and tags are lists of names. intent and outcome hold the session's label ID (LBL_*) or "other", and outcome_rating holds good, neutral or bad; each is empty when the session has no label of that kind. latency.* is in ms, rolled up per session by max or mean. usage.* are counts, except usage.session_duration in ms.
+type LivekitPublicapiEvalsV1EvalDefinitionRuleVar struct {
+	Var *LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar `json:"var,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar defines model for LivekitPublicapiEvalsV1EvalDefinitionRuleVar.Var.
+type LivekitPublicapiEvalsV1EvalDefinitionRuleVarVar string
+
+// LivekitPublicapiEvalsV1EvalDefinitionRun defines model for livekit.publicapi.evals.v1.EvalDefinition.run.
+type LivekitPublicapiEvalsV1EvalDefinitionRun struct {
+	AlwaysScore *struct {
+		TagsAny *[]string `json:"tags_any,omitempty"`
+	} `json:"always_score,omitempty"`
+	SampleRate *float32                                      `json:"sample_rate,omitempty"`
+	When       *LivekitPublicapiEvalsV1EvalDefinitionRunWhen `json:"when,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionRunWhen defines model for livekit.publicapi.evals.v1.EvalDefinition.run_when.
+type LivekitPublicapiEvalsV1EvalDefinitionRunWhen struct {
+	// Intent Intent label IDs (`LBL_…`) of the project, or `other` for unfamiliar sessions. The eval runs only on sessions labeled with one of them.
+	Intent *[]string `json:"intent,omitempty"`
+
+	// IntentNone Intent label IDs (`LBL_…`), or `other`. The eval skips sessions labeled with any of them.
+	IntentNone   *[]string          `json:"intent_none,omitempty"`
+	MaxDuration  *string            `json:"max_duration,omitempty"`
+	Metadata     *map[string]string `json:"metadata,omitempty"`
+	MinDuration  *string            `json:"min_duration,omitempty"`
+	MinUserTurns *int               `json:"min_user_turns,omitempty"`
+
+	// Outcome Outcome label IDs (`LBL_…`) of the project, or `other` for unfamiliar sessions. The eval runs only on sessions labeled with one of them.
+	Outcome *[]string `json:"outcome,omitempty"`
+
+	// OutcomeNone Outcome label IDs (`LBL_…`), or `other`. The eval skips sessions labeled with any of them.
+	OutcomeNone *[]string `json:"outcome_none,omitempty"`
+	TagsAny     *[]string `json:"tags_any,omitempty"`
+	TagsNone    *[]string `json:"tags_none,omitempty"`
+
+	// Unlabeled What to do with a session that has no label of a kind this eval filters on, for example because labeling failed. `skip` (the default) does not run the eval on it; `include` runs it.
+	Unlabeled *LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled `json:"unlabeled,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled What to do with a session that has no label of a kind this eval filters on, for example because labeling failed. `skip` (the default) does not run the eval on it; `include` runs it.
+type LivekitPublicapiEvalsV1EvalDefinitionRunWhenUnlabeled string
+
+// LivekitPublicapiEvalsV1EvalDefinitionScope defines model for livekit.publicapi.evals.v1.EvalDefinition.scope.
+type LivekitPublicapiEvalsV1EvalDefinitionScope struct {
+	Agents   *[]string `json:"agents,omitempty"`
+	Key      *string   `json:"key,omitempty"`
+	Projects *[]string `json:"projects,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDraft The draft of an eval: the next version of its definition, which scores
+//
+//	nothing until it is published.
+type LivekitPublicapiEvalsV1EvalDraft struct {
+	// BaseRevision The live revision when the draft was made. 0 for an eval with nothing
+	//  published.
+	BaseRevision *int `json:"baseRevision,omitempty"`
+
+	// Definition The definition, with only the fields that its author set.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
+
+	// DraftEtag The version of the draft. It changes each time the draft changes.
+	DraftEtag *string `json:"draftEtag,omitempty"`
+
+	// UpdatedAt When the draft last changed.
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// UpdatedBy The ID of the user who last changed the draft.
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDraftsDiscardResponse defines model for livekit.publicapi.evals.v1.EvalDrafts.Discard.Response.
+type LivekitPublicapiEvalsV1EvalDraftsDiscardResponse = map[string]interface{}
+
+// LivekitPublicapiEvalsV1EvalDraftsPublishResponse defines model for livekit.publicapi.evals.v1.EvalDrafts.Publish.Response.
+type LivekitPublicapiEvalsV1EvalDraftsPublishResponse struct {
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+
+	// Revision The new live revision.
+	Revision *LivekitPublicapiEvalsV1EvalRevision `json:"revision,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalDraftsSaveResponse defines model for livekit.publicapi.evals.v1.EvalDrafts.Save.Response.
+type LivekitPublicapiEvalsV1EvalDraftsSaveResponse struct {
+	// Draft The saved draft, with its new `draftEtag`.
+	Draft *LivekitPublicapiEvalsV1EvalDraft `json:"draft,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalFieldChange A field that changed between two versions of a definition.
+type LivekitPublicapiEvalsV1EvalFieldChange struct {
+	Kind *LivekitPublicapiEvalsV1EvalFieldChangeKind `json:"kind,omitempty"`
+
+	// NewValue The value in the newer version. Unset when the field was removed.
+	NewValue *GoogleProtobufValue `json:"newValue,omitempty"`
+
+	// OldValue The value in the older version. Unset when the field was added.
+	OldValue *GoogleProtobufValue `json:"oldValue,omitempty"`
+
+	// Path The path of the field in the definition. A criterion is named by its
+	//  `id`, such as `criteria[resolved].points`.
+	Path *string `json:"path,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalFieldChangeKind How a field changed between two versions of a definition.
+type LivekitPublicapiEvalsV1EvalFieldChangeKind string
+
+// LivekitPublicapiEvalsV1EvalHistoryListResponse defines model for livekit.publicapi.evals.v1.EvalHistory.List.Response.
+type LivekitPublicapiEvalsV1EvalHistoryListResponse struct {
+	Items    *[]LivekitPublicapiEvalsV1EvalHistoryEntry `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalHistoryEntry An entry of the history of an eval.
+type LivekitPublicapiEvalsV1EvalHistoryEntry struct {
+	// ActorId The ID of the user who made the change.
+	ActorId *string `json:"actorId,omitempty"`
+
+	// ChangesScores True when the change made a revision that changes scores.
+	ChangesScores *bool `json:"changesScores,omitempty"`
+
+	// EvalVersion The `evalVersion` of the live revision after the change. Empty before the
+	//  first publish.
+	EvalVersion *string                                 `json:"evalVersion,omitempty"`
+	Kind        *LivekitPublicapiEvalsV1EvalHistoryKind `json:"kind,omitempty"`
+
+	// Message The message that the publisher wrote. Empty for a kind that is not a
+	//  publish or a rollback.
+	Message *string `json:"message,omitempty"`
+
+	// OccurredAt When the change occurred.
+	OccurredAt *GoogleProtobufTimestamp `json:"occurredAt,omitempty"`
+
+	// RestoredFrom The revision that a rollback copied. 0 for every other kind.
+	RestoredFrom *int `json:"restoredFrom,omitempty"`
+
+	// Revision The live revision after the change.
+	Revision *int `json:"revision,omitempty"`
+
+	// Source The tool that made the change.
+	Source *LivekitPublicapiEvalsV1EvalSource `json:"source,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalHistoryKind The kind of an entry of the history of an eval.
+type LivekitPublicapiEvalsV1EvalHistoryKind string
+
+// LivekitPublicapiEvalsV1EvalRevision A published version of the definition of an eval. A revision does not
+//
+//	change.
+type LivekitPublicapiEvalsV1EvalRevision struct {
+	// ChangesScores True when the revision changes scores: its `evalVersion` is not the one
+	//  of the revision before it.
+	ChangesScores *bool `json:"changesScores,omitempty"`
+
+	// Definition The definition, with only the fields that its author set.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
+
+	// EvalVersion A hash of the fields of the definition that change scores. Two revisions
+	//  with the same `evalVersion` give the same scores.
+	EvalVersion *string `json:"evalVersion,omitempty"`
+
+	// Message The message that the publisher wrote.
+	Message *string `json:"message,omitempty"`
+
+	// PublishedAt When the revision was published.
+	PublishedAt *GoogleProtobufTimestamp `json:"publishedAt,omitempty"`
+
+	// PublishedBy The ID of the user who published the revision.
+	PublishedBy *string `json:"publishedBy,omitempty"`
+
+	// ResolvedDefinition The definition with the judge defaults of the project when it was
+	//  published. LiveKit scores sessions with this definition.
+	ResolvedDefinition *LivekitPublicapiEvalsV1EvalDefinition `json:"resolvedDefinition,omitempty"`
+
+	// RestoredFrom The revision that a rollback copied. 0 when the revision is not a
+	//  rollback.
+	RestoredFrom *int `json:"restoredFrom,omitempty"`
+
+	// Revision The revision number. The first publish makes revision 1.
+	Revision *int `json:"revision,omitempty"`
+
+	// Source The tool that published the revision.
+	Source *LivekitPublicapiEvalsV1EvalSource `json:"source,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalRevisionsDiffResponse defines model for livekit.publicapi.evals.v1.EvalRevisions.Diff.Response.
+type LivekitPublicapiEvalsV1EvalRevisionsDiffResponse struct {
+	// Changes The fields that changed, sorted by path. Empty when the two versions
+	//  are the same.
+	Changes *[]LivekitPublicapiEvalsV1EvalFieldChange `json:"changes,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalSource The tool that made a change to an eval.
+type LivekitPublicapiEvalsV1EvalSource string
+
+// LivekitPublicapiEvalsV1EvalViolation A field of a definition that is wrong or missing.
+type LivekitPublicapiEvalsV1EvalViolation struct {
+	// Message What is wrong with the field.
+	Message *string `json:"message,omitempty"`
+
+	// Path The path of the field in the definition, such as
+	//  `criteria[0].question`.
+	Path *string `json:"path,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsCreateResponse defines model for livekit.publicapi.evals.v1.Evals.Create.Response.
+type LivekitPublicapiEvalsV1EvalsCreateResponse struct {
+	// Draft The first draft.
+	Draft *LivekitPublicapiEvalsV1EvalDraft `json:"draft,omitempty"`
+
+	// Eval The new eval.
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsDeleteResponse defines model for livekit.publicapi.evals.v1.Evals.Delete.Response.
+type LivekitPublicapiEvalsV1EvalsDeleteResponse struct {
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsGetResponse defines model for livekit.publicapi.evals.v1.Evals.Get.Response.
+type LivekitPublicapiEvalsV1EvalsGetResponse struct {
+	Eval  *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+	union json.RawMessage
+}
+
+// LivekitPublicapiEvalsV1EvalsGetResponse0 defines model for LivekitPublicapiEvalsV1EvalsGetResponse.0.
+type LivekitPublicapiEvalsV1EvalsGetResponse0 struct {
+	// Draft The draft. Set when the request named the draft, or when nothing
+	//  is published.
+	Draft *LivekitPublicapiEvalsV1EvalDraft `json:"draft,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsGetResponse1 defines model for LivekitPublicapiEvalsV1EvalsGetResponse.1.
+type LivekitPublicapiEvalsV1EvalsGetResponse1 struct {
+	// Revision The revision.
+	Revision *LivekitPublicapiEvalsV1EvalRevision `json:"revision,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsListResponse defines model for livekit.publicapi.evals.v1.Evals.List.Response.
+type LivekitPublicapiEvalsV1EvalsListResponse struct {
+	Items *[]LivekitPublicapiEvalsV1Eval `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsRollbackResponse defines model for livekit.publicapi.evals.v1.Evals.Rollback.Response.
+type LivekitPublicapiEvalsV1EvalsRollbackResponse struct {
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+
+	// Revision The new live revision, a copy of the one that the request named.
+	Revision *LivekitPublicapiEvalsV1EvalRevision `json:"revision,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsUndeleteResponse defines model for livekit.publicapi.evals.v1.Evals.Undelete.Response.
+type LivekitPublicapiEvalsV1EvalsUndeleteResponse struct {
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsUpdateResponse defines model for livekit.publicapi.evals.v1.Evals.Update.Response.
+type LivekitPublicapiEvalsV1EvalsUpdateResponse struct {
+	Eval *LivekitPublicapiEvalsV1Eval `json:"eval,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1EvalsValidateResponse defines model for livekit.publicapi.evals.v1.Evals.Validate.Response.
+type LivekitPublicapiEvalsV1EvalsValidateResponse struct {
+	// Definition The definition, with the judge defaults of the project applied.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
+
+	// Violations Each field of the definition that is wrong or missing. Empty when the
+	//  definition can be published.
+	Violations *[]LivekitPublicapiEvalsV1EvalViolation `json:"violations,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1JudgeDefaults The judge defaults of a project: the judge settings that each eval uses
+//
+//	when its definition does not set its own.
+type LivekitPublicapiEvalsV1JudgeDefaults struct {
+	// Definition The judge defaults. Unset fields take the LiveKit defaults.
+	Definition *LivekitPublicapiEvalsV1JudgeDefaultsDefinition `json:"definition,omitempty"`
+
+	// UpdatedAt When the judge defaults last changed. Unset when they never changed.
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// UpdatedBy The ID of the user who last changed the judge defaults.
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+
+	// UpdatedSource The tool that last changed the judge defaults.
+	UpdatedSource *LivekitPublicapiEvalsV1EvalSource `json:"updatedSource,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinition Shape of the project-wide judge defaults applied to every eval unless an eval's own definition overrides them.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinition struct {
+	Judge *struct {
+		Cheap       *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheap       `json:"cheap,omitempty"`
+		Panel       *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel       `json:"panel,omitempty"`
+		ReviewLevel *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel `json:"review_level,omitempty"`
+	} `json:"judge,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheap defines model for livekit.publicapi.evals.v1.JudgeDefaultsDefinition.cheap.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheap struct {
+	Confidence *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence `json:"confidence,omitempty"`
+	Model      *string                                                        `json:"model,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence defines model for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheap.Confidence.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionCheapConfidence string
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel defines model for livekit.publicapi.evals.v1.JudgeDefaultsDefinition.panel.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel struct {
+	Decide  *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide  `json:"decide,omitempty"`
+	Members *[]string                                                   `json:"members,omitempty"`
+	OnSplit *LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit `json:"on_split,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide defines model for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel.Decide.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelDecide string
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit defines model for LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanel.OnSplit.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionPanelOnSplit string
+
+// LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel defines model for livekit.publicapi.evals.v1.JudgeDefaultsDefinition.review_level.
+type LivekitPublicapiEvalsV1JudgeDefaultsDefinitionReviewLevel string
+
+// LivekitPublicapiEvalsV1SessionLabel An intent or an outcome that an LLM assigns to each finished session.
+type LivekitPublicapiEvalsV1SessionLabel struct {
+	// Active When false, the label is deleted, and LiveKit does not assign it.
+	Active *bool `json:"active,omitempty"`
+
+	// Agents The names of the agents that the label applies to. When empty, the label
+	//  applies to every agent of the project.
+	Agents *[]string `json:"agents,omitempty"`
+
+	// CreatedAt When the label was created.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// Description What the label means. The LLM that assigns labels reads it.
+	Description *string                                  `json:"description,omitempty"`
+	Kind        *LivekitPublicapiEvalsV1SessionLabelKind `json:"kind,omitempty"`
+
+	// LabelId The label ID (`LBL_...`).
+	LabelId *string `json:"labelId,omitempty"`
+
+	// Name The name of the label. It is unique among the active labels of the same
+	//  kind. Evals and results refer to the label by `labelId`, so a new name
+	//  does not change them.
+	Name *string `json:"name,omitempty"`
+
+	// Rating The rating of an outcome. Unspecified for an intent.
+	Rating *LivekitPublicapiEvalsV1SessionLabelRating `json:"rating,omitempty"`
+
+	// UpdatedAt When the label last changed.
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// UpdatedBy The ID of the user who last changed the label.
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+
+	// UpdatedSource The tool that last changed the label.
+	UpdatedSource *LivekitPublicapiEvalsV1EvalSource `json:"updatedSource,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelAgents A list of agent names. It tells an empty list, which means every agent, from
+//
+//	a field that is not set.
+type LivekitPublicapiEvalsV1SessionLabelAgents struct {
+	// Names The agent names. When empty, every agent of the project.
+	Names *[]string `json:"names,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelKind Whether a session label is an intent or an outcome.
+type LivekitPublicapiEvalsV1SessionLabelKind string
+
+// LivekitPublicapiEvalsV1SessionLabelRating Whether an outcome is a good or bad way for a session to end. LiveKit flags
+//
+//	an agent when a bad outcome rises or a good one falls. A neutral outcome
+//	never flags an agent. An intent has no rating.
+type LivekitPublicapiEvalsV1SessionLabelRating string
+
+// LivekitPublicapiEvalsV1SessionLabelSettings The settings that decide which sessions LiveKit labels.
+type LivekitPublicapiEvalsV1SessionLabelSettings struct {
+	// ConfidenceThreshold The lowest confidence at which the LLM keeps a label for a session. From
+	//  above 0 to 1. Defaults to 0.7.
+	ConfidenceThreshold *float64 `json:"confidenceThreshold,omitempty"`
+
+	// MinDuration The shortest session to label, as a whole number with a unit of `s`, `m`
+	//  or `h`, such as `30s`. Unset means no limit.
+	MinDuration *string `json:"minDuration,omitempty"`
+
+	// MinUserTurns The fewest user turns that a session needs to be labeled. Defaults to 1.
+	MinUserTurns *int `json:"minUserTurns,omitempty"`
+
+	// TagsNone LiveKit does not label a session that has any of these tags.
+	TagsNone *[]string `json:"tagsNone,omitempty"`
+
+	// UpdatedAt When the settings last changed. Unset when they never changed. Ignored in
+	//  a request.
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// UpdatedBy The ID of the user who last changed the settings. Ignored in a request.
+	UpdatedBy *string `json:"updatedBy,omitempty"`
+
+	// UpdatedSource The tool that last changed the settings. Ignored in a request.
+	UpdatedSource *LivekitPublicapiEvalsV1EvalSource `json:"updatedSource,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelSettingsOpsGetResponse defines model for livekit.publicapi.evals.v1.SessionLabelSettingsOps.Get.Response.
+type LivekitPublicapiEvalsV1SessionLabelSettingsOpsGetResponse struct {
+	// Settings The settings in effect: the values that the project set, and the
+	//  default for each other field.
+	Settings *LivekitPublicapiEvalsV1SessionLabelSettings `json:"settings,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelSettingsOpsUpdateResponse defines model for livekit.publicapi.evals.v1.SessionLabelSettingsOps.Update.Response.
+type LivekitPublicapiEvalsV1SessionLabelSettingsOpsUpdateResponse struct {
+	// Settings The settings in effect after the change.
+	Settings *LivekitPublicapiEvalsV1SessionLabelSettings `json:"settings,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelsCreateResponse defines model for livekit.publicapi.evals.v1.SessionLabels.Create.Response.
+type LivekitPublicapiEvalsV1SessionLabelsCreateResponse struct {
+	// Label The new label.
+	Label *LivekitPublicapiEvalsV1SessionLabel `json:"label,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelsDeleteResponse defines model for livekit.publicapi.evals.v1.SessionLabels.Delete.Response.
+type LivekitPublicapiEvalsV1SessionLabelsDeleteResponse struct {
+	// Label The deleted label.
+	Label *LivekitPublicapiEvalsV1SessionLabel `json:"label,omitempty"`
+
+	// ReferencingEvals The active evals that still name the label in `run.when`, in the live
+	//  revision or in the draft. Each one has no definition: read it with
+	//  `GetEval`.
+	ReferencingEvals *[]LivekitPublicapiEvalsV1Eval `json:"referencingEvals,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelsListResponse defines model for livekit.publicapi.evals.v1.SessionLabels.List.Response.
+type LivekitPublicapiEvalsV1SessionLabelsListResponse struct {
+	Items *[]LivekitPublicapiEvalsV1SessionLabel `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelsUndeleteResponse defines model for livekit.publicapi.evals.v1.SessionLabels.Undelete.Response.
+type LivekitPublicapiEvalsV1SessionLabelsUndeleteResponse struct {
+	Label *LivekitPublicapiEvalsV1SessionLabel `json:"label,omitempty"`
+}
+
+// LivekitPublicapiEvalsV1SessionLabelsUpdateResponse defines model for livekit.publicapi.evals.v1.SessionLabels.Update.Response.
+type LivekitPublicapiEvalsV1SessionLabelsUpdateResponse struct {
+	Label *LivekitPublicapiEvalsV1SessionLabel `json:"label,omitempty"`
+}
 
 // LivekitPublicapiObservabilityV1DataState A state of the session data: whether more of it can still arrive.
 type LivekitPublicapiObservabilityV1DataState string
@@ -3954,6 +6064,103 @@ type LivekitPublicapiObservabilityV1DataStatus struct {
 	State *LivekitPublicapiObservabilityV1DataState `json:"state,omitempty"`
 }
 
+// LivekitPublicapiObservabilityV1EvalJudgeAnswer The answer of one judge to a criterion. A judge is an LLM that answers the
+//
+//	criterion.
+type LivekitPublicapiObservabilityV1EvalJudgeAnswer struct {
+	// Answer The answer of the judge. Empty unless `outcome` is `answered`.
+	Answer *string `json:"answer,omitempty"`
+
+	// Index The position of the judge in the panel of the criterion, from 0.
+	Index *int `json:"index,omitempty"`
+
+	// Model The model of the judge.
+	Model *string `json:"model,omitempty"`
+
+	// Outcome What the judge did: `answered`, `refused`, `unreadable`, or `failed`.
+	Outcome *string `json:"outcome,omitempty"`
+
+	// Probability The probability that the judge gave its answer, from 0 to 1. Unset when
+	//  the judge gave none.
+	Probability *float64 `json:"probability,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1EvalSession One agent job in a session, with its eval results, as `ListEvalSessions`
+//
+//	returns it.
+type LivekitPublicapiObservabilityV1EvalSession struct {
+	// AgentName The name of the agent that ran the job.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// AgentVersion The version of the agent that ran the job.
+	AgentVersion *string `json:"agentVersion,omitempty"`
+
+	// EndedAt The time that the session ended.
+	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
+
+	// Evals The eval results of the job, by `evalId`. Empty for a job that LiveKit
+	//  only labeled.
+	Evals *[]LivekitPublicapiObservabilityV1EvalSessionResult `json:"evals,omitempty"`
+
+	// IntentId The ID of the intent that LiveKit assigned to the job (`LBL_...`).
+	//  `other` when no intent matched, and empty when LiveKit did not label the
+	//  job.
+	IntentId *string `json:"intentId,omitempty"`
+
+	// JobId The ID of the agent job (`AJ_...`).
+	JobId *string `json:"jobId,omitempty"`
+
+	// OutcomeId The ID of the outcome that LiveKit assigned to the job (`LBL_...`).
+	//  `other` when no outcome matched, and empty when LiveKit did not label the
+	//  job.
+	OutcomeId *string `json:"outcomeId,omitempty"`
+
+	// SessionId The session ID (`RM_...`).
+	SessionId *string `json:"sessionId,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1EvalSessionResult The result of one eval on one agent job, as `ListEvalSessions` returns it.
+type LivekitPublicapiObservabilityV1EvalSessionResult struct {
+	// CriterionAnswer The answer to the criterion in `criterionId`. Set only when the request
+	//  has `criterionId`. Empty for a `rule` criterion: a rule has no judge
+	//  answer, and every listed session failed it.
+	CriterionAnswer *string `json:"criterionAnswer,omitempty"`
+
+	// ErrorCode Why the eval did not run to the end. Empty unless `verdict` is
+	//  `EVAL_VERDICT_ERROR`.
+	ErrorCode *string `json:"errorCode,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// EvalVersion The hash of the eval version that scored the job.
+	EvalVersion *string `json:"evalVersion,omitempty"`
+
+	// FailedCriterionIds The IDs of the criteria that the eval failed, sorted. Set only when the
+	//  request has `evalId` or `verdict`, and no `criterionId`.
+	FailedCriterionIds *[]string `json:"failedCriterionIds,omitempty"`
+
+	// JudgeAnswers The answers of the judges to the criterion in `criterionId`, by judge. A
+	//  judge with no answer has its outcome, such as `refused`. Set only when
+	//  the request has `criterionId`.
+	JudgeAnswers *[]string `json:"judgeAnswers,omitempty"`
+
+	// Score The score of the eval, from 0 to 1. Unset when the eval has no score.
+	Score *float64 `json:"score,omitempty"`
+
+	// Verdict The verdict of the eval.
+	Verdict *LivekitPublicapiObservabilityV1EvalVerdict `json:"verdict,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1EvalSessionsListResponse defines model for livekit.publicapi.observability.v1.EvalSessions.List.Response.
+type LivekitPublicapiObservabilityV1EvalSessionsListResponse struct {
+	Items    *[]LivekitPublicapiObservabilityV1EvalSession `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1EvalVerdict A verdict of an eval or a criterion.
+type LivekitPublicapiObservabilityV1EvalVerdict string
+
 // LivekitPublicapiObservabilityV1LogLevel The level of a log record, as the logs panel on the dashboard shows and
 //
 //	filters it. Python and Node.js agents use different level names, such as
@@ -3963,7 +6170,103 @@ type LivekitPublicapiObservabilityV1DataStatus struct {
 //	Node.js agents.
 type LivekitPublicapiObservabilityV1LogLevel string
 
-// LivekitPublicapiObservabilityV1LogRecord A log record that an agent of a session exported.
+// LivekitPublicapiObservabilityV1LogPattern A group of log records that log the same message from one place in the
+//
+//	code, at one level.
+type LivekitPublicapiObservabilityV1LogPattern struct {
+	// Buckets The number of records in each interval of the range, oldest first. All
+	//  intervals have the same length. An interval with no records is not in
+	//  the list.
+	Buckets *[]LivekitPublicapiObservabilityV1LogPatternBucket `json:"buckets,omitempty"`
+
+	// CodeFile The code file that logged the records. Empty when the records have no
+	//  code location.
+	CodeFile *string `json:"codeFile,omitempty"`
+
+	// CodeFunc The code function that logged the records. Empty when the records have
+	//  no code location.
+	CodeFunc *string `json:"codeFunc,omitempty"`
+
+	// Events The number of records in the range.
+	Events *string `json:"events,omitempty"`
+
+	// FirstSeen The time of the first record in the range. When the counts are
+	//  estimates, it is the first record that the API read.
+	FirstSeen *GoogleProtobufTimestamp `json:"firstSeen,omitempty"`
+
+	// Id The ID of the pattern, as a decimal string. Two reads of the same records
+	//  return the same ID. When new records
+	//  add a placeholder to the template, the pattern gets the ID of the new
+	//  template.
+	Id *string `json:"id,omitempty"`
+
+	// LastSeen The time of the last record in the range. When the counts are
+	//  estimates, it is the last record that the API read.
+	LastSeen *GoogleProtobufTimestamp `json:"lastSeen,omitempty"`
+
+	// Level The level of the records. `LOG_LEVEL_UNSPECIFIED` for records with no
+	//  level.
+	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
+
+	// Logger The logger that wrote the records, such as `livekit.agents`.
+	Logger *string `json:"logger,omitempty"`
+
+	// Source The source of the records.
+	Source *LivekitPublicapiObservabilityV1LogSource `json:"source,omitempty"`
+
+	// Template The message of the records, with each variable part replaced by a
+	//  placeholder. For example, `<N>` replaces a number. `<*>` replaces a
+	//  word that is different in the variants. A string in double quotes is not
+	//  replaced.
+	Template *string `json:"template,omitempty"`
+
+	// Variants The messages that the pattern groups, with their own counts, most
+	//  records first. At most 10.
+	Variants *[]LivekitPublicapiObservabilityV1LogPatternVariant `json:"variants,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogPatternBucket The number of records of a pattern in one interval.
+type LivekitPublicapiObservabilityV1LogPatternBucket struct {
+	// Events The number of records in the interval.
+	Events *string `json:"events,omitempty"`
+
+	// StartTime The start of the interval.
+	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogPatternVariant One message that a pattern groups, with its own count.
+type LivekitPublicapiObservabilityV1LogPatternVariant struct {
+	// Events The number of records with this message.
+	Events *string `json:"events,omitempty"`
+
+	// Template The message, with each variable part replaced by a placeholder.
+	Template *string `json:"template,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogPatternRank The rank that chooses which log patterns `ListLogPatterns` returns.
+type LivekitPublicapiObservabilityV1LogPatternRank string
+
+// LivekitPublicapiObservabilityV1LogPatternsListResponse defines model for livekit.publicapi.observability.v1.LogPatterns.List.Response.
+type LivekitPublicapiObservabilityV1LogPatternsListResponse struct {
+	// Estimated When true, the counts are estimates. The API read the records of a
+	//  share of the sessions (`sampleShare`), and scaled the counts.
+	Estimated *bool                                        `json:"estimated,omitempty"`
+	Items     *[]LivekitPublicapiObservabilityV1LogPattern `json:"items,omitempty"`
+	PageInfo  *LivekitPublicapiCommonV1PageInfo            `json:"pageInfo,omitempty"`
+
+	// SampleShare The share of the sessions that the API read, from 0 to 1. It is 1
+	//  when the counts are exact.
+	SampleShare *float64 `json:"sampleShare,omitempty"`
+
+	// TotalEvents The number of records in the range, in all patterns. It includes the
+	//  patterns that `pageSize` leaves out.
+	TotalEvents *string `json:"totalEvents,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogRecord A log record. `GetSessionLogs` returns the records that the agents of a
+//
+//	session exported. `ListProjectLogs` returns the records of a project from
+//	all sources.
 type LivekitPublicapiObservabilityV1LogRecord struct {
 	// Attributes The attributes of the record, typed and nested as the agent recorded
 	//  them. They include its resource and scope attributes. When an
@@ -3990,9 +6293,17 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 	//  these fields, this field holds the full body as JSON.
 	Message *string `json:"message,omitempty"`
 
+	// SessionId The session ID (`RM_...`) of the record. Empty for a record of no
+	//  session, which only `ListProjectLogs` returns.
+	SessionId *string `json:"sessionId,omitempty"`
+
 	// SeverityText The name of the level, as the agent logged it, such as `WARN` or
 	//  `CRITICAL`.
 	SeverityText *string `json:"severityText,omitempty"`
+
+	// Source The source of the record. `GetSessionLogs` returns only
+	//  `LOG_SOURCE_AGENT` records.
+	Source *LivekitPublicapiObservabilityV1LogSource `json:"source,omitempty"`
 
 	// SpanId The ID of the span that the record was logged in, as lowercase hex. Empty
 	//  when the record was logged outside a span.
@@ -4006,6 +6317,9 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 	//  the record to its span in `GetSessionTraces`.
 	TraceId *string `json:"traceId,omitempty"`
 }
+
+// LivekitPublicapiObservabilityV1LogSource The source of a log record.
+type LivekitPublicapiObservabilityV1LogSource string
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
@@ -4116,6 +6430,12 @@ type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiObservabilityV1ProjectLogsListResponse defines model for livekit.publicapi.observability.v1.ProjectLogs.List.Response.
+type LivekitPublicapiObservabilityV1ProjectLogsListResponse struct {
+	Items    *[]LivekitPublicapiObservabilityV1LogRecord `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
+}
+
 // LivekitPublicapiObservabilityV1RecordingGetURLResponse defines model for livekit.publicapi.observability.v1.Recording.GetURL.Response.
 type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
 	// DataStatus The data status of the session recording: whether it can still arrive
@@ -4147,6 +6467,157 @@ type LivekitPublicapiObservabilityV1RecordingFileType string
 
 // LivekitPublicapiObservabilityV1Role The sender of a transcript message.
 type LivekitPublicapiObservabilityV1Role string
+
+// LivekitPublicapiObservabilityV1SessionEval The newest result of one eval on one agent job of a session, as
+//
+//	`GetSessionEvals` returns it.
+type LivekitPublicapiObservabilityV1SessionEval struct {
+	// AgentName The name of the agent that ran the job.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// Criteria The criteria of the eval, by `position`. A criterion with a `parentId` is
+	//  a sub-criterion of that criterion.
+	Criteria *[]LivekitPublicapiObservabilityV1SessionEvalCriterion `json:"criteria,omitempty"`
+
+	// ErrorCode Why the eval did not run to the end. Empty unless `verdict` is
+	//  `EVAL_VERDICT_ERROR`.
+	ErrorCode *string `json:"errorCode,omitempty"`
+
+	// EvalId The eval ID (`EVAL_...`).
+	EvalId *string `json:"evalId,omitempty"`
+
+	// EvalName The current name of the eval, or the name of the eval when LiveKit scored
+	//  the session when the eval no longer exists or `evalNamesUnavailable` is
+	//  true.
+	EvalName *string `json:"evalName,omitempty"`
+
+	// EvalRevision The revision of the eval that scored the job.
+	EvalRevision *int `json:"evalRevision,omitempty"`
+
+	// EvalVersion The hash of the eval version that scored the job.
+	EvalVersion *string `json:"evalVersion,omitempty"`
+
+	// JobId The ID of the agent job that LiveKit scored (`AJ_...`). A session with
+	//  several agent jobs has one item for each eval and job.
+	JobId *string `json:"jobId,omitempty"`
+
+	// PassThreshold The lowest score that passes. Unset when the eval has no threshold.
+	PassThreshold *float64 `json:"passThreshold,omitempty"`
+
+	// Score The score of the eval, from 0 to 1. Unset when the eval has no score.
+	Score *float64 `json:"score,omitempty"`
+
+	// ScoredAt The time that LiveKit scored the job.
+	ScoredAt *GoogleProtobufTimestamp `json:"scoredAt,omitempty"`
+
+	// UndecidedCount The number of criteria that the judges could not decide. It explains an
+	//  `EVAL_VERDICT_UNDECIDED` verdict.
+	UndecidedCount *int `json:"undecidedCount,omitempty"`
+
+	// Verdict The verdict of the eval.
+	Verdict *LivekitPublicapiObservabilityV1EvalVerdict `json:"verdict,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1SessionEvalCriterion The result of one criterion of an eval on one agent job.
+type LivekitPublicapiObservabilityV1SessionEvalCriterion struct {
+	// Answer The answer that the judges agreed on, such as `yes`. Empty for a `rule`
+	//  criterion and for an undecided criterion.
+	Answer *string `json:"answer,omitempty"`
+
+	// CriterionId The ID of the criterion in the definition of the eval.
+	CriterionId *string `json:"criterionId,omitempty"`
+
+	// Depth The nesting depth of the criterion. 0 for a top-level criterion.
+	Depth *int `json:"depth,omitempty"`
+
+	// FailureExcerpt The transcript lines that show the failure, when it spans more than one
+	//  item.
+	FailureExcerpt *string `json:"failureExcerpt,omitempty"`
+
+	// FailureItemId The ID of the transcript item where the failure starts, as
+	//  `GetSessionTranscript` returns it. Empty when no single item shows the
+	//  failure.
+	FailureItemId *string `json:"failureItemId,omitempty"`
+
+	// FailureReason Why the criterion failed. It can quote the user or the agent. Set only on
+	//  a failed criterion of a failed eval, and only when LiveKit could explain
+	//  it.
+	FailureReason *string `json:"failureReason,omitempty"`
+
+	// Judges The answer of each judge, by `index`.
+	Judges *[]LivekitPublicapiObservabilityV1EvalJudgeAnswer `json:"judges,omitempty"`
+
+	// Kind The kind of the criterion: `rule`, `yes_no`, `categorical`, or `numeric`.
+	Kind *string `json:"kind,omitempty"`
+
+	// Label The label of the criterion in the definition of the eval.
+	Label *string `json:"label,omitempty"`
+
+	// ParentId The ID of the parent criterion. Empty for a top-level criterion.
+	ParentId *string `json:"parentId,omitempty"`
+
+	// PointsEarned The points that the criterion earned. Unset when it earned no decision.
+	PointsEarned *float64 `json:"pointsEarned,omitempty"`
+
+	// PointsPossible The points that the criterion can earn.
+	PointsPossible *float64 `json:"pointsPossible,omitempty"`
+
+	// Position The position of the criterion in the eval, from 0.
+	Position *int `json:"position,omitempty"`
+
+	// ReasonCode The code that explains an undecided or not applicable verdict, such as
+	//  `judges_disagree`.
+	ReasonCode *string `json:"reasonCode,omitempty"`
+
+	// Verdict The verdict of the criterion. It is never `EVAL_VERDICT_ERROR`.
+	Verdict *LivekitPublicapiObservabilityV1EvalVerdict `json:"verdict,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1SessionEvalsGetResponse defines model for livekit.publicapi.observability.v1.SessionEvals.Get.Response.
+type LivekitPublicapiObservabilityV1SessionEvalsGetResponse struct {
+	// EvalNamesUnavailable True when LiveKit could not read the current names of the evals. Each
+	//  `evalName` is then the name of the eval when LiveKit scored the
+	//  session.
+	EvalNamesUnavailable *bool `json:"evalNamesUnavailable,omitempty"`
+
+	// Evals The newest result of each eval on each agent job of the session, by
+	//  `evalName`, then by `jobId`. Empty when LiveKit has not scored the
+	//  session.
+	Evals *[]LivekitPublicapiObservabilityV1SessionEval `json:"evals,omitempty"`
+
+	// LabelNamesUnavailable True when LiveKit could not read the names of the labels. Each
+	//  `intentName` and `outcomeName` is then empty.
+	LabelNamesUnavailable *bool `json:"labelNamesUnavailable,omitempty"`
+
+	// Labels The intent and the outcome of each agent job that LiveKit labeled, by
+	//  `jobId`.
+	Labels *[]LivekitPublicapiObservabilityV1SessionJobLabels `json:"labels,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1SessionJobLabels The intent and the outcome that LiveKit assigned to one agent job of a
+//
+//	session. An intent is what the user wanted, and an outcome is how the
+//	session ended.
+type LivekitPublicapiObservabilityV1SessionJobLabels struct {
+	// AgentName The name of the agent that ran the job.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// IntentId The ID of the intent (`LBL_...`). `other` when no intent matched.
+	IntentId *string `json:"intentId,omitempty"`
+
+	// IntentName The name of the intent. Empty for `other`, or when
+	//  `labelNamesUnavailable` is true.
+	IntentName *string `json:"intentName,omitempty"`
+
+	// JobId The ID of the agent job (`AJ_...`).
+	JobId *string `json:"jobId,omitempty"`
+
+	// OutcomeId The ID of the outcome (`LBL_...`). `other` when no outcome matched.
+	OutcomeId *string `json:"outcomeId,omitempty"`
+
+	// OutcomeName The name of the outcome. Empty as `intentName` is.
+	OutcomeName *string `json:"outcomeName,omitempty"`
+}
 
 // LivekitPublicapiObservabilityV1Span A unit of work in the trace of a session, such as an agent turn or an LLM
 //
@@ -4497,11 +6968,14 @@ type LivekitPublicapiProjectsV1CreateProjectRequest struct {
 	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
 	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
 
-	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
-	//  sessions for agent observability. Defaults to false. While it is off, a
-	//  session read that finds no data returns `FailedPrecondition` with an
-	//  `ObservabilityDisabled` detail. This applies to a recording, and to the
-	//  first unfiltered page of a transcript, traces, logs, or metrics.
+	// EnableUserDataRecording Agent observability: when true, the project captures traces, transcripts,
+	//  and audio from agent sessions for debugging. Defaults to true, as it does
+	//  for a project created in the dashboard. Set it to false to turn it off.
+	//  You can change it later with `UpdateProject`, or in the dashboard under
+	//  the project's settings. While it is off, a session read that finds no data
+	//  returns `FailedPrecondition` with an `ObservabilityDisabled` detail. This
+	//  applies to a recording, and to the first unfiltered page of a transcript,
+	//  traces, logs, or metrics.
 	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
 
 	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
@@ -4686,6 +7160,7 @@ type LivekitPublicapiProjectsV1PinnedRegions struct {
 //
 //	are not embedded here.
 type LivekitPublicapiProjectsV1Project struct {
+	// AnalyticsAccessKey Deprecated: always empty. The key is internal to LiveKit Cloud analytics.
 	AnalyticsAccessKey *string `json:"analyticsAccessKey,omitempty"`
 
 	// CreatedAt When the project was created.
@@ -5657,8 +8132,8 @@ type ProjectServiceUpdateProjectJSONBody struct {
 	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 }
 
-// BuilderAgentServiceListBuilderAgentsParams defines parameters for BuilderAgentServiceListBuilderAgents.
-type BuilderAgentServiceListBuilderAgentsParams struct {
+// AgentBuilderServiceListAgentsParams defines parameters for AgentBuilderServiceListAgents.
+type AgentBuilderServiceListAgentsParams struct {
 	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
 	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
@@ -5668,10 +8143,10 @@ type BuilderAgentServiceListBuilderAgentsParams struct {
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
-// BuilderAgentServiceCreateBuilderAgentJSONBody defines parameters for BuilderAgentServiceCreateBuilderAgent.
-type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
+// AgentBuilderServiceCreateAgentJSONBody defines parameters for AgentBuilderServiceCreateAgent.
+type AgentBuilderServiceCreateAgentJSONBody struct {
 	// Config The configuration. Unset uses the default configuration.
-	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+	Config *LivekitPublicapiAgentbuilderV1AgentConfig `json:"config,omitempty"`
 
 	// Name The agent name. The agent registers under this name, and you use it
 	//  to dispatch the agent to a room. It starts with a letter, and has only
@@ -5680,17 +8155,438 @@ type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
 	Name *string `json:"name,omitempty"`
 }
 
-// BuilderAgentServiceUpdateBuilderAgentJSONBody defines parameters for BuilderAgentServiceUpdateBuilderAgent.
-type BuilderAgentServiceUpdateBuilderAgentJSONBody struct {
+// AgentBuilderServiceUpdateAgentJSONBody defines parameters for AgentBuilderServiceUpdateAgent.
+type AgentBuilderServiceUpdateAgentJSONBody struct {
 	// Config The new configuration. It replaces the current one: unset properties
-	//  take their default, not their current value.
-	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+	//  take their default, not their current value. When unset, the
+	//  configuration does not change.
+	Config *LivekitPublicapiAgentbuilderV1AgentConfig `json:"config,omitempty"`
+
+	// Name The new agent name. It has the same rules as the name in
+	//  `CreateAgent`. When unset, the name does not change.
+	Name *string `json:"name,omitempty"`
 }
 
-// BuilderAgentServiceDeployBuilderAgentJSONBody defines parameters for BuilderAgentServiceDeployBuilderAgent.
-type BuilderAgentServiceDeployBuilderAgentJSONBody struct {
+// AgentBuilderServiceGetAgentCodeURLParams defines parameters for AgentBuilderServiceGetAgentCodeURL.
+type AgentBuilderServiceGetAgentCodeURLParams struct {
+	// VersionId The version whose agent code to download. When empty, the current
+	//  version.
+	VersionId *string `form:"versionId,omitempty" json:"versionId,omitempty"`
+
+	// ExpirySeconds The time that the URL stays valid, in seconds. Defaults to 900 (15
+	//  minutes) when unset or 0. The API clamps a larger value to 900, with
+	//  no error. `expiresAt` gives the expiry that the API granted.
+	ExpirySeconds *int `form:"expirySeconds,omitempty" json:"expirySeconds,omitempty"`
+}
+
+// AgentBuilderServiceListAgentVersionsParams defines parameters for AgentBuilderServiceListAgentVersions.
+type AgentBuilderServiceListAgentVersionsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// AgentBuilderServiceDeployAgentJSONBody defines parameters for AgentBuilderServiceDeployAgent.
+type AgentBuilderServiceDeployAgentJSONBody struct {
 	// VersionId The version to deploy. Empty deploys the current configuration.
 	VersionId *string `json:"versionId,omitempty"`
+}
+
+// AnalyticsServiceGetAgentInsightsParams defines parameters for AnalyticsServiceGetAgentInsights.
+type AnalyticsServiceGetAgentInsightsParams struct {
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// AgentIds The IDs of cloud agents (`CA_...`). Returns only the data of these
+	//  agents and of the agents in `agentNames`. When `agentIds` and
+	//  `agentNames` are both empty, returns the data of every agent of the
+	//  project. The two lists can have at most 25 entries together.
+	AgentIds *[]string `form:"agentIds,omitempty" json:"agentIds,omitempty"`
+
+	// AgentNames The names of agents. Returns only the data of the agents with these
+	//  names and of the agents in `agentIds`. A self-hosted agent has no
+	//  agent ID, so select it by its name.
+	AgentNames *[]string `form:"agentNames,omitempty" json:"agentNames,omitempty"`
+}
+
+// CloudAgentServiceListCloudAgentPrivateLinksParams defines parameters for CloudAgentServiceListCloudAgentPrivateLinks.
+type CloudAgentServiceListCloudAgentPrivateLinksParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// CloudAgentServiceCreateCloudAgentPrivateLinkJSONBody defines parameters for CloudAgentServiceCreateCloudAgentPrivateLink.
+type CloudAgentServiceCreateCloudAgentPrivateLinkJSONBody struct {
+	// CloudRegion The region of the cloud provider that hosts the service, such as
+	//  `eastus`. Required when `endpoint` is an Azure resource ID. When unset,
+	//  LiveKit reads the region from `endpoint`.
+	CloudRegion *string `json:"cloudRegion,omitempty"`
+
+	// Endpoint The service to connect to: the name of an AWS endpoint service, or the
+	//  alias or the resource ID of an Azure Private Link service. Required.
+	Endpoint *string `json:"endpoint,omitempty"`
+
+	// Name The name of the private link. Required. Each private link of the
+	//  project has its own name. A name that another private link has
+	//  returns `AlreadyExists`.
+	Name *string `json:"name,omitempty"`
+
+	// Port The TCP port of the service, from 1 to 65535. Required.
+	Port *int `json:"port,omitempty"`
+
+	// Region The LiveKit Cloud region of the agents that use the link, such as
+	//  `us-east`. Required. `GetCloudAgentSettings` lists the regions in
+	//  `availableRegions`.
+	Region *string `json:"region,omitempty"`
+}
+
+// CloudAgentServiceListCloudAgentsParams defines parameters for CloudAgentServiceListCloudAgents.
+type CloudAgentServiceListCloudAgentsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// AgentIds The IDs of cloud agents (`CA_...`). Returns only these agents, at most
+	//  50. When empty, returns every agent of the project.
+	AgentIds *[]string `form:"agentIds,omitempty" json:"agentIds,omitempty"`
+}
+
+// CloudAgentServiceCreateCloudAgentJSONBody defines parameters for CloudAgentServiceCreateCloudAgent.
+type CloudAgentServiceCreateCloudAgentJSONBody struct {
+	// Region The region where the agent runs, such as `us-east`. Required. It must
+	//  be one of the regions in `availableRegions` that
+	//  `GetCloudAgentSettings` returns, else the API returns
+	//  `InvalidArgument`.
+	Region *string `json:"region,omitempty"`
+
+	// Secrets The secrets of the agent, set as environment variables or files in
+	//  each deployment. Setting secrets requires the `ADMIN` role.
+	Secrets *[]LivekitPublicapiCloudagentsV1CloudAgentSecretValue `json:"secrets,omitempty"`
+}
+
+// CloudAgentServiceDeleteCloudAgentParams defines parameters for CloudAgentServiceDeleteCloudAgent.
+type CloudAgentServiceDeleteCloudAgentParams struct {
+	// Deployment The name of a deployment. Deletes only this deployment of the agent. It
+	//  cannot be `production`. When empty, deletes the whole agent.
+	Deployment *string `form:"deployment,omitempty" json:"deployment,omitempty"`
+}
+
+// CloudAgentServiceGetCloudAgentBuildLogsParams defines parameters for CloudAgentServiceGetCloudAgentBuildLogs.
+type CloudAgentServiceGetCloudAgentBuildLogsParams struct {
+	// Deployment The name of the deployment. When empty, reads production.
+	Deployment *string `form:"deployment,omitempty" json:"deployment,omitempty"`
+
+	// Version The version to read, as `ListCloudAgentVersions` returns it. When
+	//  empty, reads the version that the deployment runs, or the newest version
+	//  of the agent when the deployment runs none.
+	Version *string `form:"version,omitempty" json:"version,omitempty"`
+}
+
+// CloudAgentServiceBuildCloudAgentJSONBody defines parameters for CloudAgentServiceBuildCloudAgent.
+type CloudAgentServiceBuildCloudAgentJSONBody struct {
+	// Attributes The attributes of the version, such as the commit of the source.
+	//  `ListCloudAgentVersions` returns them. They take at most 3072 bytes as
+	//  JSON. Larger attributes return `InvalidArgument`.
+	Attributes *map[string]string `json:"attributes,omitempty"`
+
+	// Deployment The name of the deployment. Send the value that you sent to
+	//  `DeployCloudAgent`.
+	Deployment *string `json:"deployment,omitempty"`
+
+	// Tag The tag that `DeployCloudAgent` returned.
+	Tag *string `json:"tag,omitempty"`
+}
+
+// CloudAgentServiceDeployCloudAgentJSONBody defines parameters for CloudAgentServiceDeployCloudAgent.
+type CloudAgentServiceDeployCloudAgentJSONBody struct {
+	// Deployment The name of the deployment to deploy to. When empty, deploys to
+	//  production. Another name makes a separate deployment of the agent that
+	//  you can test, then promote with `PromoteCloudAgent`.
+	Deployment *string `json:"deployment,omitempty"`
+
+	// Secrets The secrets to set before the build. A secret that you do not name
+	//  keeps its value. Setting secrets requires the `ADMIN` role.
+	Secrets *[]LivekitPublicapiCloudagentsV1CloudAgentSecretValue `json:"secrets,omitempty"`
+}
+
+// CloudAgentServicePromoteCloudAgentJSONBody defines parameters for CloudAgentServicePromoteCloudAgent.
+type CloudAgentServicePromoteCloudAgentJSONBody struct {
+	// Deployment The name of the deployment to promote to production. Production
+	//  itself returns `InvalidArgument`.
+	Deployment *string `json:"deployment,omitempty"`
+}
+
+// CloudAgentServiceRollbackCloudAgentJSONBody defines parameters for CloudAgentServiceRollbackCloudAgent.
+type CloudAgentServiceRollbackCloudAgentJSONBody struct {
+	// Version The version to run in production, as `ListCloudAgentVersions` returns
+	//  it.
+	Version *string `json:"version,omitempty"`
+}
+
+// CloudAgentServiceListCloudAgentSecretsParams defines parameters for CloudAgentServiceListCloudAgentSecrets.
+type CloudAgentServiceListCloudAgentSecretsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// CloudAgentServiceUpdateCloudAgentSecretsJSONBody defines parameters for CloudAgentServiceUpdateCloudAgentSecrets.
+type CloudAgentServiceUpdateCloudAgentSecretsJSONBody struct {
+	// Remove The names of the secrets to delete. A name that the agent does not
+	//  have is ignored. `set` and `remove` cannot both be empty, and cannot
+	//  name the same secret.
+	Remove *[]string `json:"remove,omitempty"`
+
+	// Set The secrets to set. A secret with the name of a secret that the agent
+	//  has replaces its value.
+	Set *[]LivekitPublicapiCloudagentsV1CloudAgentSecretValue `json:"set,omitempty"`
+}
+
+// CloudAgentServiceListCloudAgentVersionsParams defines parameters for CloudAgentServiceListCloudAgentVersions.
+type CloudAgentServiceListCloudAgentVersionsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// EvalServiceUpdateEvalDefaultsJSONBody defines parameters for EvalServiceUpdateEvalDefaults.
+type EvalServiceUpdateEvalDefaultsJSONBody struct {
+	// Definition The new judge defaults. They replace the ones that are set.
+	Definition *LivekitPublicapiEvalsV1JudgeDefaultsDefinition `json:"definition,omitempty"`
+}
+
+// AnalyticsServiceGetEvalResultsParams defines parameters for AnalyticsServiceGetEvalResults.
+type AnalyticsServiceGetEvalResultsParams struct {
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// AgentNames The names of agents. Returns only the sessions of these agents. When
+	//  empty, returns the sessions of every agent. The maximum is 25.
+	AgentNames *[]string `form:"agentNames,omitempty" json:"agentNames,omitempty"`
+
+	// EvalIds The IDs of evals (`EVAL_...`). Returns only the results of these
+	//  evals. When it has exactly one ID, the response has `criteria`. The
+	//  maximum is 25.
+	EvalIds *[]string `form:"evalIds,omitempty" json:"evalIds,omitempty"`
+
+	// IntentIds The IDs of intents (`LBL_...`). Returns only the sessions with one of
+	//  these intents. `other` matches the sessions that no intent matched,
+	//  and an empty string matches the sessions that have no intent. The
+	//  maximum is 25.
+	IntentIds *[]string `form:"intentIds,omitempty" json:"intentIds,omitempty"`
+
+	// OutcomeIds The IDs of outcomes (`LBL_...`). Returns only the sessions with one of
+	//  these outcomes. `other` and an empty string match as in `intentIds`.
+	//  The maximum is 25.
+	OutcomeIds *[]string `form:"outcomeIds,omitempty" json:"outcomeIds,omitempty"`
+}
+
+// ObservabilityServiceListEvalSessionsParams defines parameters for ObservabilityServiceListEvalSessions.
+type ObservabilityServiceListEvalSessionsParams struct {
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// EvalId The ID of an eval (`EVAL_...`). Returns only the sessions that this
+	//  eval scored, one item for each agent job.
+	EvalId *string `form:"evalId,omitempty" json:"evalId,omitempty"`
+
+	// Verdict A verdict. Returns only the eval results with this verdict, one item
+	//  for each session and eval. `EVAL_VERDICT_UNSPECIFIED` returns every
+	//  verdict.
+	Verdict *LivekitPublicapiObservabilityV1EvalVerdict `form:"verdict,omitempty" json:"verdict,omitempty"`
+
+	// CriterionId The ID of a criterion in the definition of the eval in `evalId`.
+	//  Returns only the sessions in which the eval failed this criterion.
+	//  Needs `evalId`, and takes no `verdict`.
+	CriterionId *string `form:"criterionId,omitempty" json:"criterionId,omitempty"`
+
+	// AgentNames The names of agents. Returns only the sessions of these agents. When
+	//  empty, returns the sessions of every agent. The maximum is 25.
+	AgentNames *[]string `form:"agentNames,omitempty" json:"agentNames,omitempty"`
+
+	// IntentIds The IDs of intents (`LBL_...`). Returns only the sessions with one of
+	//  these intents. `other` matches the sessions that no intent matched,
+	//  and an empty string matches the sessions that have no intent. The
+	//  maximum is 25.
+	IntentIds *[]string `form:"intentIds,omitempty" json:"intentIds,omitempty"`
+
+	// OutcomeIds The IDs of outcomes (`LBL_...`). Returns only the sessions with one of
+	//  these outcomes. `other` and an empty string match as in `intentIds`.
+	//  The maximum is 25.
+	OutcomeIds *[]string `form:"outcomeIds,omitempty" json:"outcomeIds,omitempty"`
+
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// SortOrder The sort direction of the session end times. Defaults to descending
+	//  (newest first).
+	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
+}
+
+// EvalServiceListEvalsParams defines parameters for EvalServiceListEvals.
+type EvalServiceListEvalsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// AgentName The agent name. Returns only the evals that the live revision runs on
+	//  this agent, including the evals that run on every agent.
+	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
+
+	// ShowDeleted When true, the list includes the deleted evals.
+	ShowDeleted *bool `form:"showDeleted,omitempty" json:"showDeleted,omitempty"`
+}
+
+// EvalServiceCreateEvalJSONBody defines parameters for EvalServiceCreateEval.
+type EvalServiceCreateEvalJSONBody struct {
+	// Definition The first draft of the definition.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
+
+	// Description The description of the eval.
+	Description *string `json:"description,omitempty"`
+
+	// Name The name of the eval. It must be unique among the evals of the project.
+	Name *string `json:"name,omitempty"`
+}
+
+// EvalServiceGetEvalParams defines parameters for EvalServiceGetEval.
+type EvalServiceGetEvalParams struct {
+	// VersionRevision A revision number.
+	VersionRevision *int `form:"version.revision,omitempty" json:"version.revision,omitempty"`
+
+	// VersionDraft When true, the draft.
+	VersionDraft *bool `form:"version.draft,omitempty" json:"version.draft,omitempty"`
+}
+
+// EvalServiceUpdateEvalJSONBody defines parameters for EvalServiceUpdateEval.
+type EvalServiceUpdateEvalJSONBody struct {
+	// Description The new description. Unset leaves the description as it is.
+	Description *string `json:"description,omitempty"`
+
+	// Name The new name. Unset leaves the name as it is.
+	Name *string `json:"name,omitempty"`
+}
+
+// EvalServiceDiffEvalRevisionsParams defines parameters for EvalServiceDiffEvalRevisions.
+type EvalServiceDiffEvalRevisionsParams struct {
+	// FromRevision A revision number.
+	FromRevision *int `form:"from.revision,omitempty" json:"from.revision,omitempty"`
+
+	// FromDraft When true, the draft.
+	FromDraft *bool `form:"from.draft,omitempty" json:"from.draft,omitempty"`
+
+	// ToRevision A revision number.
+	ToRevision *int `form:"to.revision,omitempty" json:"to.revision,omitempty"`
+
+	// ToDraft When true, the draft.
+	ToDraft *bool `form:"to.draft,omitempty" json:"to.draft,omitempty"`
+}
+
+// EvalServiceDiscardEvalDraftParams defines parameters for EvalServiceDiscardEvalDraft.
+type EvalServiceDiscardEvalDraftParams struct {
+	// DraftEtag The `draftEtag` of the draft that you last read.
+	DraftEtag *string `form:"draftEtag,omitempty" json:"draftEtag,omitempty"`
+}
+
+// EvalServiceSaveEvalDraftJSONBody defines parameters for EvalServiceSaveEvalDraft.
+type EvalServiceSaveEvalDraftJSONBody struct {
+	// Definition The new definition. It replaces the draft.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
+
+	// DraftEtag The `draftEtag` of the draft that you last read. Empty when the eval
+	//  has no draft.
+	DraftEtag *string `json:"draftEtag,omitempty"`
+}
+
+// EvalServicePublishEvalDraftJSONBody defines parameters for EvalServicePublishEvalDraft.
+type EvalServicePublishEvalDraftJSONBody struct {
+	// AllowStaleBase When true, publishes the draft also when the live revision changed
+	//  after the draft was opened. The draft then replaces those changes.
+	AllowStaleBase *bool `json:"allowStaleBase,omitempty"`
+
+	// DraftEtag The `draftEtag` of the draft that you last read.
+	DraftEtag *string `json:"draftEtag,omitempty"`
+
+	// Message A message for the history of the eval, such as what changed.
+	Message *string `json:"message,omitempty"`
+}
+
+// EvalServiceListEvalHistoryParams defines parameters for EvalServiceListEvalHistory.
+type EvalServiceListEvalHistoryParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Kinds The kinds of entries to return. When empty, returns every kind. To
+	//  list only the revisions, set `EVAL_HISTORY_KIND_PUBLISHED` and
+	//  `EVAL_HISTORY_KIND_ROLLED_BACK`. Use a cursor only with the same
+	//  `kinds` as the request that returned it.
+	Kinds *[]LivekitPublicapiEvalsV1EvalHistoryKind `form:"kinds,omitempty" json:"kinds,omitempty"`
+}
+
+// EvalServiceRollbackEvalJSONBody defines parameters for EvalServiceRollbackEval.
+type EvalServiceRollbackEvalJSONBody struct {
+	// Message A message for the history of the eval, such as the reason for the
+	//  rollback.
+	Message *string `json:"message,omitempty"`
+
+	// Revision The number of the revision to copy. It must not be the live revision.
+	Revision *int `json:"revision,omitempty"`
+}
+
+// EvalServiceValidateEvalJSONBody defines parameters for EvalServiceValidateEval.
+type EvalServiceValidateEvalJSONBody struct {
+	// Definition The definition to check.
+	Definition *LivekitPublicapiEvalsV1EvalDefinition `json:"definition,omitempty"`
 }
 
 // ProjectServiceListInvitesParams defines parameters for ProjectServiceListInvites.
@@ -5747,6 +8643,113 @@ type ProjectServiceGenerateKeyJSONBody struct {
 	//  `ListKeys` with an `ownerId` does not return it, and it stays when the
 	//  user who created it leaves the project.
 	IsServiceAccount *bool `json:"isServiceAccount,omitempty"`
+}
+
+// ObservabilityServiceListLogPatternsParams defines parameters for ObservabilityServiceListLogPatterns.
+type ObservabilityServiceListLogPatternsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// Query A search query, in the syntax of the search box on the logs page of
+	//  the dashboard. For example, `agent_name:support "timed out"`. Returns
+	//  only the patterns of the records that match. At most 4096 bytes. A
+	//  query that is longer, or that is not valid, returns `InvalidArgument`.
+	Query *string `form:"query,omitempty" json:"query,omitempty"`
+
+	// MinLevel The lowest log level to return. Returns only the patterns at this
+	//  level or a higher level. Unset means `LOG_LEVEL_WARN`.
+	//  `LOG_LEVEL_TRACE` returns the patterns at all levels, including the
+	//  records with no level. A value that is not a `LogLevel` value returns
+	//  `InvalidArgument`.
+	MinLevel *LivekitPublicapiObservabilityV1LogLevel `form:"minLevel,omitempty" json:"minLevel,omitempty"`
+
+	// Sources The sources to return. Returns only the patterns from these sources.
+	//  When empty, returns the patterns from agents. Only
+	//  `LOG_SOURCE_AGENT` and `LOG_SOURCE_CLIENT` have patterns. Another
+	//  value returns `InvalidArgument`.
+	Sources *[]LivekitPublicapiObservabilityV1LogSource `form:"sources,omitempty" json:"sources,omitempty"`
+
+	// AgentName The agent name. Returns only the patterns of the records that agents
+	//  with this name logged.
+	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
+
+	// AgentId The ID of a cloud agent (`CA_...`). Returns only the patterns of the
+	//  records that this agent logged.
+	AgentId *string `form:"agentId,omitempty" json:"agentId,omitempty"`
+
+	// SessionId The session ID (`RM_...`). Returns only the patterns of the records of
+	//  this session.
+	SessionId *string `form:"sessionId,omitempty" json:"sessionId,omitempty"`
+
+	// RankBy The rank that chooses which patterns the list returns, and in which
+	//  order. Defaults to `LOG_PATTERN_RANK_EVENTS`. It does not sort pages:
+	//  a different rank can return different patterns. A value that is not
+	//  one of the `LogPatternRank` values returns `InvalidArgument`.
+	RankBy *LivekitPublicapiObservabilityV1LogPatternRank `form:"rankBy,omitempty" json:"rankBy,omitempty"`
+}
+
+// ObservabilityServiceListProjectLogsParams defines parameters for ObservabilityServiceListProjectLogs.
+type ObservabilityServiceListProjectLogsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// LogLevels The log levels to return. Returns only the records at these levels.
+	//  When empty, returns all records, including records with no level.
+	//  `LOG_LEVEL_UNSPECIFIED` returns `InvalidArgument`.
+	LogLevels *[]LivekitPublicapiObservabilityV1LogLevel `form:"logLevels,omitempty" json:"logLevels,omitempty"`
+
+	// Sources The sources to return. Returns only the records from these sources.
+	//  When empty, returns the records from all sources.
+	//  `LOG_SOURCE_UNSPECIFIED` returns `InvalidArgument`.
+	Sources *[]LivekitPublicapiObservabilityV1LogSource `form:"sources,omitempty" json:"sources,omitempty"`
+
+	// SessionId The session ID (`RM_...`). Returns only the records of this session.
+	//  When empty, returns the records of all sessions, and the records of
+	//  no session.
+	SessionId *string `form:"sessionId,omitempty" json:"sessionId,omitempty"`
+
+	// Query A search query, in the syntax of the search box on the logs page of
+	//  the dashboard. For example, `agent_name:support "timed out"`. Returns
+	//  only the records that match. At most 4096 bytes. A query that is
+	//  longer, or that is not valid, returns `InvalidArgument`.
+	Query *string `form:"query,omitempty" json:"query,omitempty"`
+
+	// SortOrder The sort direction of the timestamps. Defaults to descending (newest
+	//  first).
+	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
+
+	// AgentId The ID of a cloud agent (`CA_...`). Returns only the records that
+	//  this agent exported, from every deployment of the agent. Use it with
+	//  the `LOG_SOURCE_AGENT` source to read the runtime logs of the agent.
+	//  It combines with `query`: a record must match both. An ID that is not
+	//  a cloud agent ID returns `InvalidArgument`.
+	AgentId *string `form:"agentId,omitempty" json:"agentId,omitempty"`
 }
 
 // ProjectServiceListMembersParams defines parameters for ProjectServiceListMembers.
@@ -5852,6 +8855,102 @@ type SimulationServiceGenerateScenarioFromSessionJSONBody struct {
 	RoomId *string `json:"roomId,omitempty"`
 }
 
+// AnalyticsServiceGetSessionLabelResultsParams defines parameters for AnalyticsServiceGetSessionLabelResults.
+type AnalyticsServiceGetSessionLabelResultsParams struct {
+	// RangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
+	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+
+	// RangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
+	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+
+	// AgentNames The names of agents. Returns only the sessions of these agents. When
+	//  empty, returns the sessions of every agent. The maximum is 25.
+	AgentNames *[]string `form:"agentNames,omitempty" json:"agentNames,omitempty"`
+
+	// EvalIds The IDs of evals (`EVAL_...`). Returns only the results of these
+	//  evals. It narrows `evals` and `totals`, and does not change the other
+	//  fields. The maximum is 25.
+	EvalIds *[]string `form:"evalIds,omitempty" json:"evalIds,omitempty"`
+
+	// IntentIds The IDs of intents (`LBL_...`). Returns only the sessions with one of
+	//  these intents. `other` matches the sessions that no intent matched,
+	//  and an empty string matches the sessions that have no intent. The
+	//  maximum is 25.
+	IntentIds *[]string `form:"intentIds,omitempty" json:"intentIds,omitempty"`
+
+	// OutcomeIds The IDs of outcomes (`LBL_...`). Returns only the sessions with one of
+	//  these outcomes. `other` and an empty string match as in `intentIds`.
+	//  The maximum is 25.
+	OutcomeIds *[]string `form:"outcomeIds,omitempty" json:"outcomeIds,omitempty"`
+}
+
+// EvalServiceUpdateSessionLabelSettingsJSONBody defines parameters for EvalServiceUpdateSessionLabelSettings.
+type EvalServiceUpdateSessionLabelSettingsJSONBody struct {
+	// Settings The new settings. They replace the ones that are set, and a field that
+	//  you leave out goes back to its default. The API ignores `updatedAt`,
+	//  `updatedBy` and `updatedSource`.
+	Settings *LivekitPublicapiEvalsV1SessionLabelSettings `json:"settings,omitempty"`
+}
+
+// EvalServiceListSessionLabelsParams defines parameters for EvalServiceListSessionLabels.
+type EvalServiceListSessionLabelsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Kind The kind of labels to return. When unset, returns both kinds.
+	Kind *LivekitPublicapiEvalsV1SessionLabelKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// ShowDeleted When true, the list includes the deleted labels.
+	ShowDeleted *bool `form:"showDeleted,omitempty" json:"showDeleted,omitempty"`
+}
+
+// EvalServiceCreateSessionLabelJSONBody defines parameters for EvalServiceCreateSessionLabel.
+type EvalServiceCreateSessionLabelJSONBody struct {
+	// Agents The names of the agents that the label applies to. When empty, the
+	//  label applies to every agent of the project.
+	Agents *[]string `json:"agents,omitempty"`
+
+	// Description What the label means, 1 to 500 characters. The LLM that assigns labels
+	//  reads it, so say which sessions get the label. Required.
+	Description *string `json:"description,omitempty"`
+
+	// Kind The kind of the label. Required. It does not change later.
+	Kind *LivekitPublicapiEvalsV1SessionLabelKind `json:"kind,omitempty"`
+
+	// Name The name of the label, 1 to 64 characters. It must be unique among the
+	//  active labels of the same kind. `other` and `none_of_these` are
+	//  reserved.
+	Name *string `json:"name,omitempty"`
+
+	// Rating For an outcome only: whether it is a good, neutral or bad way for a
+	//  session to end. Defaults to `SESSION_LABEL_RATING_NEUTRAL`. Leave it
+	//  unset for an intent.
+	Rating *LivekitPublicapiEvalsV1SessionLabelRating `json:"rating,omitempty"`
+}
+
+// EvalServiceUpdateSessionLabelJSONBody defines parameters for EvalServiceUpdateSessionLabel.
+type EvalServiceUpdateSessionLabelJSONBody struct {
+	// Agents The new agents. Unset leaves the agents as they are. A value with no
+	//  names makes the label apply to every agent.
+	Agents *LivekitPublicapiEvalsV1SessionLabelAgents `json:"agents,omitempty"`
+
+	// Description The new description. Unset leaves the description as it is.
+	Description *string `json:"description,omitempty"`
+
+	// Name The new name. Unset leaves the name as it is.
+	Name *string `json:"name,omitempty"`
+
+	// Rating The new rating, for an outcome only. Unset leaves the rating as it is.
+	Rating *LivekitPublicapiEvalsV1SessionLabelRating `json:"rating,omitempty"`
+}
+
 // AnalyticsServiceListProjectSessionsParams defines parameters for AnalyticsServiceListProjectSessions.
 type AnalyticsServiceListProjectSessionsParams struct {
 	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
@@ -5862,10 +8961,12 @@ type AnalyticsServiceListProjectSessionsParams struct {
 	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// FilterRangeStartTime The start of the range, included. Unset means 24 hours before the end.
+	// FilterRangeStartTime The start of the range, included. Unset means a default length before the
+	//  end, which the RPC that takes the range gives.
 	FilterRangeStartTime *time.Time `form:"filter.range.startTime,omitempty" json:"filter.range.startTime,omitempty"`
 
-	// FilterRangeEndTime The end of the range, excluded. Unset means now.
+	// FilterRangeEndTime The end of the range. Unset means now. The RPC that takes the range says
+	//  whether the range includes it.
 	FilterRangeEndTime *time.Time `form:"filter.range.endTime,omitempty" json:"filter.range.endTime,omitempty"`
 
 	// FilterStatuses The statuses to match. A session matches when it has one of the statuses.
@@ -6031,8 +9132,8 @@ type SimulationServiceListSimulationRunsParams struct {
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
 	// StartTime The start of the window on the creation time of the run, inclusive.
-	//  When unset, the window starts 45 days before `endTime`. The window can
-	//  be at most 45 days. A longer window returns `InvalidArgument`.
+	//  When unset, the window starts 60 days before `endTime`. The window can
+	//  be at most 60 days. A longer window returns `InvalidArgument`.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
 	// EndTime The end of the window on the creation time of the run, exclusive.
@@ -6320,7 +9421,8 @@ type ProjectServiceUpdateWebhookJSONBody struct {
 // ProjectServiceSendTestWebhookJSONBody defines parameters for ProjectServiceSendTestWebhook.
 type ProjectServiceSendTestWebhookJSONBody struct {
 	// Event The event to send: one of the names from `ListWebhookEvents`. The API
-	//  sends it with sample data and ignores the webhook filter.
+	//  sends it with sample data and ignores the webhook filter. Unset sends
+	//  `room_started`.
 	Event *string `json:"event,omitempty"`
 }
 
@@ -6440,14 +9542,56 @@ type ProjectServiceCreateProjectJSONRequestBody = LivekitPublicapiProjectsV1Crea
 // ProjectServiceUpdateProjectJSONRequestBody defines body for ProjectServiceUpdateProject for application/json ContentType.
 type ProjectServiceUpdateProjectJSONRequestBody ProjectServiceUpdateProjectJSONBody
 
-// BuilderAgentServiceCreateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceCreateBuilderAgent for application/json ContentType.
-type BuilderAgentServiceCreateBuilderAgentJSONRequestBody BuilderAgentServiceCreateBuilderAgentJSONBody
+// AgentBuilderServiceCreateAgentJSONRequestBody defines body for AgentBuilderServiceCreateAgent for application/json ContentType.
+type AgentBuilderServiceCreateAgentJSONRequestBody AgentBuilderServiceCreateAgentJSONBody
 
-// BuilderAgentServiceUpdateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceUpdateBuilderAgent for application/json ContentType.
-type BuilderAgentServiceUpdateBuilderAgentJSONRequestBody BuilderAgentServiceUpdateBuilderAgentJSONBody
+// AgentBuilderServiceUpdateAgentJSONRequestBody defines body for AgentBuilderServiceUpdateAgent for application/json ContentType.
+type AgentBuilderServiceUpdateAgentJSONRequestBody AgentBuilderServiceUpdateAgentJSONBody
 
-// BuilderAgentServiceDeployBuilderAgentJSONRequestBody defines body for BuilderAgentServiceDeployBuilderAgent for application/json ContentType.
-type BuilderAgentServiceDeployBuilderAgentJSONRequestBody BuilderAgentServiceDeployBuilderAgentJSONBody
+// AgentBuilderServiceDeployAgentJSONRequestBody defines body for AgentBuilderServiceDeployAgent for application/json ContentType.
+type AgentBuilderServiceDeployAgentJSONRequestBody AgentBuilderServiceDeployAgentJSONBody
+
+// CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody defines body for CloudAgentServiceCreateCloudAgentPrivateLink for application/json ContentType.
+type CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody CloudAgentServiceCreateCloudAgentPrivateLinkJSONBody
+
+// CloudAgentServiceCreateCloudAgentJSONRequestBody defines body for CloudAgentServiceCreateCloudAgent for application/json ContentType.
+type CloudAgentServiceCreateCloudAgentJSONRequestBody CloudAgentServiceCreateCloudAgentJSONBody
+
+// CloudAgentServiceBuildCloudAgentJSONRequestBody defines body for CloudAgentServiceBuildCloudAgent for application/json ContentType.
+type CloudAgentServiceBuildCloudAgentJSONRequestBody CloudAgentServiceBuildCloudAgentJSONBody
+
+// CloudAgentServiceDeployCloudAgentJSONRequestBody defines body for CloudAgentServiceDeployCloudAgent for application/json ContentType.
+type CloudAgentServiceDeployCloudAgentJSONRequestBody CloudAgentServiceDeployCloudAgentJSONBody
+
+// CloudAgentServicePromoteCloudAgentJSONRequestBody defines body for CloudAgentServicePromoteCloudAgent for application/json ContentType.
+type CloudAgentServicePromoteCloudAgentJSONRequestBody CloudAgentServicePromoteCloudAgentJSONBody
+
+// CloudAgentServiceRollbackCloudAgentJSONRequestBody defines body for CloudAgentServiceRollbackCloudAgent for application/json ContentType.
+type CloudAgentServiceRollbackCloudAgentJSONRequestBody CloudAgentServiceRollbackCloudAgentJSONBody
+
+// CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody defines body for CloudAgentServiceUpdateCloudAgentSecrets for application/json ContentType.
+type CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody CloudAgentServiceUpdateCloudAgentSecretsJSONBody
+
+// EvalServiceUpdateEvalDefaultsJSONRequestBody defines body for EvalServiceUpdateEvalDefaults for application/json ContentType.
+type EvalServiceUpdateEvalDefaultsJSONRequestBody EvalServiceUpdateEvalDefaultsJSONBody
+
+// EvalServiceCreateEvalJSONRequestBody defines body for EvalServiceCreateEval for application/json ContentType.
+type EvalServiceCreateEvalJSONRequestBody EvalServiceCreateEvalJSONBody
+
+// EvalServiceUpdateEvalJSONRequestBody defines body for EvalServiceUpdateEval for application/json ContentType.
+type EvalServiceUpdateEvalJSONRequestBody EvalServiceUpdateEvalJSONBody
+
+// EvalServiceSaveEvalDraftJSONRequestBody defines body for EvalServiceSaveEvalDraft for application/json ContentType.
+type EvalServiceSaveEvalDraftJSONRequestBody EvalServiceSaveEvalDraftJSONBody
+
+// EvalServicePublishEvalDraftJSONRequestBody defines body for EvalServicePublishEvalDraft for application/json ContentType.
+type EvalServicePublishEvalDraftJSONRequestBody EvalServicePublishEvalDraftJSONBody
+
+// EvalServiceRollbackEvalJSONRequestBody defines body for EvalServiceRollbackEval for application/json ContentType.
+type EvalServiceRollbackEvalJSONRequestBody EvalServiceRollbackEvalJSONBody
+
+// EvalServiceValidateEvalJSONRequestBody defines body for EvalServiceValidateEval for application/json ContentType.
+type EvalServiceValidateEvalJSONRequestBody EvalServiceValidateEvalJSONBody
 
 // ProjectServiceInviteMemberJSONRequestBody defines body for ProjectServiceInviteMember for application/json ContentType.
 type ProjectServiceInviteMemberJSONRequestBody ProjectServiceInviteMemberJSONBody
@@ -6472,6 +9616,15 @@ type TelephonyServiceUpdatePhoneNumberJSONRequestBody TelephonyServiceUpdatePhon
 
 // SimulationServiceGenerateScenarioFromSessionJSONRequestBody defines body for SimulationServiceGenerateScenarioFromSession for application/json ContentType.
 type SimulationServiceGenerateScenarioFromSessionJSONRequestBody SimulationServiceGenerateScenarioFromSessionJSONBody
+
+// EvalServiceUpdateSessionLabelSettingsJSONRequestBody defines body for EvalServiceUpdateSessionLabelSettings for application/json ContentType.
+type EvalServiceUpdateSessionLabelSettingsJSONRequestBody EvalServiceUpdateSessionLabelSettingsJSONBody
+
+// EvalServiceCreateSessionLabelJSONRequestBody defines body for EvalServiceCreateSessionLabel for application/json ContentType.
+type EvalServiceCreateSessionLabelJSONRequestBody EvalServiceCreateSessionLabelJSONBody
+
+// EvalServiceUpdateSessionLabelJSONRequestBody defines body for EvalServiceUpdateSessionLabel for application/json ContentType.
+type EvalServiceUpdateSessionLabelJSONRequestBody EvalServiceUpdateSessionLabelJSONBody
 
 // SimulationServiceCreateSimulationRunJSONRequestBody defines body for SimulationServiceCreateSimulationRun for application/json ContentType.
 type SimulationServiceCreateSimulationRunJSONRequestBody SimulationServiceCreateSimulationRunJSONBody
@@ -7415,6 +10568,160 @@ func (t *LivekitImageOutput) UnmarshalJSON(b []byte) error {
 		err = json.Unmarshal(raw, &t.Width)
 		if err != nil {
 			return fmt.Errorf("error reading 'width': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsLivekitPrivateLink0 returns the union data inside the LivekitPrivateLink as a LivekitPrivateLink0
+func (t LivekitPrivateLink) AsLivekitPrivateLink0() (LivekitPrivateLink0, error) {
+	var body LivekitPrivateLink0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPrivateLink0 overwrites any union data inside the LivekitPrivateLink as the provided LivekitPrivateLink0
+func (t *LivekitPrivateLink) FromLivekitPrivateLink0(v LivekitPrivateLink0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPrivateLink0 performs a merge with any union data inside the LivekitPrivateLink, using the provided LivekitPrivateLink0
+func (t *LivekitPrivateLink) MergeLivekitPrivateLink0(v LivekitPrivateLink0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPrivateLink) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.CloudRegion != nil {
+		object["cloudRegion"], err = json.Marshal(t.CloudRegion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cloudRegion': %w", err)
+		}
+	}
+
+	if t.ConnectionEndpoint != nil {
+		object["connectionEndpoint"], err = json.Marshal(t.ConnectionEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'connectionEndpoint': %w", err)
+		}
+	}
+
+	if t.Endpoint != nil {
+		object["endpoint"], err = json.Marshal(t.Endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoint': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.Port != nil {
+		object["port"], err = json.Marshal(t.Port)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'port': %w", err)
+		}
+	}
+
+	if t.PrivateLinkId != nil {
+		object["privateLinkId"], err = json.Marshal(t.PrivateLinkId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'privateLinkId': %w", err)
+		}
+	}
+
+	if t.Region != nil {
+		object["region"], err = json.Marshal(t.Region)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'region': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *LivekitPrivateLink) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cloudRegion"]; found {
+		err = json.Unmarshal(raw, &t.CloudRegion)
+		if err != nil {
+			return fmt.Errorf("error reading 'cloudRegion': %w", err)
+		}
+	}
+
+	if raw, found := object["connectionEndpoint"]; found {
+		err = json.Unmarshal(raw, &t.ConnectionEndpoint)
+		if err != nil {
+			return fmt.Errorf("error reading 'connectionEndpoint': %w", err)
+		}
+	}
+
+	if raw, found := object["endpoint"]; found {
+		err = json.Unmarshal(raw, &t.Endpoint)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoint': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["port"]; found {
+		err = json.Unmarshal(raw, &t.Port)
+		if err != nil {
+			return fmt.Errorf("error reading 'port': %w", err)
+		}
+	}
+
+	if raw, found := object["privateLinkId"]; found {
+		err = json.Unmarshal(raw, &t.PrivateLinkId)
+		if err != nil {
+			return fmt.Errorf("error reading 'privateLinkId': %w", err)
+		}
+	}
+
+	if raw, found := object["region"]; found {
+		err = json.Unmarshal(raw, &t.Region)
+		if err != nil {
+			return fmt.Errorf("error reading 'region': %w", err)
 		}
 	}
 
@@ -8389,22 +11696,22 @@ func (t *LivekitAgentChatMessageChatContent) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
-func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable0, error) {
-	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+// AsLivekitPublicapiAgentbuilderV1AgentConfigVariable0 returns the union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as a LivekitPublicapiAgentbuilderV1AgentConfigVariable0
+func (t LivekitPublicapiAgentbuilderV1AgentConfigVariable) AsLivekitPublicapiAgentbuilderV1AgentConfigVariable0() (LivekitPublicapiAgentbuilderV1AgentConfigVariable0, error) {
+	var body LivekitPublicapiAgentbuilderV1AgentConfigVariable0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+// FromLivekitPublicapiAgentbuilderV1AgentConfigVariable0 overwrites any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable0
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) FromLivekitPublicapiAgentbuilderV1AgentConfigVariable0(v LivekitPublicapiAgentbuilderV1AgentConfigVariable0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+// MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable0 performs a merge with any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable, using the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable0
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable0(v LivekitPublicapiAgentbuilderV1AgentConfigVariable0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -8415,22 +11722,22 @@ func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublica
 	return err
 }
 
-// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
-func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable1, error) {
-	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+// AsLivekitPublicapiAgentbuilderV1AgentConfigVariable1 returns the union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as a LivekitPublicapiAgentbuilderV1AgentConfigVariable1
+func (t LivekitPublicapiAgentbuilderV1AgentConfigVariable) AsLivekitPublicapiAgentbuilderV1AgentConfigVariable1() (LivekitPublicapiAgentbuilderV1AgentConfigVariable1, error) {
+	var body LivekitPublicapiAgentbuilderV1AgentConfigVariable1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+// FromLivekitPublicapiAgentbuilderV1AgentConfigVariable1 overwrites any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable1
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) FromLivekitPublicapiAgentbuilderV1AgentConfigVariable1(v LivekitPublicapiAgentbuilderV1AgentConfigVariable1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+// MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable1 performs a merge with any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable, using the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable1
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable1(v LivekitPublicapiAgentbuilderV1AgentConfigVariable1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -8441,22 +11748,22 @@ func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublica
 	return err
 }
 
-// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
-func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable2, error) {
-	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+// AsLivekitPublicapiAgentbuilderV1AgentConfigVariable2 returns the union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as a LivekitPublicapiAgentbuilderV1AgentConfigVariable2
+func (t LivekitPublicapiAgentbuilderV1AgentConfigVariable) AsLivekitPublicapiAgentbuilderV1AgentConfigVariable2() (LivekitPublicapiAgentbuilderV1AgentConfigVariable2, error) {
+	var body LivekitPublicapiAgentbuilderV1AgentConfigVariable2
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+// FromLivekitPublicapiAgentbuilderV1AgentConfigVariable2 overwrites any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable as the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable2
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) FromLivekitPublicapiAgentbuilderV1AgentConfigVariable2(v LivekitPublicapiAgentbuilderV1AgentConfigVariable2) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+// MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable2 performs a merge with any union data inside the LivekitPublicapiAgentbuilderV1AgentConfigVariable, using the provided LivekitPublicapiAgentbuilderV1AgentConfigVariable2
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) MergeLivekitPublicapiAgentbuilderV1AgentConfigVariable2(v LivekitPublicapiAgentbuilderV1AgentConfigVariable2) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -8467,13 +11774,295 @@ func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublica
 	return err
 }
 
-func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MarshalJSON() ([]byte, error) {
+func (t LivekitPublicapiAgentbuilderV1AgentConfigVariable) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) UnmarshalJSON(b []byte) error {
+func (t *LivekitPublicapiAgentbuilderV1AgentConfigVariable) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0 returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices as a LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) AsLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0() (LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0 overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices as the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) FromLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0(v LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices, using the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0(v LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1 returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices as a LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) AsLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1() (LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1 overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices as the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) FromLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1(v LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices, using the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1(v LivekitPublicapiEvalsV1EvalDefinitionCriterionChoices1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_Choices) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0 returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On as a LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) AsLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0() (LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0 overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On as the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) FromLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0(v LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On, using the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionOn0(v LivekitPublicapiEvalsV1EvalDefinitionCriterionOn0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1 returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On as a LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) AsLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1() (LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1 overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On as the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) FromLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1(v LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionCriterion_On, using the provided LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) MergeLivekitPublicapiEvalsV1EvalDefinitionCriterionOn1(v LivekitPublicapiEvalsV1EvalDefinitionCriterionOn1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitPublicapiEvalsV1EvalDefinitionCriterion_On) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0 returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item as a LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0
+func (t LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) AsLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0() (LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0 overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item as the provided LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) FromLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0(v LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item, using the provided LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0
+func (t *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) MergeLivekitPublicapiEvalsV1EvalDefinitionRuleCompare0(v LivekitPublicapiEvalsV1EvalDefinitionRuleCompare0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalDefinitionRuleVar returns the union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item as a LivekitPublicapiEvalsV1EvalDefinitionRuleVar
+func (t LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) AsLivekitPublicapiEvalsV1EvalDefinitionRuleVar() (LivekitPublicapiEvalsV1EvalDefinitionRuleVar, error) {
+	var body LivekitPublicapiEvalsV1EvalDefinitionRuleVar
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalDefinitionRuleVar overwrites any union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item as the provided LivekitPublicapiEvalsV1EvalDefinitionRuleVar
+func (t *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) FromLivekitPublicapiEvalsV1EvalDefinitionRuleVar(v LivekitPublicapiEvalsV1EvalDefinitionRuleVar) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalDefinitionRuleVar performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item, using the provided LivekitPublicapiEvalsV1EvalDefinitionRuleVar
+func (t *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) MergeLivekitPublicapiEvalsV1EvalDefinitionRuleVar(v LivekitPublicapiEvalsV1EvalDefinitionRuleVar) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitPublicapiEvalsV1EvalDefinitionRuleCompare_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalsGetResponse0 returns the union data inside the LivekitPublicapiEvalsV1EvalsGetResponse as a LivekitPublicapiEvalsV1EvalsGetResponse0
+func (t LivekitPublicapiEvalsV1EvalsGetResponse) AsLivekitPublicapiEvalsV1EvalsGetResponse0() (LivekitPublicapiEvalsV1EvalsGetResponse0, error) {
+	var body LivekitPublicapiEvalsV1EvalsGetResponse0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalsGetResponse0 overwrites any union data inside the LivekitPublicapiEvalsV1EvalsGetResponse as the provided LivekitPublicapiEvalsV1EvalsGetResponse0
+func (t *LivekitPublicapiEvalsV1EvalsGetResponse) FromLivekitPublicapiEvalsV1EvalsGetResponse0(v LivekitPublicapiEvalsV1EvalsGetResponse0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalsGetResponse0 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalsGetResponse, using the provided LivekitPublicapiEvalsV1EvalsGetResponse0
+func (t *LivekitPublicapiEvalsV1EvalsGetResponse) MergeLivekitPublicapiEvalsV1EvalsGetResponse0(v LivekitPublicapiEvalsV1EvalsGetResponse0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiEvalsV1EvalsGetResponse1 returns the union data inside the LivekitPublicapiEvalsV1EvalsGetResponse as a LivekitPublicapiEvalsV1EvalsGetResponse1
+func (t LivekitPublicapiEvalsV1EvalsGetResponse) AsLivekitPublicapiEvalsV1EvalsGetResponse1() (LivekitPublicapiEvalsV1EvalsGetResponse1, error) {
+	var body LivekitPublicapiEvalsV1EvalsGetResponse1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiEvalsV1EvalsGetResponse1 overwrites any union data inside the LivekitPublicapiEvalsV1EvalsGetResponse as the provided LivekitPublicapiEvalsV1EvalsGetResponse1
+func (t *LivekitPublicapiEvalsV1EvalsGetResponse) FromLivekitPublicapiEvalsV1EvalsGetResponse1(v LivekitPublicapiEvalsV1EvalsGetResponse1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiEvalsV1EvalsGetResponse1 performs a merge with any union data inside the LivekitPublicapiEvalsV1EvalsGetResponse, using the provided LivekitPublicapiEvalsV1EvalsGetResponse1
+func (t *LivekitPublicapiEvalsV1EvalsGetResponse) MergeLivekitPublicapiEvalsV1EvalsGetResponse1(v LivekitPublicapiEvalsV1EvalsGetResponse1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiEvalsV1EvalsGetResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Eval != nil {
+		object["eval"], err = json.Marshal(t.Eval)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'eval': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *LivekitPublicapiEvalsV1EvalsGetResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["eval"]; found {
+		err = json.Unmarshal(raw, &t.Eval)
+		if err != nil {
+			return fmt.Errorf("error reading 'eval': %w", err)
+		}
+	}
+
 	return err
 }
 
@@ -9231,111 +12820,735 @@ type ClientInterface interface {
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProject(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceListBuilderAgents ListBuilderAgents
+	// AgentBuilderServiceListAgents ListAgents
 	//
-	// Lists the builder agents of a project by name, with the deployment status
-	//  of each. The list does not include configurations. To get the
-	//  configuration of an agent, call `GetBuilderAgent`.
+	// Lists the Agent Builder agents of a project by name, with the deployment
+	//  status of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetAgent`.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
-	BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceListAgents` operationId).
+	AgentBuilderServiceListAgents(ctx context.Context, projectId string, params *AgentBuilderServiceListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
+	// AgentBuilderServiceCreateAgentWithBody CreateAgent
 	//
-	// Creates a builder agent from a name and a configuration. The agent is not
-	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	// Creates an Agent Builder agent from a name and a configuration. The agent
+	//  is not deployed: call `DeployAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored. A
 	//  configuration that is not valid fails with `InvalidArgument` and a
 	//  `google.rpc.BadRequest` detail. It has a field violation for each
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-	BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+	AgentBuilderServiceCreateAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
+	// AgentBuilderServiceCreateAgent CreateAgent
 	//
-	// Creates a builder agent from a name and a configuration. The agent is not
-	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	// Creates an Agent Builder agent from a name and a configuration. The agent
+	//  is not deployed: call `DeployAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored. A
 	//  configuration that is not valid fails with `InvalidArgument` and a
 	//  `google.rpc.BadRequest` detail. It has a field violation for each
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-	BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+	AgentBuilderServiceCreateAgent(ctx context.Context, projectId string, body AgentBuilderServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
+	// AgentBuilderServiceDeleteAgent DeleteAgent
 	//
-	// Deletes a builder agent, its versions, and its deployment.
+	// Deletes an Agent Builder agent, its versions, and its deployment.
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
-	BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceDeleteAgent` operationId).
+	AgentBuilderServiceDeleteAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
+	// AgentBuilderServiceGetAgent GetAgent
 	//
-	// Returns a builder agent with its current configuration and its deployment
-	//  status.
+	// Returns an Agent Builder agent with its current configuration and its
+	//  deployment status. A `READ` member reads `********` in place of each
+	//  header value.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
-	BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceGetAgent` operationId).
+	AgentBuilderServiceGetAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
+	// AgentBuilderServiceUpdateAgentWithBody UpdateAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of an Agent Builder agent, its name, or both. A
+	//  new configuration makes a new version. A new name does not. The running
+	//  agent does not change until you deploy again. Until then, it keeps the
+	//  old configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another Agent Builder agent of the project
+	//  has fails with `AlreadyExists`. A configuration that is not valid fails
+	//  as it does in `CreateAgent`, which includes `********` as a header value.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-	BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+	AgentBuilderServiceUpdateAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+	// AgentBuilderServiceUpdateAgent UpdateAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of an Agent Builder agent, its name, or both. A
+	//  new configuration makes a new version. A new name does not. The running
+	//  agent does not change until you deploy again. Until then, it keeps the
+	//  old configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another Agent Builder agent of the project
+	//  has fails with `AlreadyExists`. A configuration that is not valid fails
+	//  as it does in `CreateAgent`, which includes `********` as a header value.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-	BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+	AgentBuilderServiceUpdateAgent(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceUpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+	// AgentBuilderServiceGetAgentCodeURL GetAgentCodeURL
 	//
-	// Starts a deployment of the current configuration of a builder agent, or of
-	//  an earlier version. The call returns when the build starts, with the
-	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
-	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	// Returns a short-lived URL that downloads the agent code of an Agent
+	//  Builder agent version as a zip file. The zip holds `src/agent.py`,
+	//  `pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+	//  so that you can run and change the agent yourself. The URL needs no
+	//  credentials and is valid until `expiresAt`. The agent code holds every
+	//  header value, so the call requires the `WRITE` role. A version whose
+	//  configuration can't make agent code returns `FailedPrecondition`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/code-url (the `AgentBuilderServiceGetAgentCodeURL` operationId).
+	AgentBuilderServiceGetAgentCodeURL(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceGetAgentCodeURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentBuilderServiceListAgentVersions ListAgentVersions
+	//
+	// Lists the versions of an Agent Builder agent, newest first, each with its
+	//  configuration. To deploy an earlier version, pass its ID to
+	//  `DeployAgent`. To make its configuration current again, pass the
+	//  configuration to `UpdateAgent`. A `READ` member reads `********` in place
+	//  of each header value.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/versions (the `AgentBuilderServiceListAgentVersions` operationId).
+	AgentBuilderServiceListAgentVersions(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceListAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AgentBuilderServiceDeployAgentWithBody DeployAgent
+	//
+	// Starts a deployment of the current configuration of an Agent Builder
+	//  agent, or of an earlier version. The call returns when the build starts,
+	//  with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+	//  the call returns. Call `GetAgent` to follow the deployment until its
+	//  status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-	BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+	AgentBuilderServiceDeployAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+	// AgentBuilderServiceDeployAgent DeployAgent
 	//
-	// Starts a deployment of the current configuration of a builder agent, or of
-	//  an earlier version. The call returns when the build starts, with the
-	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
-	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	// Starts a deployment of the current configuration of an Agent Builder
+	//  agent, or of an earlier version. The call returns when the build starts,
+	//  with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+	//  the call returns. Call `GetAgent` to follow the deployment until its
+	//  status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-	BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+	AgentBuilderServiceDeployAgent(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AnalyticsServiceGetAgentInsights Returns the agent insights of a project over a time range: the totals and
+	//  latencies of its agents, one item for each agent, and one item for each
+	//  model that the agents used. This is the data that the agent dashboards of
+	//  LiveKit Cloud show.
+	//
+	// The data comes from the turns, model requests, and tool calls that the
+	//  agents recorded. Simulated sessions are not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  The range does not include `range.endTime`. The range can be at most 30
+	//  days.
+	//
+	//  Errors: a range longer than 30 days, a range whose `startTime` is not
+	//  before its `endTime`, a range that starts after now, more than 25 agents
+	//  in `agentIds` and `agentNames` together, or an empty agent ID or name
+	//  returns `InvalidArgument`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-insights (the `AnalyticsServiceGetAgentInsights` operationId).
+	AnalyticsServiceGetAgentInsights(ctx context.Context, projectId string, params *AnalyticsServiceGetAgentInsightsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceListCloudAgentPrivateLinks ListCloudAgentPrivateLinks
+	//
+	// Lists the private links of the project. A private link connects the agents
+	//  of the project to a service in your network. The list is always one page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceListCloudAgentPrivateLinks` operationId).
+	CloudAgentServiceListCloudAgentPrivateLinks(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentPrivateLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceCreateCloudAgentPrivateLinkWithBody CreateCloudAgentPrivateLink
+	//
+	// Creates a private link from the agents of the project to a service in your
+	//  network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+	CloudAgentServiceCreateCloudAgentPrivateLinkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceCreateCloudAgentPrivateLink CreateCloudAgentPrivateLink
+	//
+	// Creates a private link from the agents of the project to a service in your
+	//  network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+	CloudAgentServiceCreateCloudAgentPrivateLink(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceDeleteCloudAgentPrivateLink DeleteCloudAgentPrivateLink
+	//
+	// Deletes a private link.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId} (the `CloudAgentServiceDeleteCloudAgentPrivateLink` operationId).
+	CloudAgentServiceDeleteCloudAgentPrivateLink(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceGetCloudAgentPrivateLinkStatus GetCloudAgentPrivateLinkStatus
+	//
+	// Returns the health of a private link.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId}/status (the `CloudAgentServiceGetCloudAgentPrivateLinkStatus` operationId).
+	CloudAgentServiceGetCloudAgentPrivateLinkStatus(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceGetCloudAgentSettings GetCloudAgentSettings
+	//
+	// Returns what a client needs to create or deploy a cloud agent: the regions
+	//  that the project can use, and the settings that `lk` checks.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-settings (the `CloudAgentServiceGetCloudAgentSettings` operationId).
+	CloudAgentServiceGetCloudAgentSettings(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceListCloudAgents ListCloudAgents
+	//
+	// Lists the cloud agents of the project in ID order. Each
+	//  item has the deployments of the agent, one for each region and named
+	//  deployment. The list is always one page. An agent that Agent Builder made
+	//  is in the list, with the ID of its Agent Builder agent.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceListCloudAgents` operationId).
+	CloudAgentServiceListCloudAgents(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceCreateCloudAgentWithBody CreateCloudAgent
+	//
+	// Creates a cloud agent with no code deployed, and returns its ID. Call
+	//  `DeployCloudAgent` to run code on it. The plan of the project limits the
+	//  number of agents: a project at the limit returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+	CloudAgentServiceCreateCloudAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceCreateCloudAgent CreateCloudAgent
+	//
+	// Creates a cloud agent with no code deployed, and returns its ID. Call
+	//  `DeployCloudAgent` to run code on it. The plan of the project limits the
+	//  number of agents: a project at the limit returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+	CloudAgentServiceCreateCloudAgent(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceDeleteCloudAgent DeleteCloudAgent
+	//
+	// Deletes a cloud agent with everything that it runs, or only its named
+	//  deployment when you set `deployment`. The deployment cannot be
+	//  `production`: to remove it, delete the agent. A retry after a success
+	//  returns `NotFound`.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceDeleteCloudAgent` operationId).
+	CloudAgentServiceDeleteCloudAgent(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceDeleteCloudAgentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceGetCloudAgent GetCloudAgent
+	//
+	// Returns a cloud agent with its deployments and their status. Returns
+	//  `NotFound` for an agent that the project does not have.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceGetCloudAgent` operationId).
+	CloudAgentServiceGetCloudAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceGetCloudAgentBuildLogs GetCloudAgentBuildLogs
+	//
+	// Returns the build log of a version of a cloud agent. It returns the last
+	//  1 MiB of the log, from the start of a line, and sets `truncated` when the
+	//  log is longer: the end of a log tells why a build failed. Returns
+	//  `NotFound` when the version has no log.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/build-logs (the `CloudAgentServiceGetCloudAgentBuildLogs` operationId).
+	CloudAgentServiceGetCloudAgentBuildLogs(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceGetCloudAgentBuildLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceBuildCloudAgentWithBody BuildCloudAgent
+	//
+	// Builds the source archive that you uploaded for a deployment, and deploys
+	//  the version that it makes. The call returns when the build is queued. The
+	//  build runs on without the call. Read `GetCloudAgent` for its status. A
+	//  project can start a limited number of builds each hour: a call over the
+	//  limit returns `ResourceExhausted`. An agent that has as many versions as
+	//  its plan allows returns `FailedPrecondition`: delete a deployment that runs
+	//  another version, then deploy again.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+	CloudAgentServiceBuildCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceBuildCloudAgent BuildCloudAgent
+	//
+	// Builds the source archive that you uploaded for a deployment, and deploys
+	//  the version that it makes. The call returns when the build is queued. The
+	//  build runs on without the call. Read `GetCloudAgent` for its status. A
+	//  project can start a limited number of builds each hour: a call over the
+	//  limit returns `ResourceExhausted`. An agent that has as many versions as
+	//  its plan allows returns `FailedPrecondition`: delete a deployment that runs
+	//  another version, then deploy again.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+	CloudAgentServiceBuildCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceBuildCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceDeployCloudAgentWithBody DeployCloudAgent
+	//
+	// Starts a deployment of new code to a cloud agent. It returns where to
+	//  upload the source archive of the agent and the tag of the version that the
+	//  deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+	//  The call makes no version by itself, and a retry returns a new upload
+	//  target and tag.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+	CloudAgentServiceDeployCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceDeployCloudAgent DeployCloudAgent
+	//
+	// Starts a deployment of new code to a cloud agent. It returns where to
+	//  upload the source archive of the agent and the tag of the version that the
+	//  deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+	//  The call makes no version by itself, and a retry returns a new upload
+	//  target and tag.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+	CloudAgentServiceDeployCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceDeployCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServicePromoteCloudAgentWithBody PromoteCloudAgent
+	//
+	// Makes the version that a named deployment runs the version that
+	//  production runs.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+	CloudAgentServicePromoteCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServicePromoteCloudAgent PromoteCloudAgent
+	//
+	// Makes the version that a named deployment runs the version that
+	//  production runs.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+	CloudAgentServicePromoteCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServicePromoteCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceRestartCloudAgent RestartCloudAgent
+	//
+	// Restarts the workers of a cloud agent. Sessions in progress end.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/restart (the `CloudAgentServiceRestartCloudAgent` operationId).
+	CloudAgentServiceRestartCloudAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceRollbackCloudAgentWithBody RollbackCloudAgent
+	//
+	// Makes a version of a cloud agent the version that production runs. Read
+	//  the versions with `ListCloudAgentVersions`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+	CloudAgentServiceRollbackCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceRollbackCloudAgent RollbackCloudAgent
+	//
+	// Makes a version of a cloud agent the version that production runs. Read
+	//  the versions with `ListCloudAgentVersions`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+	CloudAgentServiceRollbackCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceRollbackCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceListCloudAgentSecrets ListCloudAgentSecrets
+	//
+	// Lists the secrets of a cloud agent, without their values, in name order.
+	//  The list is always one page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceListCloudAgentSecrets` operationId).
+	CloudAgentServiceListCloudAgentSecrets(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentSecretsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceUpdateCloudAgentSecretsWithBody UpdateCloudAgentSecrets
+	//
+	// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+	//  the secret of the same name. A secret that you do not name stays. A change
+	//  takes effect at the next restart or deployment. The call requires the
+	//  `ADMIN` role.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+	CloudAgentServiceUpdateCloudAgentSecretsWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceUpdateCloudAgentSecrets UpdateCloudAgentSecrets
+	//
+	// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+	//  the secret of the same name. A secret that you do not name stays. A change
+	//  takes effect at the next restart or deployment. The call requires the
+	//  `ADMIN` role.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+	CloudAgentServiceUpdateCloudAgentSecrets(ctx context.Context, projectId string, agentId string, body CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CloudAgentServiceListCloudAgentVersions ListCloudAgentVersions
+	//
+	// Lists the versions of a cloud agent, newest first. The list is always one
+	//  page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/versions (the `CloudAgentServiceListCloudAgentVersions` operationId).
+	CloudAgentServiceListCloudAgentVersions(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceGetEvalDefaults GetEvalDefaults
+	//
+	// Returns the judge defaults of the project, and the judge models that a
+	//  definition can name. Each eval uses the judge defaults for the judge
+	//  settings that its definition does not set.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-defaults (the `EvalServiceGetEvalDefaults` operationId).
+	EvalServiceGetEvalDefaults(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateEvalDefaultsWithBody Replaces the judge defaults of the project. A revision keeps the defaults
+	//  that it was published with, so the change reaches an eval at its next
+	//  publish.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+	EvalServiceUpdateEvalDefaultsWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateEvalDefaults Replaces the judge defaults of the project. A revision keeps the defaults
+	//  that it was published with, so the change reaches an eval at its next
+	//  publish.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+	EvalServiceUpdateEvalDefaults(ctx context.Context, projectId string, body EvalServiceUpdateEvalDefaultsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AnalyticsServiceGetEvalResults Returns the eval results of a project over a time range: the totals, one
+	//  item for each eval, eval version and agent, and the error codes. An eval
+	//  is a set of criteria that LiveKit checks on each finished live session of
+	//  the agents of a project. This is the data that the evals page of LiveKit
+	//  Cloud shows.
+	//
+	// Each count is a number of sessions. The range selects sessions by their
+	//  end time, and expands to whole 5-minute periods. Simulated sessions are
+	//  not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  A session that ends at `range.endTime` is included, unless `range.endTime`
+	//  is on a 5-minute boundary. The range can be at most 60 days.
+	//
+	//  Errors: a range longer than 60 days, a range whose `startTime` is not
+	//  before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+	//  `intentIds`, or `outcomeIds` returns `InvalidArgument`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-results (the `AnalyticsServiceGetEvalResults` operationId).
+	AnalyticsServiceGetEvalResults(ctx context.Context, projectId string, params *AnalyticsServiceGetEvalResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ObservabilityServiceListEvalSessions Lists the agent sessions that LiveKit scored with evals or labeled, newest
+	//  session end first. An eval is a set of criteria that LiveKit checks on each
+	//  finished live session. Each item is one agent job in a session, with the
+	//  result of each eval. These are the sessions that the evals page of the
+	//  dashboard lists when you select a result.
+	//
+	// With no `evalId`, `verdict` or `criterionId`, each item has the verdict and
+	//  score of every eval that scored the session, and a session that LiveKit
+	//  only labeled has no evals. With `evalId` or `verdict`, each item has one
+	//  eval and the IDs of the criteria that it failed. With `criterionId`, each
+	//  item has the answer to that criterion and the answers of its judges. To get
+	//  the failure reasons, call `GetSessionEvals`.
+	//
+	//  The range selects sessions by their end time, and expands to whole
+	//  5-minute periods. A session that ends at `range.endTime` is included,
+	//  unless `range.endTime` is on a 5-minute boundary. When `range.startTime`
+	//  is unset, the range starts 7 days before its end. The range can be at
+	//  most 30 days. Simulated sessions are not included.
+	//
+	//  Errors: a range longer than 30 days, a range whose `startTime` is not
+	//  before its `endTime`, more than 25 entries in `agentNames`, `intentIds`, or
+	//  `outcomeIds`, a `criterionId` without an `evalId` or with a `verdict`, or a
+	//  cursor from another request returns `InvalidArgument`. A read with no
+	//  filter that returns no sessions while user data recording is off returns
+	//  the `ObservabilityDisabled` error.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-sessions (the `ObservabilityServiceListEvalSessions` operationId).
+	ObservabilityServiceListEvalSessions(ctx context.Context, projectId string, params *ObservabilityServiceListEvalSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceListEvals ListEvals
+	//
+	// Lists the evals of a project, sorted by name, ignoring case. The list is always one page,
+	//  with every eval. A project has at most 500 active evals. Each item has the
+	//  live revision number and says whether the eval has a draft, but has no
+	//  definition. To read a definition, use `GetEval`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals (the `EvalServiceListEvals` operationId).
+	EvalServiceListEvals(ctx context.Context, projectId string, params *EvalServiceListEvalsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceCreateEvalWithBody Creates an eval, with its definition as the first draft. The eval scores
+	//  nothing until you publish the draft with `PublishEvalDraft`. Returns the
+	//  eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A name that another eval of the project
+	//  has returns `AlreadyExists`. A project with the maximum number of evals
+	//  returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+	EvalServiceCreateEvalWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceCreateEval Creates an eval, with its definition as the first draft. The eval scores
+	//  nothing until you publish the draft with `PublishEvalDraft`. Returns the
+	//  eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A name that another eval of the project
+	//  has returns `AlreadyExists`. A project with the maximum number of evals
+	//  returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+	EvalServiceCreateEval(ctx context.Context, projectId string, body EvalServiceCreateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceDeleteEval Deletes an eval. LiveKit stops scoring sessions with it, and its past
+	//  results stay. `UndeleteEval` brings it back.
+	//
+	// Errors: an unknown eval returns `NotFound`.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceDeleteEval` operationId).
+	EvalServiceDeleteEval(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceGetEval Returns an eval and one version of its definition: the live revision, a
+	//  revision that you name, or the draft. Without `version`, returns the live
+	//  revision, or the draft when nothing is published. A deleted eval is still
+	//  readable.
+	//
+	// Errors: an unknown eval returns `NotFound`. A revision or a draft that the
+	//  eval does not have also returns `NotFound`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceGetEval` operationId).
+	EvalServiceGetEval(ctx context.Context, projectId string, evalId string, params *EvalServiceGetEvalParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateEvalWithBody Changes the name or the description of an eval. A field that you leave
+	//  out does not change. A change takes effect at once, and does not need a
+	//  publish.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has returns `AlreadyExists`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+	EvalServiceUpdateEvalWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateEval Changes the name or the description of an eval. A field that you leave
+	//  out does not change. A change takes effect at once, and does not need a
+	//  publish.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has returns `AlreadyExists`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+	EvalServiceUpdateEval(ctx context.Context, projectId string, evalId string, body EvalServiceUpdateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceDiffEvalRevisions Returns the changes between two versions of the definition of an eval,
+	//  field by field. Each version is a revision or the draft. The changes are
+	//  to the definition as it was written, without the judge defaults of the
+	//  project.
+	//
+	// Errors: an unknown eval, revision or draft returns `NotFound`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/diff (the `EvalServiceDiffEvalRevisions` operationId).
+	EvalServiceDiffEvalRevisions(ctx context.Context, projectId string, evalId string, params *EvalServiceDiffEvalRevisionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceDiscardEvalDraft Discards the draft of an eval. The live revision does not change. Pass the
+	//  `draftEtag` that you last read, so that you do not discard a change that
+	//  someone else made.
+	//
+	// Errors: an unknown eval, or an eval with no draft, returns `NotFound`. A
+	//  `draftEtag` that is not the current one returns `Aborted`.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceDiscardEvalDraft` operationId).
+	EvalServiceDiscardEvalDraft(ctx context.Context, projectId string, evalId string, params *EvalServiceDiscardEvalDraftParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceSaveEvalDraftWithBody Saves the draft of an eval, and replaces the draft that was there. The
+	//  draft scores nothing until you publish it. Pass the `draftEtag` that you
+	//  last read, so that you do not overwrite a change that someone else made.
+	//  Leave it empty when the eval has no draft.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`: read the eval again, and repeat the change on its
+	//  draft.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+	EvalServiceSaveEvalDraftWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceSaveEvalDraft Saves the draft of an eval, and replaces the draft that was there. The
+	//  draft scores nothing until you publish it. Pass the `draftEtag` that you
+	//  last read, so that you do not overwrite a change that someone else made.
+	//  Leave it empty when the eval has no draft.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`: read the eval again, and repeat the change on its
+	//  draft.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+	EvalServiceSaveEvalDraft(ctx context.Context, projectId string, evalId string, body EvalServiceSaveEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServicePublishEvalDraftWithBody Publishes the draft of an eval as its next revision, and makes that
+	//  revision live. From now on, the eval scores every matching live session of
+	//  the project, and each judged criterion uses LLM judge inference that
+	//  LiveKit pays for. Pass the `draftEtag` that you last read.
+	//
+	// Errors: a draft that is not complete returns `InvalidArgument`, with each
+	//  field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`. When the live revision changed after the draft was
+	//  opened, returns `FailedPrecondition`: compare the two with
+	//  `DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+	EvalServicePublishEvalDraftWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServicePublishEvalDraft Publishes the draft of an eval as its next revision, and makes that
+	//  revision live. From now on, the eval scores every matching live session of
+	//  the project, and each judged criterion uses LLM judge inference that
+	//  LiveKit pays for. Pass the `draftEtag` that you last read.
+	//
+	// Errors: a draft that is not complete returns `InvalidArgument`, with each
+	//  field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`. When the live revision changed after the draft was
+	//  opened, returns `FailedPrecondition`: compare the two with
+	//  `DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+	EvalServicePublishEvalDraft(ctx context.Context, projectId string, evalId string, body EvalServicePublishEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceListEvalHistory ListEvalHistory
+	//
+	// Lists the history of an eval, newest first: each publish, rollback,
+	//  delete and undelete, and each change of its name or description.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/history (the `EvalServiceListEvalHistory` operationId).
+	EvalServiceListEvalHistory(ctx context.Context, projectId string, evalId string, params *EvalServiceListEvalHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceRollbackEvalWithBody Makes a copy of an older revision of an eval the next revision, and makes
+	//  it live. From now on, the eval scores every matching live session of the
+	//  project with that definition. The older revision and the history do not
+	//  change.
+	//
+	// Errors: an unknown eval or revision returns `NotFound`. The live revision
+	//  returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+	EvalServiceRollbackEvalWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceRollbackEval Makes a copy of an older revision of an eval the next revision, and makes
+	//  it live. From now on, the eval scores every matching live session of the
+	//  project with that definition. The older revision and the history do not
+	//  change.
+	//
+	// Errors: an unknown eval or revision returns `NotFound`. The live revision
+	//  returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+	EvalServiceRollbackEval(ctx context.Context, projectId string, evalId string, body EvalServiceRollbackEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUndeleteEval Undeletes an eval. If it has a live revision, LiveKit scores sessions with
+	//  it again.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has taken returns `AlreadyExists`. A project with the maximum
+	//  number of evals returns `FailedPrecondition`.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:undelete (the `EvalServiceUndeleteEval` operationId).
+	EvalServiceUndeleteEval(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceValidateEvalWithBody ValidateEval
+	//
+	// Checks an eval definition, and saves nothing. Returns the definition with
+	//  the judge defaults of the project applied, and each field that is wrong
+	//  or missing. A definition can be published only when it has no
+	//  violations. The call returns OK also when the definition has violations.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+	EvalServiceValidateEvalWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceValidateEval ValidateEval
+	//
+	// Checks an eval definition, and saves nothing. Returns the definition with
+	//  the judge defaults of the project applied, and each field that is wrong
+	//  or missing. A definition can be published only when it has no
+	//  violations. The call returns OK also when the definition has violations.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+	EvalServiceValidateEval(ctx context.Context, projectId string, body EvalServiceValidateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListInvites ListInvites
 	//
@@ -9444,6 +13657,54 @@ type ClientInterface interface {
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 	ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ObservabilityServiceListLogPatterns Lists the log patterns of a project in a time range, ranked, with their
+	//  counts over time. A log pattern is a group of log records that log the
+	//  same message from one place in the code, at one level. Its template is
+	//  the message with each variable part, such as a number or an ID, replaced
+	//  by a placeholder. These are the patterns that the logs page on the
+	//  dashboard groups the records into.
+	//
+	// When `range.startTime` is unset, the range starts 24 hours before its
+	//  end. The range does not include `range.endTime`.
+	//
+	//  The API keeps log records for 14 days. One read covers at most the 7
+	//  days before the end of its range. A range that starts earlier reads the
+	//  records of those 7 days. A range that ends more than 14 days ago returns
+	//  `InvalidArgument`. The read does not count the records of the current
+	//  minute, and its answer can be up to one minute old. For a range of one
+	//  day or more, these are five minutes. On a project with
+	//  many records, the counts can be estimates. Then `estimated` is true: the
+	//  API reads the records of a share of the sessions, and scales the counts.
+	//  The read does not count the records of agent simulation sessions, unless
+	//  you set `sessionId`. A read with a filter can return no patterns because
+	//  no record matches. Thus, only a read with no `query`, `minLevel`,
+	//  `sources`, `agentName`, `agentId`, or `sessionId` returns the
+	//  `ObservabilityDisabled` error.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/log-patterns (the `ObservabilityServiceListLogPatterns` operationId).
+	ObservabilityServiceListLogPatterns(ctx context.Context, projectId string, params *ObservabilityServiceListLogPatternsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ObservabilityServiceListProjectLogs Lists the log records of a project in a time range, from its agents, its
+	//  client SDKs, and LiveKit, newest first by default. These are the records
+	//  that the logs page on the dashboard shows. The chat history is not
+	//  included, because `GetSessionTranscript` returns it.
+	//
+	// When `range.startTime` is unset, the range starts 24 hours before its
+	//  end. The range includes `range.endTime`, to the millisecond.
+	//
+	//  The API keeps log records for 14 days. One read returns at most the 7
+	//  days before the end of its range. A range that starts earlier returns
+	//  the records of those 7 days. A range that ends more than 14 days ago
+	//  returns `InvalidArgument`. A record that arrives after you read a page
+	//  can have a time that your pages already passed. This read does not return
+	//  that record. A new read returns it. Records from the last few minutes can
+	//  still arrive. A read with a filter can return no records because no
+	//  record matches. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/logs (the `ObservabilityServiceListProjectLogs` operationId).
+	ObservabilityServiceListProjectLogs(ctx context.Context, projectId string, params *ObservabilityServiceListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListMembers ListMembers
 	//
@@ -9640,9 +13901,165 @@ type ClientInterface interface {
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AnalyticsServiceGetSessionLabelResults Returns the session labels of a project over a time range: the number of
+	//  sessions with each intent and each outcome, the number of sessions with
+	//  each pair of intent and outcome, and the eval results of the sessions
+	//  with each label. A session label is an intent (what the user wanted) or
+	//  an outcome (how the session ended) that LiveKit assigns to each finished
+	//  live session.
+	//
+	// The eval results name each eval by its ID only. To get the names, call
+	//  `GetEvalResults` and read `evals`, or call `ListEvals`.
+	//
+	//  The range selects sessions by their end time, and expands to whole
+	//  5-minute periods. Simulated sessions are not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  A session that ends at `range.endTime` is included, unless `range.endTime`
+	//  is on a 5-minute boundary. The range can be at most 60 days.
+	//
+	//  Errors: a range longer than 60 days, a range whose `startTime` is not
+	//  before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+	//  `intentIds`, or `outcomeIds` returns `InvalidArgument`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-label-results (the `AnalyticsServiceGetSessionLabelResults` operationId).
+	AnalyticsServiceGetSessionLabelResults(ctx context.Context, projectId string, params *AnalyticsServiceGetSessionLabelResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceGetSessionLabelSettings GetSessionLabelSettings
+	//
+	// Returns the settings that decide which sessions LiveKit labels. A project
+	//  that never changed them has the default values.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-label-settings (the `EvalServiceGetSessionLabelSettings` operationId).
+	EvalServiceGetSessionLabelSettings(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateSessionLabelSettingsWithBody Replaces the session label settings of a project. A field that you leave
+	//  out goes back to its default value, so send every field that you want to
+	//  keep.
+	//
+	// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+	//  range, returns `InvalidArgument`, with each field in the error details.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+	EvalServiceUpdateSessionLabelSettingsWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateSessionLabelSettings Replaces the session label settings of a project. A field that you leave
+	//  out goes back to its default value, so send every field that you want to
+	//  keep.
+	//
+	// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+	//  range, returns `InvalidArgument`, with each field in the error details.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+	EvalServiceUpdateSessionLabelSettings(ctx context.Context, projectId string, body EvalServiceUpdateSessionLabelSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceListSessionLabels ListSessionLabels
+	//
+	// Lists the session labels of a project, sorted by name, ignoring case. The
+	//  list is always one page, with every label of the kind. A project has at
+	//  most 500 active labels of each kind.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-labels (the `EvalServiceListSessionLabels` operationId).
+	EvalServiceListSessionLabels(ctx context.Context, projectId string, params *EvalServiceListSessionLabelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceCreateSessionLabelWithBody Creates a session label. LiveKit applies the label to the sessions that
+	//  end after the label exists, and the label does not reach sessions that
+	//  ended before. The LLM that assigns labels reads the `description` of each
+	//  label, so a description is required. The first label of a project turns
+	//  labeling on, and each labeled session uses LLM inference that LiveKit pays
+	//  for.
+	//
+	// Errors: a field that is wrong returns `InvalidArgument`, with each field
+	//  in the error details. A name that another active label of the same kind
+	//  has returns `AlreadyExists`. A project with the maximum number of active
+	//  labels of the kind, or an agent that would have too many labels of the
+	//  kind, returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+	EvalServiceCreateSessionLabelWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceCreateSessionLabel Creates a session label. LiveKit applies the label to the sessions that
+	//  end after the label exists, and the label does not reach sessions that
+	//  ended before. The LLM that assigns labels reads the `description` of each
+	//  label, so a description is required. The first label of a project turns
+	//  labeling on, and each labeled session uses LLM inference that LiveKit pays
+	//  for.
+	//
+	// Errors: a field that is wrong returns `InvalidArgument`, with each field
+	//  in the error details. A name that another active label of the same kind
+	//  has returns `AlreadyExists`. A project with the maximum number of active
+	//  labels of the kind, or an agent that would have too many labels of the
+	//  kind, returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+	EvalServiceCreateSessionLabel(ctx context.Context, projectId string, body EvalServiceCreateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceDeleteSessionLabel Deletes a session label. LiveKit stops assigning it, and the labels that
+	//  it assigned to past sessions stay. The response lists the active evals
+	//  that still name the label in `run.when`. The delete happens either way, so
+	//  fix those evals. `UndeleteSessionLabel` brings the label back with the
+	//  same ID. Deleting a deleted label changes nothing.
+	//
+	// Errors: an unknown label returns `NotFound`.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceDeleteSessionLabel` operationId).
+	EvalServiceDeleteSessionLabel(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateSessionLabelWithBody Changes a session label. A field that you leave out does not change. The
+	//  kind of a label does not change. A change applies to the sessions that end
+	//  after it. Evals refer to a label by its ID, so a new name does not change
+	//  them.
+	//
+	// Errors: an unknown label returns `NotFound`. A deleted label returns
+	//  `FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+	//  name that another active label of the same kind has returns
+	//  `AlreadyExists`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+	EvalServiceUpdateSessionLabelWithBody(ctx context.Context, projectId string, labelId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUpdateSessionLabel Changes a session label. A field that you leave out does not change. The
+	//  kind of a label does not change. A change applies to the sessions that end
+	//  after it. Evals refer to a label by its ID, so a new name does not change
+	//  them.
+	//
+	// Errors: an unknown label returns `NotFound`. A deleted label returns
+	//  `FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+	//  name that another active label of the same kind has returns
+	//  `AlreadyExists`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+	EvalServiceUpdateSessionLabel(ctx context.Context, projectId string, labelId string, body EvalServiceUpdateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EvalServiceUndeleteSessionLabel Undeletes a session label, with its old ID, so the evals that name the ID
+	//  match it again. The name and the limits of the project apply again.
+	//  Undeleting an active label changes nothing.
+	//
+	// Errors: an unknown label returns `NotFound`. A name that another active
+	//  label of the same kind has taken returns `AlreadyExists`. A project with
+	//  the maximum number of active labels of the kind, or an agent that would
+	//  have too many labels of the kind, returns `FailedPrecondition`.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels/{labelId}:undelete (the `EvalServiceUndeleteSessionLabel` operationId).
+	EvalServiceUndeleteSessionLabel(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AnalyticsServiceListProjectSessions ListProjectSessions
 	//
-	// Lists the room sessions of a project, newest first.
+	// Lists the room sessions of a project, newest first. When
+	//  `filter.range.startTime` is unset, the range starts 14 days before its
+	//  end. A session that started at `filter.range.endTime` is not included.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9654,6 +14071,28 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ObservabilityServiceGetSessionEvals Returns the eval results of a session: the newest result of each eval
+	//  that LiveKit scored on each agent job of the session, with the answer of
+	//  each criterion, the answers of its judges, and why a failed criterion
+	//  failed. It also returns the intent and the outcome that LiveKit assigned to
+	//  each agent job. These are the results that the evals tab of a session on
+	//  the dashboard shows.
+	//
+	// A judge is an LLM that answers a criterion. A failure reason explains a
+	//  failed criterion of a failed eval, and a failure excerpt quotes the
+	//  transcript lines that show the failure.
+	//
+	//  LiveKit scores a session after its agent uploads the session recording,
+	//  and the judges can take minutes after the session ends. Thus, a session
+	//  that LiveKit has not scored yet returns empty `evals` and `labels`, with no
+	//  error. When an eval that you expect is missing, read again a few minutes
+	//  later. An unknown session, or a session of another project,
+	//  returns `NotFound`. A session with no results while user data recording is
+	//  off returns the `ObservabilityDisabled` error.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/evals (the `ObservabilityServiceGetSessionEvals` operationId).
+	ObservabilityServiceGetSessionEvals(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionEvents Lists the events of a room session. Defaults to oldest first. The page info
 	//  has no total.
@@ -10178,7 +14617,10 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateWebhookWithBody CreateWebhook
 	//
-	// Creates a webhook destination for a project. A `url` that is not an absolute
+	// Creates a webhook destination for a project. It delivers LiveKit Cloud
+	//  events only, such as room, participant, track, egress, ingress and agent
+	//  job events; it doesn't receive or forward events from other services, such
+	//  as SMS. A `url` that is not an absolute
 	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 	//  in `filterParams` that `ListWebhookEvents` does not return, or a
 	//  `signingKey` that is not an API key of the project, also returns
@@ -10193,7 +14635,10 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateWebhook CreateWebhook
 	//
-	// Creates a webhook destination for a project. A `url` that is not an absolute
+	// Creates a webhook destination for a project. It delivers LiveKit Cloud
+	//  events only, such as room, participant, track, egress, ingress and agent
+	//  job events; it doesn't receive or forward events from other services, such
+	//  as SMS. A `url` that is not an absolute
 	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 	//  in `filterParams` that `ListWebhookEvents` does not return, or a
 	//  `signingKey` that is not an API key of the project, also returns
@@ -10822,16 +15267,16 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceListBuilderAgents ListBuilderAgents
+// AgentBuilderServiceListAgents ListAgents
 //
-// Lists the builder agents of a project by name, with the deployment status
+// Lists the Agent Builder agents of a project by name, with the deployment
 //
-//	of each. The list does not include configurations. To get the
-//	configuration of an agent, call `GetBuilderAgent`.
+//	status of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetAgent`.
 //
-// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
-func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceListBuilderAgentsRequest(c.Server, projectId, params)
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceListAgents` operationId).
+func (c *Client) AgentBuilderServiceListAgents(ctx context.Context, projectId string, params *AgentBuilderServiceListAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceListAgentsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -10842,23 +15287,24 @@ func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
+// AgentBuilderServiceCreateAgentWithBody CreateAgent
 //
-// Creates a builder agent from a name and a configuration. The agent is not
+// Creates an Agent Builder agent from a name and a configuration. The agent
 //
-//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	is not deployed: call `DeployAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored. A
 //	configuration that is not valid fails with `InvalidArgument` and a
 //	`google.rpc.BadRequest` detail. It has a field violation for each
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(c.Server, projectId, contentType, body)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+func (c *Client) AgentBuilderServiceCreateAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceCreateAgentRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10869,23 +15315,24 @@ func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Conte
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
+// AgentBuilderServiceCreateAgent CreateAgent
 //
-// Creates a builder agent from a name and a configuration. The agent is not
+// Creates an Agent Builder agent from a name and a configuration. The agent
 //
-//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	is not deployed: call `DeployAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored. A
 //	configuration that is not valid fails with `InvalidArgument` and a
 //	`google.rpc.BadRequest` detail. It has a field violation for each
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceCreateBuilderAgentRequest(c.Server, projectId, body)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+func (c *Client) AgentBuilderServiceCreateAgent(ctx context.Context, projectId string, body AgentBuilderServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceCreateAgentRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10896,13 +15343,13 @@ func (c *Client) BuilderAgentServiceCreateBuilderAgent(ctx context.Context, proj
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
+// AgentBuilderServiceDeleteAgent DeleteAgent
 //
-// Deletes a builder agent, its versions, and its deployment.
+// Deletes an Agent Builder agent, its versions, and its deployment.
 //
-// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceDeleteBuilderAgentRequest(c.Server, projectId, builderAgentId)
+// Corresponds with DELETE /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceDeleteAgent` operationId).
+func (c *Client) AgentBuilderServiceDeleteAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceDeleteAgentRequest(c.Server, projectId, agentId)
 	if err != nil {
 		return nil, err
 	}
@@ -10913,15 +15360,16 @@ func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, proj
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
+// AgentBuilderServiceGetAgent GetAgent
 //
-// Returns a builder agent with its current configuration and its deployment
+// Returns an Agent Builder agent with its current configuration and its
 //
-//	status.
+//	deployment status. A `READ` member reads `********` in place of each
+//	header value.
 //
-// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceGetBuilderAgentRequest(c.Server, projectId, builderAgentId)
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceGetAgent` operationId).
+func (c *Client) AgentBuilderServiceGetAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceGetAgentRequest(c.Server, projectId, agentId)
 	if err != nil {
 		return nil, err
 	}
@@ -10932,19 +15380,24 @@ func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
+// AgentBuilderServiceUpdateAgentWithBody UpdateAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of an Agent Builder agent, its name, or both. A
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	new configuration makes a new version. A new name does not. The running
+//	agent does not change until you deploy again. Until then, it keeps the
+//	old configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another Agent Builder agent of the project
+//	has fails with `AlreadyExists`. A configuration that is not valid fails
+//	as it does in `CreateAgent`, which includes `********` as a header value.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+func (c *Client) AgentBuilderServiceUpdateAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceUpdateAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10955,19 +15408,24 @@ func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Conte
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+// AgentBuilderServiceUpdateAgent UpdateAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of an Agent Builder agent, its name, or both. A
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	new configuration makes a new version. A new name does not. The running
+//	agent does not change until you deploy again. Until then, it keeps the
+//	old configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another Agent Builder agent of the project
+//	has fails with `AlreadyExists`. A configuration that is not valid fails
+//	as it does in `CreateAgent`, which includes `********` as a header value.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+func (c *Client) AgentBuilderServiceUpdateAgent(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceUpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceUpdateAgentRequest(c.Server, projectId, agentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10978,20 +15436,66 @@ func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, proj
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+// AgentBuilderServiceGetAgentCodeURL GetAgentCodeURL
 //
-// Starts a deployment of the current configuration of a builder agent, or of
+// Returns a short-lived URL that downloads the agent code of an Agent
 //
-//	an earlier version. The call returns when the build starts, with the
-//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-//	returns. Call `GetBuilderAgent` to follow the deployment until its status
-//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//	Builder agent version as a zip file. The zip holds `src/agent.py`,
+//	`pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+//	so that you can run and change the agent yourself. The URL needs no
+//	credentials and is valid until `expiresAt`. The agent code holds every
+//	header value, so the call requires the `WRITE` role. A version whose
+//	configuration can't make agent code returns `FailedPrecondition`.
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/code-url (the `AgentBuilderServiceGetAgentCodeURL` operationId).
+func (c *Client) AgentBuilderServiceGetAgentCodeURL(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceGetAgentCodeURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceGetAgentCodeURLRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentBuilderServiceListAgentVersions ListAgentVersions
+//
+// Lists the versions of an Agent Builder agent, newest first, each with its
+//
+//	configuration. To deploy an earlier version, pass its ID to
+//	`DeployAgent`. To make its configuration current again, pass the
+//	configuration to `UpdateAgent`. A `READ` member reads `********` in place
+//	of each header value.
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/versions (the `AgentBuilderServiceListAgentVersions` operationId).
+func (c *Client) AgentBuilderServiceListAgentVersions(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceListAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceListAgentVersionsRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AgentBuilderServiceDeployAgentWithBody DeployAgent
+//
+// Starts a deployment of the current configuration of an Agent Builder
+//
+//	agent, or of an earlier version. The call returns when the build starts,
+//	with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+//	the call returns. Call `GetAgent` to follow the deployment until its
+//	status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+func (c *Client) AgentBuilderServiceDeployAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceDeployAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11002,20 +15506,1172 @@ func (c *Client) BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Conte
 	return c.Client.Do(req)
 }
 
-// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+// AgentBuilderServiceDeployAgent DeployAgent
 //
-// Starts a deployment of the current configuration of a builder agent, or of
+// Starts a deployment of the current configuration of an Agent Builder
 //
-//	an earlier version. The call returns when the build starts, with the
-//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-//	returns. Call `GetBuilderAgent` to follow the deployment until its status
-//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//	agent, or of an earlier version. The call returns when the build starts,
+//	with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+//	the call returns. Call `GetAgent` to follow the deployment until its
+//	status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-func (c *Client) BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBuilderAgentServiceDeployBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+func (c *Client) AgentBuilderServiceDeployAgent(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAgentBuilderServiceDeployAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AnalyticsServiceGetAgentInsights Returns the agent insights of a project over a time range: the totals and
+//
+//	latencies of its agents, one item for each agent, and one item for each
+//	model that the agents used. This is the data that the agent dashboards of
+//	LiveKit Cloud show.
+//
+// The data comes from the turns, model requests, and tool calls that the
+//
+//	agents recorded. Simulated sessions are not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	The range does not include `range.endTime`. The range can be at most 30
+//	days.
+//
+//	Errors: a range longer than 30 days, a range whose `startTime` is not
+//	before its `endTime`, a range that starts after now, more than 25 agents
+//	in `agentIds` and `agentNames` together, or an empty agent ID or name
+//	returns `InvalidArgument`.
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-insights (the `AnalyticsServiceGetAgentInsights` operationId).
+func (c *Client) AnalyticsServiceGetAgentInsights(ctx context.Context, projectId string, params *AnalyticsServiceGetAgentInsightsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAnalyticsServiceGetAgentInsightsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceListCloudAgentPrivateLinks ListCloudAgentPrivateLinks
+//
+// Lists the private links of the project. A private link connects the agents
+//
+//	of the project to a service in your network. The list is always one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceListCloudAgentPrivateLinks` operationId).
+func (c *Client) CloudAgentServiceListCloudAgentPrivateLinks(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentPrivateLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceListCloudAgentPrivateLinksRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceCreateCloudAgentPrivateLinkWithBody CreateCloudAgentPrivateLink
+//
+// Creates a private link from the agents of the project to a service in your
+//
+//	network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+func (c *Client) CloudAgentServiceCreateCloudAgentPrivateLinkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceCreateCloudAgentPrivateLinkRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceCreateCloudAgentPrivateLink CreateCloudAgentPrivateLink
+//
+// Creates a private link from the agents of the project to a service in your
+//
+//	network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+func (c *Client) CloudAgentServiceCreateCloudAgentPrivateLink(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceCreateCloudAgentPrivateLinkRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceDeleteCloudAgentPrivateLink DeleteCloudAgentPrivateLink
+//
+// Deletes a private link.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId} (the `CloudAgentServiceDeleteCloudAgentPrivateLink` operationId).
+func (c *Client) CloudAgentServiceDeleteCloudAgentPrivateLink(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceDeleteCloudAgentPrivateLinkRequest(c.Server, projectId, privateLinkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceGetCloudAgentPrivateLinkStatus GetCloudAgentPrivateLinkStatus
+//
+// Returns the health of a private link.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId}/status (the `CloudAgentServiceGetCloudAgentPrivateLinkStatus` operationId).
+func (c *Client) CloudAgentServiceGetCloudAgentPrivateLinkStatus(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceGetCloudAgentPrivateLinkStatusRequest(c.Server, projectId, privateLinkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceGetCloudAgentSettings GetCloudAgentSettings
+//
+// Returns what a client needs to create or deploy a cloud agent: the regions
+//
+//	that the project can use, and the settings that `lk` checks.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-settings (the `CloudAgentServiceGetCloudAgentSettings` operationId).
+func (c *Client) CloudAgentServiceGetCloudAgentSettings(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceGetCloudAgentSettingsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceListCloudAgents ListCloudAgents
+//
+// Lists the cloud agents of the project in ID order. Each
+//
+//	item has the deployments of the agent, one for each region and named
+//	deployment. The list is always one page. An agent that Agent Builder made
+//	is in the list, with the ID of its Agent Builder agent.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceListCloudAgents` operationId).
+func (c *Client) CloudAgentServiceListCloudAgents(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceListCloudAgentsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceCreateCloudAgentWithBody CreateCloudAgent
+//
+// Creates a cloud agent with no code deployed, and returns its ID. Call
+//
+//	`DeployCloudAgent` to run code on it. The plan of the project limits the
+//	number of agents: a project at the limit returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+func (c *Client) CloudAgentServiceCreateCloudAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceCreateCloudAgentRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceCreateCloudAgent CreateCloudAgent
+//
+// Creates a cloud agent with no code deployed, and returns its ID. Call
+//
+//	`DeployCloudAgent` to run code on it. The plan of the project limits the
+//	number of agents: a project at the limit returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+func (c *Client) CloudAgentServiceCreateCloudAgent(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceCreateCloudAgentRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceDeleteCloudAgent DeleteCloudAgent
+//
+// Deletes a cloud agent with everything that it runs, or only its named
+//
+//	deployment when you set `deployment`. The deployment cannot be
+//	`production`: to remove it, delete the agent. A retry after a success
+//	returns `NotFound`.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceDeleteCloudAgent` operationId).
+func (c *Client) CloudAgentServiceDeleteCloudAgent(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceDeleteCloudAgentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceDeleteCloudAgentRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceGetCloudAgent GetCloudAgent
+//
+// Returns a cloud agent with its deployments and their status. Returns
+//
+//	`NotFound` for an agent that the project does not have.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceGetCloudAgent` operationId).
+func (c *Client) CloudAgentServiceGetCloudAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceGetCloudAgentRequest(c.Server, projectId, agentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceGetCloudAgentBuildLogs GetCloudAgentBuildLogs
+//
+// Returns the build log of a version of a cloud agent. It returns the last
+//
+//	1 MiB of the log, from the start of a line, and sets `truncated` when the
+//	log is longer: the end of a log tells why a build failed. Returns
+//	`NotFound` when the version has no log.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/build-logs (the `CloudAgentServiceGetCloudAgentBuildLogs` operationId).
+func (c *Client) CloudAgentServiceGetCloudAgentBuildLogs(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceGetCloudAgentBuildLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceGetCloudAgentBuildLogsRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceBuildCloudAgentWithBody BuildCloudAgent
+//
+// Builds the source archive that you uploaded for a deployment, and deploys
+//
+//	the version that it makes. The call returns when the build is queued. The
+//	build runs on without the call. Read `GetCloudAgent` for its status. A
+//	project can start a limited number of builds each hour: a call over the
+//	limit returns `ResourceExhausted`. An agent that has as many versions as
+//	its plan allows returns `FailedPrecondition`: delete a deployment that runs
+//	another version, then deploy again.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+func (c *Client) CloudAgentServiceBuildCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceBuildCloudAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceBuildCloudAgent BuildCloudAgent
+//
+// Builds the source archive that you uploaded for a deployment, and deploys
+//
+//	the version that it makes. The call returns when the build is queued. The
+//	build runs on without the call. Read `GetCloudAgent` for its status. A
+//	project can start a limited number of builds each hour: a call over the
+//	limit returns `ResourceExhausted`. An agent that has as many versions as
+//	its plan allows returns `FailedPrecondition`: delete a deployment that runs
+//	another version, then deploy again.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+func (c *Client) CloudAgentServiceBuildCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceBuildCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceBuildCloudAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceDeployCloudAgentWithBody DeployCloudAgent
+//
+// Starts a deployment of new code to a cloud agent. It returns where to
+//
+//	upload the source archive of the agent and the tag of the version that the
+//	deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+//	The call makes no version by itself, and a retry returns a new upload
+//	target and tag.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+func (c *Client) CloudAgentServiceDeployCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceDeployCloudAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceDeployCloudAgent DeployCloudAgent
+//
+// Starts a deployment of new code to a cloud agent. It returns where to
+//
+//	upload the source archive of the agent and the tag of the version that the
+//	deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+//	The call makes no version by itself, and a retry returns a new upload
+//	target and tag.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+func (c *Client) CloudAgentServiceDeployCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceDeployCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceDeployCloudAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServicePromoteCloudAgentWithBody PromoteCloudAgent
+//
+// Makes the version that a named deployment runs the version that
+//
+//	production runs.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+func (c *Client) CloudAgentServicePromoteCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServicePromoteCloudAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServicePromoteCloudAgent PromoteCloudAgent
+//
+// Makes the version that a named deployment runs the version that
+//
+//	production runs.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+func (c *Client) CloudAgentServicePromoteCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServicePromoteCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServicePromoteCloudAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceRestartCloudAgent RestartCloudAgent
+//
+// Restarts the workers of a cloud agent. Sessions in progress end.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/restart (the `CloudAgentServiceRestartCloudAgent` operationId).
+func (c *Client) CloudAgentServiceRestartCloudAgent(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceRestartCloudAgentRequest(c.Server, projectId, agentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceRollbackCloudAgentWithBody RollbackCloudAgent
+//
+// Makes a version of a cloud agent the version that production runs. Read
+//
+//	the versions with `ListCloudAgentVersions`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+func (c *Client) CloudAgentServiceRollbackCloudAgentWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceRollbackCloudAgentRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceRollbackCloudAgent RollbackCloudAgent
+//
+// Makes a version of a cloud agent the version that production runs. Read
+//
+//	the versions with `ListCloudAgentVersions`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+func (c *Client) CloudAgentServiceRollbackCloudAgent(ctx context.Context, projectId string, agentId string, body CloudAgentServiceRollbackCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceRollbackCloudAgentRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceListCloudAgentSecrets ListCloudAgentSecrets
+//
+// Lists the secrets of a cloud agent, without their values, in name order.
+//
+//	The list is always one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceListCloudAgentSecrets` operationId).
+func (c *Client) CloudAgentServiceListCloudAgentSecrets(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentSecretsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceListCloudAgentSecretsRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceUpdateCloudAgentSecretsWithBody UpdateCloudAgentSecrets
+//
+// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+//
+//	the secret of the same name. A secret that you do not name stays. A change
+//	takes effect at the next restart or deployment. The call requires the
+//	`ADMIN` role.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+func (c *Client) CloudAgentServiceUpdateCloudAgentSecretsWithBody(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceUpdateCloudAgentSecretsRequestWithBody(c.Server, projectId, agentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceUpdateCloudAgentSecrets UpdateCloudAgentSecrets
+//
+// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+//
+//	the secret of the same name. A secret that you do not name stays. A change
+//	takes effect at the next restart or deployment. The call requires the
+//	`ADMIN` role.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+func (c *Client) CloudAgentServiceUpdateCloudAgentSecrets(ctx context.Context, projectId string, agentId string, body CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceUpdateCloudAgentSecretsRequest(c.Server, projectId, agentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CloudAgentServiceListCloudAgentVersions ListCloudAgentVersions
+//
+// Lists the versions of a cloud agent, newest first. The list is always one
+//
+//	page.
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/versions (the `CloudAgentServiceListCloudAgentVersions` operationId).
+func (c *Client) CloudAgentServiceListCloudAgentVersions(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCloudAgentServiceListCloudAgentVersionsRequest(c.Server, projectId, agentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceGetEvalDefaults GetEvalDefaults
+//
+// Returns the judge defaults of the project, and the judge models that a
+//
+//	definition can name. Each eval uses the judge defaults for the judge
+//	settings that its definition does not set.
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-defaults (the `EvalServiceGetEvalDefaults` operationId).
+func (c *Client) EvalServiceGetEvalDefaults(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceGetEvalDefaultsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateEvalDefaultsWithBody Replaces the judge defaults of the project. A revision keeps the defaults
+//
+//	that it was published with, so the change reaches an eval at its next
+//	publish.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+func (c *Client) EvalServiceUpdateEvalDefaultsWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateEvalDefaultsRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateEvalDefaults Replaces the judge defaults of the project. A revision keeps the defaults
+//
+//	that it was published with, so the change reaches an eval at its next
+//	publish.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+func (c *Client) EvalServiceUpdateEvalDefaults(ctx context.Context, projectId string, body EvalServiceUpdateEvalDefaultsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateEvalDefaultsRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AnalyticsServiceGetEvalResults Returns the eval results of a project over a time range: the totals, one
+//
+//	item for each eval, eval version and agent, and the error codes. An eval
+//	is a set of criteria that LiveKit checks on each finished live session of
+//	the agents of a project. This is the data that the evals page of LiveKit
+//	Cloud shows.
+//
+// Each count is a number of sessions. The range selects sessions by their
+//
+//	end time, and expands to whole 5-minute periods. Simulated sessions are
+//	not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	A session that ends at `range.endTime` is included, unless `range.endTime`
+//	is on a 5-minute boundary. The range can be at most 60 days.
+//
+//	Errors: a range longer than 60 days, a range whose `startTime` is not
+//	before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+//	`intentIds`, or `outcomeIds` returns `InvalidArgument`.
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-results (the `AnalyticsServiceGetEvalResults` operationId).
+func (c *Client) AnalyticsServiceGetEvalResults(ctx context.Context, projectId string, params *AnalyticsServiceGetEvalResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAnalyticsServiceGetEvalResultsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ObservabilityServiceListEvalSessions Lists the agent sessions that LiveKit scored with evals or labeled, newest
+//
+//	session end first. An eval is a set of criteria that LiveKit checks on each
+//	finished live session. Each item is one agent job in a session, with the
+//	result of each eval. These are the sessions that the evals page of the
+//	dashboard lists when you select a result.
+//
+// With no `evalId`, `verdict` or `criterionId`, each item has the verdict and
+//
+//	score of every eval that scored the session, and a session that LiveKit
+//	only labeled has no evals. With `evalId` or `verdict`, each item has one
+//	eval and the IDs of the criteria that it failed. With `criterionId`, each
+//	item has the answer to that criterion and the answers of its judges. To get
+//	the failure reasons, call `GetSessionEvals`.
+//
+//	The range selects sessions by their end time, and expands to whole
+//	5-minute periods. A session that ends at `range.endTime` is included,
+//	unless `range.endTime` is on a 5-minute boundary. When `range.startTime`
+//	is unset, the range starts 7 days before its end. The range can be at
+//	most 30 days. Simulated sessions are not included.
+//
+//	Errors: a range longer than 30 days, a range whose `startTime` is not
+//	before its `endTime`, more than 25 entries in `agentNames`, `intentIds`, or
+//	`outcomeIds`, a `criterionId` without an `evalId` or with a `verdict`, or a
+//	cursor from another request returns `InvalidArgument`. A read with no
+//	filter that returns no sessions while user data recording is off returns
+//	the `ObservabilityDisabled` error.
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-sessions (the `ObservabilityServiceListEvalSessions` operationId).
+func (c *Client) ObservabilityServiceListEvalSessions(ctx context.Context, projectId string, params *ObservabilityServiceListEvalSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewObservabilityServiceListEvalSessionsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceListEvals ListEvals
+//
+// Lists the evals of a project, sorted by name, ignoring case. The list is always one page,
+//
+//	with every eval. A project has at most 500 active evals. Each item has the
+//	live revision number and says whether the eval has a draft, but has no
+//	definition. To read a definition, use `GetEval`.
+//
+// Corresponds with GET /v0/projects/{projectId}/evals (the `EvalServiceListEvals` operationId).
+func (c *Client) EvalServiceListEvals(ctx context.Context, projectId string, params *EvalServiceListEvalsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceListEvalsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceCreateEvalWithBody Creates an eval, with its definition as the first draft. The eval scores
+//
+//	nothing until you publish the draft with `PublishEvalDraft`. Returns the
+//	eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A name that another eval of the project
+//	has returns `AlreadyExists`. A project with the maximum number of evals
+//	returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+func (c *Client) EvalServiceCreateEvalWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceCreateEvalRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceCreateEval Creates an eval, with its definition as the first draft. The eval scores
+//
+//	nothing until you publish the draft with `PublishEvalDraft`. Returns the
+//	eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A name that another eval of the project
+//	has returns `AlreadyExists`. A project with the maximum number of evals
+//	returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+func (c *Client) EvalServiceCreateEval(ctx context.Context, projectId string, body EvalServiceCreateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceCreateEvalRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceDeleteEval Deletes an eval. LiveKit stops scoring sessions with it, and its past
+//
+//	results stay. `UndeleteEval` brings it back.
+//
+// Errors: an unknown eval returns `NotFound`.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceDeleteEval` operationId).
+func (c *Client) EvalServiceDeleteEval(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceDeleteEvalRequest(c.Server, projectId, evalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceGetEval Returns an eval and one version of its definition: the live revision, a
+//
+//	revision that you name, or the draft. Without `version`, returns the live
+//	revision, or the draft when nothing is published. A deleted eval is still
+//	readable.
+//
+// Errors: an unknown eval returns `NotFound`. A revision or a draft that the
+//
+//	eval does not have also returns `NotFound`.
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceGetEval` operationId).
+func (c *Client) EvalServiceGetEval(ctx context.Context, projectId string, evalId string, params *EvalServiceGetEvalParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceGetEvalRequest(c.Server, projectId, evalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateEvalWithBody Changes the name or the description of an eval. A field that you leave
+//
+//	out does not change. A change takes effect at once, and does not need a
+//	publish.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has returns `AlreadyExists`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+func (c *Client) EvalServiceUpdateEvalWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateEvalRequestWithBody(c.Server, projectId, evalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateEval Changes the name or the description of an eval. A field that you leave
+//
+//	out does not change. A change takes effect at once, and does not need a
+//	publish.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has returns `AlreadyExists`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+func (c *Client) EvalServiceUpdateEval(ctx context.Context, projectId string, evalId string, body EvalServiceUpdateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateEvalRequest(c.Server, projectId, evalId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceDiffEvalRevisions Returns the changes between two versions of the definition of an eval,
+//
+//	field by field. Each version is a revision or the draft. The changes are
+//	to the definition as it was written, without the judge defaults of the
+//	project.
+//
+// Errors: an unknown eval, revision or draft returns `NotFound`.
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/diff (the `EvalServiceDiffEvalRevisions` operationId).
+func (c *Client) EvalServiceDiffEvalRevisions(ctx context.Context, projectId string, evalId string, params *EvalServiceDiffEvalRevisionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceDiffEvalRevisionsRequest(c.Server, projectId, evalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceDiscardEvalDraft Discards the draft of an eval. The live revision does not change. Pass the
+//
+//	`draftEtag` that you last read, so that you do not discard a change that
+//	someone else made.
+//
+// Errors: an unknown eval, or an eval with no draft, returns `NotFound`. A
+//
+//	`draftEtag` that is not the current one returns `Aborted`.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceDiscardEvalDraft` operationId).
+func (c *Client) EvalServiceDiscardEvalDraft(ctx context.Context, projectId string, evalId string, params *EvalServiceDiscardEvalDraftParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceDiscardEvalDraftRequest(c.Server, projectId, evalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceSaveEvalDraftWithBody Saves the draft of an eval, and replaces the draft that was there. The
+//
+//	draft scores nothing until you publish it. Pass the `draftEtag` that you
+//	last read, so that you do not overwrite a change that someone else made.
+//	Leave it empty when the eval has no draft.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`: read the eval again, and repeat the change on its
+//	draft.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+func (c *Client) EvalServiceSaveEvalDraftWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceSaveEvalDraftRequestWithBody(c.Server, projectId, evalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceSaveEvalDraft Saves the draft of an eval, and replaces the draft that was there. The
+//
+//	draft scores nothing until you publish it. Pass the `draftEtag` that you
+//	last read, so that you do not overwrite a change that someone else made.
+//	Leave it empty when the eval has no draft.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`: read the eval again, and repeat the change on its
+//	draft.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+func (c *Client) EvalServiceSaveEvalDraft(ctx context.Context, projectId string, evalId string, body EvalServiceSaveEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceSaveEvalDraftRequest(c.Server, projectId, evalId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServicePublishEvalDraftWithBody Publishes the draft of an eval as its next revision, and makes that
+//
+//	revision live. From now on, the eval scores every matching live session of
+//	the project, and each judged criterion uses LLM judge inference that
+//	LiveKit pays for. Pass the `draftEtag` that you last read.
+//
+// Errors: a draft that is not complete returns `InvalidArgument`, with each
+//
+//	field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`. When the live revision changed after the draft was
+//	opened, returns `FailedPrecondition`: compare the two with
+//	`DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+func (c *Client) EvalServicePublishEvalDraftWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServicePublishEvalDraftRequestWithBody(c.Server, projectId, evalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServicePublishEvalDraft Publishes the draft of an eval as its next revision, and makes that
+//
+//	revision live. From now on, the eval scores every matching live session of
+//	the project, and each judged criterion uses LLM judge inference that
+//	LiveKit pays for. Pass the `draftEtag` that you last read.
+//
+// Errors: a draft that is not complete returns `InvalidArgument`, with each
+//
+//	field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`. When the live revision changed after the draft was
+//	opened, returns `FailedPrecondition`: compare the two with
+//	`DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+func (c *Client) EvalServicePublishEvalDraft(ctx context.Context, projectId string, evalId string, body EvalServicePublishEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServicePublishEvalDraftRequest(c.Server, projectId, evalId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceListEvalHistory ListEvalHistory
+//
+// Lists the history of an eval, newest first: each publish, rollback,
+//
+//	delete and undelete, and each change of its name or description.
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/history (the `EvalServiceListEvalHistory` operationId).
+func (c *Client) EvalServiceListEvalHistory(ctx context.Context, projectId string, evalId string, params *EvalServiceListEvalHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceListEvalHistoryRequest(c.Server, projectId, evalId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceRollbackEvalWithBody Makes a copy of an older revision of an eval the next revision, and makes
+//
+//	it live. From now on, the eval scores every matching live session of the
+//	project with that definition. The older revision and the history do not
+//	change.
+//
+// Errors: an unknown eval or revision returns `NotFound`. The live revision
+//
+//	returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+func (c *Client) EvalServiceRollbackEvalWithBody(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceRollbackEvalRequestWithBody(c.Server, projectId, evalId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceRollbackEval Makes a copy of an older revision of an eval the next revision, and makes
+//
+//	it live. From now on, the eval scores every matching live session of the
+//	project with that definition. The older revision and the history do not
+//	change.
+//
+// Errors: an unknown eval or revision returns `NotFound`. The live revision
+//
+//	returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+func (c *Client) EvalServiceRollbackEval(ctx context.Context, projectId string, evalId string, body EvalServiceRollbackEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceRollbackEvalRequest(c.Server, projectId, evalId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUndeleteEval Undeletes an eval. If it has a live revision, LiveKit scores sessions with
+//
+//	it again.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has taken returns `AlreadyExists`. A project with the maximum
+//	number of evals returns `FailedPrecondition`.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:undelete (the `EvalServiceUndeleteEval` operationId).
+func (c *Client) EvalServiceUndeleteEval(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUndeleteEvalRequest(c.Server, projectId, evalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceValidateEvalWithBody ValidateEval
+//
+// Checks an eval definition, and saves nothing. Returns the definition with
+//
+//	the judge defaults of the project applied, and each field that is wrong
+//	or missing. A definition can be published only when it has no
+//	violations. The call returns OK also when the definition has violations.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+func (c *Client) EvalServiceValidateEvalWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceValidateEvalRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceValidateEval ValidateEval
+//
+// Checks an eval definition, and saves nothing. Returns the definition with
+//
+//	the judge defaults of the project applied, and each field that is wrong
+//	or missing. A definition can be published only when it has no
+//	violations. The call returns OK also when the definition has violations.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+func (c *Client) EvalServiceValidateEval(ctx context.Context, projectId string, body EvalServiceValidateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceValidateEvalRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11233,6 +16889,78 @@ func (c *Client) ProjectServiceGenerateKey(ctx context.Context, projectId string
 // Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteKeyRequest(c.Server, projectId, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ObservabilityServiceListLogPatterns Lists the log patterns of a project in a time range, ranked, with their
+//
+//	counts over time. A log pattern is a group of log records that log the
+//	same message from one place in the code, at one level. Its template is
+//	the message with each variable part, such as a number or an ID, replaced
+//	by a placeholder. These are the patterns that the logs page on the
+//	dashboard groups the records into.
+//
+// When `range.startTime` is unset, the range starts 24 hours before its
+//
+//	end. The range does not include `range.endTime`.
+//
+//	The API keeps log records for 14 days. One read covers at most the 7
+//	days before the end of its range. A range that starts earlier reads the
+//	records of those 7 days. A range that ends more than 14 days ago returns
+//	`InvalidArgument`. The read does not count the records of the current
+//	minute, and its answer can be up to one minute old. For a range of one
+//	day or more, these are five minutes. On a project with
+//	many records, the counts can be estimates. Then `estimated` is true: the
+//	API reads the records of a share of the sessions, and scales the counts.
+//	The read does not count the records of agent simulation sessions, unless
+//	you set `sessionId`. A read with a filter can return no patterns because
+//	no record matches. Thus, only a read with no `query`, `minLevel`,
+//	`sources`, `agentName`, `agentId`, or `sessionId` returns the
+//	`ObservabilityDisabled` error.
+//
+// Corresponds with GET /v0/projects/{projectId}/log-patterns (the `ObservabilityServiceListLogPatterns` operationId).
+func (c *Client) ObservabilityServiceListLogPatterns(ctx context.Context, projectId string, params *ObservabilityServiceListLogPatternsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewObservabilityServiceListLogPatternsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ObservabilityServiceListProjectLogs Lists the log records of a project in a time range, from its agents, its
+//
+//	client SDKs, and LiveKit, newest first by default. These are the records
+//	that the logs page on the dashboard shows. The chat history is not
+//	included, because `GetSessionTranscript` returns it.
+//
+// When `range.startTime` is unset, the range starts 24 hours before its
+//
+//	end. The range includes `range.endTime`, to the millisecond.
+//
+//	The API keeps log records for 14 days. One read returns at most the 7
+//	days before the end of its range. A range that starts earlier returns
+//	the records of those 7 days. A range that ends more than 14 days ago
+//	returns `InvalidArgument`. A record that arrives after you read a page
+//	can have a time that your pages already passed. This read does not return
+//	that record. A new read returns it. Records from the last few minutes can
+//	still arrive. A read with a filter can return no records because no
+//	record matches. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
+//
+// Corresponds with GET /v0/projects/{projectId}/logs (the `ObservabilityServiceListProjectLogs` operationId).
+func (c *Client) ObservabilityServiceListProjectLogs(ctx context.Context, projectId string, params *ObservabilityServiceListProjectLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewObservabilityServiceListProjectLogsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -11622,9 +17350,295 @@ func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Contex
 	return c.Client.Do(req)
 }
 
+// AnalyticsServiceGetSessionLabelResults Returns the session labels of a project over a time range: the number of
+//
+//	sessions with each intent and each outcome, the number of sessions with
+//	each pair of intent and outcome, and the eval results of the sessions
+//	with each label. A session label is an intent (what the user wanted) or
+//	an outcome (how the session ended) that LiveKit assigns to each finished
+//	live session.
+//
+// The eval results name each eval by its ID only. To get the names, call
+//
+//	`GetEvalResults` and read `evals`, or call `ListEvals`.
+//
+//	The range selects sessions by their end time, and expands to whole
+//	5-minute periods. Simulated sessions are not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	A session that ends at `range.endTime` is included, unless `range.endTime`
+//	is on a 5-minute boundary. The range can be at most 60 days.
+//
+//	Errors: a range longer than 60 days, a range whose `startTime` is not
+//	before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+//	`intentIds`, or `outcomeIds` returns `InvalidArgument`.
+//
+// Corresponds with GET /v0/projects/{projectId}/session-label-results (the `AnalyticsServiceGetSessionLabelResults` operationId).
+func (c *Client) AnalyticsServiceGetSessionLabelResults(ctx context.Context, projectId string, params *AnalyticsServiceGetSessionLabelResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAnalyticsServiceGetSessionLabelResultsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceGetSessionLabelSettings GetSessionLabelSettings
+//
+// Returns the settings that decide which sessions LiveKit labels. A project
+//
+//	that never changed them has the default values.
+//
+// Corresponds with GET /v0/projects/{projectId}/session-label-settings (the `EvalServiceGetSessionLabelSettings` operationId).
+func (c *Client) EvalServiceGetSessionLabelSettings(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceGetSessionLabelSettingsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateSessionLabelSettingsWithBody Replaces the session label settings of a project. A field that you leave
+//
+//	out goes back to its default value, so send every field that you want to
+//	keep.
+//
+// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+//
+//	range, returns `InvalidArgument`, with each field in the error details.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+func (c *Client) EvalServiceUpdateSessionLabelSettingsWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateSessionLabelSettingsRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateSessionLabelSettings Replaces the session label settings of a project. A field that you leave
+//
+//	out goes back to its default value, so send every field that you want to
+//	keep.
+//
+// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+//
+//	range, returns `InvalidArgument`, with each field in the error details.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+func (c *Client) EvalServiceUpdateSessionLabelSettings(ctx context.Context, projectId string, body EvalServiceUpdateSessionLabelSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateSessionLabelSettingsRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceListSessionLabels ListSessionLabels
+//
+// Lists the session labels of a project, sorted by name, ignoring case. The
+//
+//	list is always one page, with every label of the kind. A project has at
+//	most 500 active labels of each kind.
+//
+// Corresponds with GET /v0/projects/{projectId}/session-labels (the `EvalServiceListSessionLabels` operationId).
+func (c *Client) EvalServiceListSessionLabels(ctx context.Context, projectId string, params *EvalServiceListSessionLabelsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceListSessionLabelsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceCreateSessionLabelWithBody Creates a session label. LiveKit applies the label to the sessions that
+//
+//	end after the label exists, and the label does not reach sessions that
+//	ended before. The LLM that assigns labels reads the `description` of each
+//	label, so a description is required. The first label of a project turns
+//	labeling on, and each labeled session uses LLM inference that LiveKit pays
+//	for.
+//
+// Errors: a field that is wrong returns `InvalidArgument`, with each field
+//
+//	in the error details. A name that another active label of the same kind
+//	has returns `AlreadyExists`. A project with the maximum number of active
+//	labels of the kind, or an agent that would have too many labels of the
+//	kind, returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+func (c *Client) EvalServiceCreateSessionLabelWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceCreateSessionLabelRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceCreateSessionLabel Creates a session label. LiveKit applies the label to the sessions that
+//
+//	end after the label exists, and the label does not reach sessions that
+//	ended before. The LLM that assigns labels reads the `description` of each
+//	label, so a description is required. The first label of a project turns
+//	labeling on, and each labeled session uses LLM inference that LiveKit pays
+//	for.
+//
+// Errors: a field that is wrong returns `InvalidArgument`, with each field
+//
+//	in the error details. A name that another active label of the same kind
+//	has returns `AlreadyExists`. A project with the maximum number of active
+//	labels of the kind, or an agent that would have too many labels of the
+//	kind, returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+func (c *Client) EvalServiceCreateSessionLabel(ctx context.Context, projectId string, body EvalServiceCreateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceCreateSessionLabelRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceDeleteSessionLabel Deletes a session label. LiveKit stops assigning it, and the labels that
+//
+//	it assigned to past sessions stay. The response lists the active evals
+//	that still name the label in `run.when`. The delete happens either way, so
+//	fix those evals. `UndeleteSessionLabel` brings the label back with the
+//	same ID. Deleting a deleted label changes nothing.
+//
+// Errors: an unknown label returns `NotFound`.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceDeleteSessionLabel` operationId).
+func (c *Client) EvalServiceDeleteSessionLabel(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceDeleteSessionLabelRequest(c.Server, projectId, labelId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateSessionLabelWithBody Changes a session label. A field that you leave out does not change. The
+//
+//	kind of a label does not change. A change applies to the sessions that end
+//	after it. Evals refer to a label by its ID, so a new name does not change
+//	them.
+//
+// Errors: an unknown label returns `NotFound`. A deleted label returns
+//
+//	`FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+//	name that another active label of the same kind has returns
+//	`AlreadyExists`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+func (c *Client) EvalServiceUpdateSessionLabelWithBody(ctx context.Context, projectId string, labelId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateSessionLabelRequestWithBody(c.Server, projectId, labelId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUpdateSessionLabel Changes a session label. A field that you leave out does not change. The
+//
+//	kind of a label does not change. A change applies to the sessions that end
+//	after it. Evals refer to a label by its ID, so a new name does not change
+//	them.
+//
+// Errors: an unknown label returns `NotFound`. A deleted label returns
+//
+//	`FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+//	name that another active label of the same kind has returns
+//	`AlreadyExists`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+func (c *Client) EvalServiceUpdateSessionLabel(ctx context.Context, projectId string, labelId string, body EvalServiceUpdateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUpdateSessionLabelRequest(c.Server, projectId, labelId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EvalServiceUndeleteSessionLabel Undeletes a session label, with its old ID, so the evals that name the ID
+//
+//	match it again. The name and the limits of the project apply again.
+//	Undeleting an active label changes nothing.
+//
+// Errors: an unknown label returns `NotFound`. A name that another active
+//
+//	label of the same kind has taken returns `AlreadyExists`. A project with
+//	the maximum number of active labels of the kind, or an agent that would
+//	have too many labels of the kind, returns `FailedPrecondition`.
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels/{labelId}:undelete (the `EvalServiceUndeleteSessionLabel` operationId).
+func (c *Client) EvalServiceUndeleteSessionLabel(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEvalServiceUndeleteSessionLabelRequest(c.Server, projectId, labelId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // AnalyticsServiceListProjectSessions ListProjectSessions
 //
-// Lists the room sessions of a project, newest first.
+// Lists the room sessions of a project, newest first. When
+//
+//	`filter.range.startTime` is unset, the range starts 14 days before its
+//	end. A session that started at `filter.range.endTime` is not included.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11648,6 +17662,40 @@ func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projec
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceGetSessionRequest(c.Server, projectId, sessionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ObservabilityServiceGetSessionEvals Returns the eval results of a session: the newest result of each eval
+//
+//	that LiveKit scored on each agent job of the session, with the answer of
+//	each criterion, the answers of its judges, and why a failed criterion
+//	failed. It also returns the intent and the outcome that LiveKit assigned to
+//	each agent job. These are the results that the evals tab of a session on
+//	the dashboard shows.
+//
+// A judge is an LLM that answers a criterion. A failure reason explains a
+//
+//	failed criterion of a failed eval, and a failure excerpt quotes the
+//	transcript lines that show the failure.
+//
+//	LiveKit scores a session after its agent uploads the session recording,
+//	and the judges can take minutes after the session ends. Thus, a session
+//	that LiveKit has not scored yet returns empty `evals` and `labels`, with no
+//	error. When an eval that you expect is missing, read again a few minutes
+//	later. An unknown session, or a session of another project,
+//	returns `NotFound`. A session with no results while user data recording is
+//	off returns the `ObservabilityDisabled` error.
+//
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/evals (the `ObservabilityServiceGetSessionEvals` operationId).
+func (c *Client) ObservabilityServiceGetSessionEvals(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewObservabilityServiceGetSessionEvalsRequest(c.Server, projectId, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -12669,8 +18717,11 @@ func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId strin
 
 // ProjectServiceCreateWebhookWithBody CreateWebhook
 //
-// Creates a webhook destination for a project. A `url` that is not an absolute
+// Creates a webhook destination for a project. It delivers LiveKit Cloud
 //
+//	events only, such as room, participant, track, egress, ingress and agent
+//	job events; it doesn't receive or forward events from other services, such
+//	as SMS. A `url` that is not an absolute
 //	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 //	in `filterParams` that `ListWebhookEvents` does not return, or a
 //	`signingKey` that is not an API key of the project, also returns
@@ -12695,8 +18746,11 @@ func (c *Client) ProjectServiceCreateWebhookWithBody(ctx context.Context, projec
 
 // ProjectServiceCreateWebhook CreateWebhook
 //
-// Creates a webhook destination for a project. A `url` that is not an absolute
+// Creates a webhook destination for a project. It delivers LiveKit Cloud
 //
+//	events only, such as room, participant, track, egress, ingress and agent
+//	job events; it doesn't receive or forward events from other services, such
+//	as SMS. A `url` that is not an absolute
 //	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 //	in `filterParams` that `ListWebhookEvents` does not return, or a
 //	`signingKey` that is not an API key of the project, also returns
@@ -13770,8 +19824,8 @@ func NewProjectServiceUpdateProjectRequestWithBody(server string, projectId stri
 	return req, nil
 }
 
-// NewBuilderAgentServiceListBuilderAgentsRequest constructs an http.Request for the BuilderAgentServiceListBuilderAgents method
-func NewBuilderAgentServiceListBuilderAgentsRequest(server string, projectId string, params *BuilderAgentServiceListBuilderAgentsParams) (*http.Request, error) {
+// NewAgentBuilderServiceListAgentsRequest constructs an http.Request for the AgentBuilderServiceListAgents method
+func NewAgentBuilderServiceListAgentsRequest(server string, projectId string, params *AgentBuilderServiceListAgentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13786,7 +19840,7 @@ func NewBuilderAgentServiceListBuilderAgentsRequest(server string, projectId str
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13843,19 +19897,19 @@ func NewBuilderAgentServiceListBuilderAgentsRequest(server string, projectId str
 	return req, nil
 }
 
-// NewBuilderAgentServiceCreateBuilderAgentRequest calls the generic BuilderAgentServiceCreateBuilderAgent builder with application/json body
-func NewBuilderAgentServiceCreateBuilderAgentRequest(server string, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody) (*http.Request, error) {
+// NewAgentBuilderServiceCreateAgentRequest calls the generic AgentBuilderServiceCreateAgent builder with application/json body
+func NewAgentBuilderServiceCreateAgentRequest(server string, projectId string, body AgentBuilderServiceCreateAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewAgentBuilderServiceCreateAgentRequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewBuilderAgentServiceCreateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceCreateBuilderAgent method, with any body, and a specified content type
-func NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAgentBuilderServiceCreateAgentRequestWithBody constructs an http.Request for the AgentBuilderServiceCreateAgent method, with any body, and a specified content type
+func NewAgentBuilderServiceCreateAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13870,7 +19924,7 @@ func NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server string, proj
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13890,8 +19944,8 @@ func NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server string, proj
 	return req, nil
 }
 
-// NewBuilderAgentServiceDeleteBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceDeleteBuilderAgent method
-func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
+// NewAgentBuilderServiceDeleteAgentRequest constructs an http.Request for the AgentBuilderServiceDeleteAgent method
+func NewAgentBuilderServiceDeleteAgentRequest(server string, projectId string, agentId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13903,7 +19957,7 @@ func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId st
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -13913,7 +19967,7 @@ func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId st
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13931,8 +19985,8 @@ func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId st
 	return req, nil
 }
 
-// NewBuilderAgentServiceGetBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceGetBuilderAgent method
-func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
+// NewAgentBuilderServiceGetAgentRequest constructs an http.Request for the AgentBuilderServiceGetAgent method
+func NewAgentBuilderServiceGetAgentRequest(server string, projectId string, agentId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13944,7 +19998,7 @@ func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId strin
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -13954,7 +20008,7 @@ func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13972,19 +20026,19 @@ func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId strin
 	return req, nil
 }
 
-// NewBuilderAgentServiceUpdateBuilderAgentRequest calls the generic BuilderAgentServiceUpdateBuilderAgent builder with application/json body
-func NewBuilderAgentServiceUpdateBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody) (*http.Request, error) {
+// NewAgentBuilderServiceUpdateAgentRequest calls the generic AgentBuilderServiceUpdateAgent builder with application/json body
+func NewAgentBuilderServiceUpdateAgentRequest(server string, projectId string, agentId string, body AgentBuilderServiceUpdateAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
+	return NewAgentBuilderServiceUpdateAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
 }
 
-// NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceUpdateBuilderAgent method, with any body, and a specified content type
-func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAgentBuilderServiceUpdateAgentRequestWithBody constructs an http.Request for the AgentBuilderServiceUpdateAgent method, with any body, and a specified content type
+func NewAgentBuilderServiceUpdateAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -13996,7 +20050,7 @@ func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, proj
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -14006,7 +20060,7 @@ func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, proj
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14026,19 +20080,8 @@ func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, proj
 	return req, nil
 }
 
-// NewBuilderAgentServiceDeployBuilderAgentRequest calls the generic BuilderAgentServiceDeployBuilderAgent builder with application/json body
-func NewBuilderAgentServiceDeployBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
-}
-
-// NewBuilderAgentServiceDeployBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceDeployBuilderAgent method, with any body, and a specified content type
-func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAgentBuilderServiceGetAgentCodeURLRequest constructs an http.Request for the AgentBuilderServiceGetAgentCodeURL method
+func NewAgentBuilderServiceGetAgentCodeURLRequest(server string, projectId string, agentId string, params *AgentBuilderServiceGetAgentCodeURLParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14050,7 +20093,7 @@ func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, proj
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -14060,7 +20103,2519 @@ func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, proj
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s:deploy", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s/code-url", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.VersionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "versionId", *params.VersionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ExpirySeconds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "expirySeconds", *params.ExpirySeconds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAgentBuilderServiceListAgentVersionsRequest constructs an http.Request for the AgentBuilderServiceListAgentVersions method
+func NewAgentBuilderServiceListAgentVersionsRequest(server string, projectId string, agentId string, params *AgentBuilderServiceListAgentVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAgentBuilderServiceDeployAgentRequest calls the generic AgentBuilderServiceDeployAgent builder with application/json body
+func NewAgentBuilderServiceDeployAgentRequest(server string, projectId string, agentId string, body AgentBuilderServiceDeployAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAgentBuilderServiceDeployAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewAgentBuilderServiceDeployAgentRequestWithBody constructs an http.Request for the AgentBuilderServiceDeployAgent method, with any body, and a specified content type
+func NewAgentBuilderServiceDeployAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-builder/agents/%s:deploy", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAnalyticsServiceGetAgentInsightsRequest constructs an http.Request for the AnalyticsServiceGetAgentInsights method
+func NewAnalyticsServiceGetAgentInsightsRequest(server string, projectId string, params *AnalyticsServiceGetAgentInsightsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agent-insights", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentIds", *params.AgentIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentNames", *params.AgentNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceListCloudAgentPrivateLinksRequest constructs an http.Request for the CloudAgentServiceListCloudAgentPrivateLinks method
+func NewCloudAgentServiceListCloudAgentPrivateLinksRequest(server string, projectId string, params *CloudAgentServiceListCloudAgentPrivateLinksParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agent-private-links", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceCreateCloudAgentPrivateLinkRequest calls the generic CloudAgentServiceCreateCloudAgentPrivateLink builder with application/json body
+func NewCloudAgentServiceCreateCloudAgentPrivateLinkRequest(server string, projectId string, body CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceCreateCloudAgentPrivateLinkRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceCreateCloudAgentPrivateLinkRequestWithBody constructs an http.Request for the CloudAgentServiceCreateCloudAgentPrivateLink method, with any body, and a specified content type
+func NewCloudAgentServiceCreateCloudAgentPrivateLinkRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agent-private-links", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceDeleteCloudAgentPrivateLinkRequest constructs an http.Request for the CloudAgentServiceDeleteCloudAgentPrivateLink method
+func NewCloudAgentServiceDeleteCloudAgentPrivateLinkRequest(server string, projectId string, privateLinkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "privateLinkId", privateLinkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agent-private-links/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceGetCloudAgentPrivateLinkStatusRequest constructs an http.Request for the CloudAgentServiceGetCloudAgentPrivateLinkStatus method
+func NewCloudAgentServiceGetCloudAgentPrivateLinkStatusRequest(server string, projectId string, privateLinkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "privateLinkId", privateLinkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agent-private-links/%s/status", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceGetCloudAgentSettingsRequest constructs an http.Request for the CloudAgentServiceGetCloudAgentSettings method
+func NewCloudAgentServiceGetCloudAgentSettingsRequest(server string, projectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agent-settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceListCloudAgentsRequest constructs an http.Request for the CloudAgentServiceListCloudAgents method
+func NewCloudAgentServiceListCloudAgentsRequest(server string, projectId string, params *CloudAgentServiceListCloudAgentsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentIds", *params.AgentIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceCreateCloudAgentRequest calls the generic CloudAgentServiceCreateCloudAgent builder with application/json body
+func NewCloudAgentServiceCreateCloudAgentRequest(server string, projectId string, body CloudAgentServiceCreateCloudAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceCreateCloudAgentRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceCreateCloudAgentRequestWithBody constructs an http.Request for the CloudAgentServiceCreateCloudAgent method, with any body, and a specified content type
+func NewCloudAgentServiceCreateCloudAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceDeleteCloudAgentRequest constructs an http.Request for the CloudAgentServiceDeleteCloudAgent method
+func NewCloudAgentServiceDeleteCloudAgentRequest(server string, projectId string, agentId string, params *CloudAgentServiceDeleteCloudAgentParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Deployment != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "deployment", *params.Deployment, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceGetCloudAgentRequest constructs an http.Request for the CloudAgentServiceGetCloudAgent method
+func NewCloudAgentServiceGetCloudAgentRequest(server string, projectId string, agentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceGetCloudAgentBuildLogsRequest constructs an http.Request for the CloudAgentServiceGetCloudAgentBuildLogs method
+func NewCloudAgentServiceGetCloudAgentBuildLogsRequest(server string, projectId string, agentId string, params *CloudAgentServiceGetCloudAgentBuildLogsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/build-logs", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Deployment != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "deployment", *params.Deployment, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Version != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "version", *params.Version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceBuildCloudAgentRequest calls the generic CloudAgentServiceBuildCloudAgent builder with application/json body
+func NewCloudAgentServiceBuildCloudAgentRequest(server string, projectId string, agentId string, body CloudAgentServiceBuildCloudAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceBuildCloudAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceBuildCloudAgentRequestWithBody constructs an http.Request for the CloudAgentServiceBuildCloudAgent method, with any body, and a specified content type
+func NewCloudAgentServiceBuildCloudAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/builds", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceDeployCloudAgentRequest calls the generic CloudAgentServiceDeployCloudAgent builder with application/json body
+func NewCloudAgentServiceDeployCloudAgentRequest(server string, projectId string, agentId string, body CloudAgentServiceDeployCloudAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceDeployCloudAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceDeployCloudAgentRequestWithBody constructs an http.Request for the CloudAgentServiceDeployCloudAgent method, with any body, and a specified content type
+func NewCloudAgentServiceDeployCloudAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/deployments", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServicePromoteCloudAgentRequest calls the generic CloudAgentServicePromoteCloudAgent builder with application/json body
+func NewCloudAgentServicePromoteCloudAgentRequest(server string, projectId string, agentId string, body CloudAgentServicePromoteCloudAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServicePromoteCloudAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServicePromoteCloudAgentRequestWithBody constructs an http.Request for the CloudAgentServicePromoteCloudAgent method, with any body, and a specified content type
+func NewCloudAgentServicePromoteCloudAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/promote", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceRestartCloudAgentRequest constructs an http.Request for the CloudAgentServiceRestartCloudAgent method
+func NewCloudAgentServiceRestartCloudAgentRequest(server string, projectId string, agentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/restart", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceRollbackCloudAgentRequest calls the generic CloudAgentServiceRollbackCloudAgent builder with application/json body
+func NewCloudAgentServiceRollbackCloudAgentRequest(server string, projectId string, agentId string, body CloudAgentServiceRollbackCloudAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceRollbackCloudAgentRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceRollbackCloudAgentRequestWithBody constructs an http.Request for the CloudAgentServiceRollbackCloudAgent method, with any body, and a specified content type
+func NewCloudAgentServiceRollbackCloudAgentRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/rollback", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceListCloudAgentSecretsRequest constructs an http.Request for the CloudAgentServiceListCloudAgentSecrets method
+func NewCloudAgentServiceListCloudAgentSecretsRequest(server string, projectId string, agentId string, params *CloudAgentServiceListCloudAgentSecretsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/secrets", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCloudAgentServiceUpdateCloudAgentSecretsRequest calls the generic CloudAgentServiceUpdateCloudAgentSecrets builder with application/json body
+func NewCloudAgentServiceUpdateCloudAgentSecretsRequest(server string, projectId string, agentId string, body CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCloudAgentServiceUpdateCloudAgentSecretsRequestWithBody(server, projectId, agentId, "application/json", bodyReader)
+}
+
+// NewCloudAgentServiceUpdateCloudAgentSecretsRequestWithBody constructs an http.Request for the CloudAgentServiceUpdateCloudAgentSecrets method, with any body, and a specified content type
+func NewCloudAgentServiceUpdateCloudAgentSecretsRequestWithBody(server string, projectId string, agentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/secrets", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCloudAgentServiceListCloudAgentVersionsRequest constructs an http.Request for the CloudAgentServiceListCloudAgentVersions method
+func NewCloudAgentServiceListCloudAgentVersionsRequest(server string, projectId string, agentId string, params *CloudAgentServiceListCloudAgentVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/cloud-agents/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceGetEvalDefaultsRequest constructs an http.Request for the EvalServiceGetEvalDefaults method
+func NewEvalServiceGetEvalDefaultsRequest(server string, projectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/eval-defaults", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceUpdateEvalDefaultsRequest calls the generic EvalServiceUpdateEvalDefaults builder with application/json body
+func NewEvalServiceUpdateEvalDefaultsRequest(server string, projectId string, body EvalServiceUpdateEvalDefaultsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceUpdateEvalDefaultsRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewEvalServiceUpdateEvalDefaultsRequestWithBody constructs an http.Request for the EvalServiceUpdateEvalDefaults method, with any body, and a specified content type
+func NewEvalServiceUpdateEvalDefaultsRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/eval-defaults", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAnalyticsServiceGetEvalResultsRequest constructs an http.Request for the AnalyticsServiceGetEvalResults method
+func NewAnalyticsServiceGetEvalResultsRequest(server string, projectId string, params *AnalyticsServiceGetEvalResultsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/eval-results", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentNames", *params.AgentNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EvalIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "evalIds", *params.EvalIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.IntentIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "intentIds", *params.IntentIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OutcomeIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "outcomeIds", *params.OutcomeIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewObservabilityServiceListEvalSessionsRequest constructs an http.Request for the ObservabilityServiceListEvalSessions method
+func NewObservabilityServiceListEvalSessionsRequest(server string, projectId string, params *ObservabilityServiceListEvalSessionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/eval-sessions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EvalId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "evalId", *params.EvalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Verdict != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "verdict", *params.Verdict, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.CriterionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "criterionId", *params.CriterionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentNames", *params.AgentNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.IntentIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "intentIds", *params.IntentIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OutcomeIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "outcomeIds", *params.OutcomeIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortOrder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceListEvalsRequest constructs an http.Request for the EvalServiceListEvals method
+func NewEvalServiceListEvalsRequest(server string, projectId string, params *EvalServiceListEvalsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentName", *params.AgentName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ShowDeleted != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "showDeleted", *params.ShowDeleted, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceCreateEvalRequest calls the generic EvalServiceCreateEval builder with application/json body
+func NewEvalServiceCreateEvalRequest(server string, projectId string, body EvalServiceCreateEvalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceCreateEvalRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewEvalServiceCreateEvalRequestWithBody constructs an http.Request for the EvalServiceCreateEval method, with any body, and a specified content type
+func NewEvalServiceCreateEvalRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceDeleteEvalRequest constructs an http.Request for the EvalServiceDeleteEval method
+func NewEvalServiceDeleteEvalRequest(server string, projectId string, evalId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceGetEvalRequest constructs an http.Request for the EvalServiceGetEval method
+func NewEvalServiceGetEvalRequest(server string, projectId string, evalId string, params *EvalServiceGetEvalParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.VersionRevision != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "version.revision", *params.VersionRevision, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.VersionDraft != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "version.draft", *params.VersionDraft, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceUpdateEvalRequest calls the generic EvalServiceUpdateEval builder with application/json body
+func NewEvalServiceUpdateEvalRequest(server string, projectId string, evalId string, body EvalServiceUpdateEvalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceUpdateEvalRequestWithBody(server, projectId, evalId, "application/json", bodyReader)
+}
+
+// NewEvalServiceUpdateEvalRequestWithBody constructs an http.Request for the EvalServiceUpdateEval method, with any body, and a specified content type
+func NewEvalServiceUpdateEvalRequestWithBody(server string, projectId string, evalId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceDiffEvalRevisionsRequest constructs an http.Request for the EvalServiceDiffEvalRevisions method
+func NewEvalServiceDiffEvalRevisionsRequest(server string, projectId string, evalId string, params *EvalServiceDiffEvalRevisionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s/diff", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.FromRevision != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from.revision", *params.FromRevision, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.FromDraft != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from.draft", *params.FromDraft, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToRevision != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to.revision", *params.ToRevision, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ToDraft != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to.draft", *params.ToDraft, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceDiscardEvalDraftRequest constructs an http.Request for the EvalServiceDiscardEvalDraft method
+func NewEvalServiceDiscardEvalDraftRequest(server string, projectId string, evalId string, params *EvalServiceDiscardEvalDraftParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s/draft", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.DraftEtag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "draftEtag", *params.DraftEtag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceSaveEvalDraftRequest calls the generic EvalServiceSaveEvalDraft builder with application/json body
+func NewEvalServiceSaveEvalDraftRequest(server string, projectId string, evalId string, body EvalServiceSaveEvalDraftJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceSaveEvalDraftRequestWithBody(server, projectId, evalId, "application/json", bodyReader)
+}
+
+// NewEvalServiceSaveEvalDraftRequestWithBody constructs an http.Request for the EvalServiceSaveEvalDraft method, with any body, and a specified content type
+func NewEvalServiceSaveEvalDraftRequestWithBody(server string, projectId string, evalId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s/draft", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServicePublishEvalDraftRequest calls the generic EvalServicePublishEvalDraft builder with application/json body
+func NewEvalServicePublishEvalDraftRequest(server string, projectId string, evalId string, body EvalServicePublishEvalDraftJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServicePublishEvalDraftRequestWithBody(server, projectId, evalId, "application/json", bodyReader)
+}
+
+// NewEvalServicePublishEvalDraftRequestWithBody constructs an http.Request for the EvalServicePublishEvalDraft method, with any body, and a specified content type
+func NewEvalServicePublishEvalDraftRequestWithBody(server string, projectId string, evalId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s/draft:publish", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceListEvalHistoryRequest constructs an http.Request for the EvalServiceListEvalHistory method
+func NewEvalServiceListEvalHistoryRequest(server string, projectId string, evalId string, params *EvalServiceListEvalHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s/history", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kinds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kinds", *params.Kinds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceRollbackEvalRequest calls the generic EvalServiceRollbackEval builder with application/json body
+func NewEvalServiceRollbackEvalRequest(server string, projectId string, evalId string, body EvalServiceRollbackEvalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceRollbackEvalRequestWithBody(server, projectId, evalId, "application/json", bodyReader)
+}
+
+// NewEvalServiceRollbackEvalRequestWithBody constructs an http.Request for the EvalServiceRollbackEval method, with any body, and a specified content type
+func NewEvalServiceRollbackEvalRequestWithBody(server string, projectId string, evalId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s:rollback", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceUndeleteEvalRequest constructs an http.Request for the EvalServiceUndeleteEval method
+func NewEvalServiceUndeleteEvalRequest(server string, projectId string, evalId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "evalId", evalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals/%s:undelete", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceValidateEvalRequest calls the generic EvalServiceValidateEval builder with application/json body
+func NewEvalServiceValidateEvalRequest(server string, projectId string, body EvalServiceValidateEvalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceValidateEvalRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewEvalServiceValidateEvalRequestWithBody constructs an http.Request for the EvalServiceValidateEval method, with any body, and a specified content type
+func NewEvalServiceValidateEvalRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/evals:validate", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14473,6 +23028,356 @@ func NewProjectServiceDeleteKeyRequest(server string, projectId string, apiKey s
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewObservabilityServiceListLogPatternsRequest constructs an http.Request for the ObservabilityServiceListLogPatterns method
+func NewObservabilityServiceListLogPatternsRequest(server string, projectId string, params *ObservabilityServiceListLogPatternsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/log-patterns", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Query != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.MinLevel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "minLevel", *params.MinLevel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sources != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sources", *params.Sources, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentName != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentName", *params.AgentName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentId", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sessionId", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RankBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "rankBy", *params.RankBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewObservabilityServiceListProjectLogsRequest constructs an http.Request for the ObservabilityServiceListProjectLogs method
+func NewObservabilityServiceListProjectLogsRequest(server string, projectId string, params *ObservabilityServiceListProjectLogsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/logs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LogLevels != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "logLevels", *params.LogLevels, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sources != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sources", *params.Sources, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sessionId", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Query != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortOrder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentId", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -15187,6 +24092,488 @@ func NewSimulationServiceGenerateScenarioFromSessionRequestWithBody(server strin
 	return req, nil
 }
 
+// NewAnalyticsServiceGetSessionLabelResultsRequest constructs an http.Request for the AnalyticsServiceGetSessionLabelResults method
+func NewAnalyticsServiceGetSessionLabelResultsRequest(server string, projectId string, params *AnalyticsServiceGetSessionLabelResultsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-label-results", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.RangeStartTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RangeEndTime != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agentNames", *params.AgentNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EvalIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "evalIds", *params.EvalIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.IntentIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "intentIds", *params.IntentIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OutcomeIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "outcomeIds", *params.OutcomeIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceGetSessionLabelSettingsRequest constructs an http.Request for the EvalServiceGetSessionLabelSettings method
+func NewEvalServiceGetSessionLabelSettingsRequest(server string, projectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-label-settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceUpdateSessionLabelSettingsRequest calls the generic EvalServiceUpdateSessionLabelSettings builder with application/json body
+func NewEvalServiceUpdateSessionLabelSettingsRequest(server string, projectId string, body EvalServiceUpdateSessionLabelSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceUpdateSessionLabelSettingsRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewEvalServiceUpdateSessionLabelSettingsRequestWithBody constructs an http.Request for the EvalServiceUpdateSessionLabelSettings method, with any body, and a specified content type
+func NewEvalServiceUpdateSessionLabelSettingsRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-label-settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceListSessionLabelsRequest constructs an http.Request for the EvalServiceListSessionLabels method
+func NewEvalServiceListSessionLabelsRequest(server string, projectId string, params *EvalServiceListSessionLabelsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-labels", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ShowDeleted != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "showDeleted", *params.ShowDeleted, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceCreateSessionLabelRequest calls the generic EvalServiceCreateSessionLabel builder with application/json body
+func NewEvalServiceCreateSessionLabelRequest(server string, projectId string, body EvalServiceCreateSessionLabelJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceCreateSessionLabelRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewEvalServiceCreateSessionLabelRequestWithBody constructs an http.Request for the EvalServiceCreateSessionLabel method, with any body, and a specified content type
+func NewEvalServiceCreateSessionLabelRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-labels", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceDeleteSessionLabelRequest constructs an http.Request for the EvalServiceDeleteSessionLabel method
+func NewEvalServiceDeleteSessionLabelRequest(server string, projectId string, labelId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "labelId", labelId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-labels/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEvalServiceUpdateSessionLabelRequest calls the generic EvalServiceUpdateSessionLabel builder with application/json body
+func NewEvalServiceUpdateSessionLabelRequest(server string, projectId string, labelId string, body EvalServiceUpdateSessionLabelJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEvalServiceUpdateSessionLabelRequestWithBody(server, projectId, labelId, "application/json", bodyReader)
+}
+
+// NewEvalServiceUpdateSessionLabelRequestWithBody constructs an http.Request for the EvalServiceUpdateSessionLabel method, with any body, and a specified content type
+func NewEvalServiceUpdateSessionLabelRequestWithBody(server string, projectId string, labelId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "labelId", labelId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-labels/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewEvalServiceUndeleteSessionLabelRequest constructs an http.Request for the EvalServiceUndeleteSessionLabel method
+func NewEvalServiceUndeleteSessionLabelRequest(server string, projectId string, labelId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "labelId", labelId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/session-labels/%s:undelete", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAnalyticsServiceListProjectSessionsRequest constructs an http.Request for the AnalyticsServiceListProjectSessions method
 func NewAnalyticsServiceListProjectSessionsRequest(server string, projectId string, params *AnalyticsServiceListProjectSessionsParams) (*http.Request, error) {
 	var err error
@@ -15380,6 +24767,47 @@ func NewAnalyticsServiceGetSessionRequest(server string, projectId string, sessi
 	}
 
 	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewObservabilityServiceGetSessionEvalsRequest constructs an http.Request for the ObservabilityServiceGetSessionEvals method
+func NewObservabilityServiceGetSessionEvalsRequest(server string, projectId string, sessionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/evals", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -19077,117 +28505,789 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error)
 
-	// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
+	// AgentBuilderServiceListAgentsWithResponse ListAgents
 	//
-	// Lists the builder agents of a project by name, with the deployment status
-	//  of each. The list does not include configurations. To get the
-	//  configuration of an agent, call `GetBuilderAgent`.
+	// Lists the Agent Builder agents of a project by name, with the deployment
+	//  status of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetAgent`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
-	BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceListAgents` operationId).
+	AgentBuilderServiceListAgentsWithResponse(ctx context.Context, projectId string, params *AgentBuilderServiceListAgentsParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceListAgentsResponse, error)
 
-	// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
+	// AgentBuilderServiceCreateAgentWithBodyWithResponse CreateAgent
 	//
-	// Creates a builder agent from a name and a configuration. The agent is not
-	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	// Creates an Agent Builder agent from a name and a configuration. The agent
+	//  is not deployed: call `DeployAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored. A
 	//  configuration that is not valid fails with `InvalidArgument` and a
 	//  `google.rpc.BadRequest` detail. It has a field violation for each
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-	BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+	AgentBuilderServiceCreateAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceCreateAgentResponse, error)
 
-	// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
+	// AgentBuilderServiceCreateAgentWithResponse CreateAgent
 	//
-	// Creates a builder agent from a name and a configuration. The agent is not
-	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	// Creates an Agent Builder agent from a name and a configuration. The agent
+	//  is not deployed: call `DeployAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored. A
 	//  configuration that is not valid fails with `InvalidArgument` and a
 	//  `google.rpc.BadRequest` detail. It has a field violation for each
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-	BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+	AgentBuilderServiceCreateAgentWithResponse(ctx context.Context, projectId string, body AgentBuilderServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceCreateAgentResponse, error)
 
-	// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
+	// AgentBuilderServiceDeleteAgentWithResponse DeleteAgent
 	//
-	// Deletes a builder agent, its versions, and its deployment.
+	// Deletes an Agent Builder agent, its versions, and its deployment.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
-	BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceDeleteAgent` operationId).
+	AgentBuilderServiceDeleteAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeleteAgentResponse, error)
 
-	// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+	// AgentBuilderServiceGetAgentWithResponse GetAgent
 	//
-	// Returns a builder agent with its current configuration and its deployment
-	//  status.
+	// Returns an Agent Builder agent with its current configuration and its
+	//  deployment status. A `READ` member reads `********` in place of each
+	//  header value.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
-	BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceGetAgent` operationId).
+	AgentBuilderServiceGetAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*AgentBuilderServiceGetAgentResponse, error)
 
-	// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
+	// AgentBuilderServiceUpdateAgentWithBodyWithResponse UpdateAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of an Agent Builder agent, its name, or both. A
+	//  new configuration makes a new version. A new name does not. The running
+	//  agent does not change until you deploy again. Until then, it keeps the
+	//  old configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another Agent Builder agent of the project
+	//  has fails with `AlreadyExists`. A configuration that is not valid fails
+	//  as it does in `CreateAgent`, which includes `********` as a header value.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-	BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+	AgentBuilderServiceUpdateAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceUpdateAgentResponse, error)
 
-	// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+	// AgentBuilderServiceUpdateAgentWithResponse UpdateAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of an Agent Builder agent, its name, or both. A
+	//  new configuration makes a new version. A new name does not. The running
+	//  agent does not change until you deploy again. Until then, it keeps the
+	//  old configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another Agent Builder agent of the project
+	//  has fails with `AlreadyExists`. A configuration that is not valid fails
+	//  as it does in `CreateAgent`, which includes `********` as a header value.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-	BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+	AgentBuilderServiceUpdateAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceUpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceUpdateAgentResponse, error)
 
-	// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+	// AgentBuilderServiceGetAgentCodeURLWithResponse GetAgentCodeURL
 	//
-	// Starts a deployment of the current configuration of a builder agent, or of
-	//  an earlier version. The call returns when the build starts, with the
-	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
-	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	// Returns a short-lived URL that downloads the agent code of an Agent
+	//  Builder agent version as a zip file. The zip holds `src/agent.py`,
+	//  `pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+	//  so that you can run and change the agent yourself. The URL needs no
+	//  credentials and is valid until `expiresAt`. The agent code holds every
+	//  header value, so the call requires the `WRITE` role. A version whose
+	//  configuration can't make agent code returns `FailedPrecondition`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/code-url (the `AgentBuilderServiceGetAgentCodeURL` operationId).
+	AgentBuilderServiceGetAgentCodeURLWithResponse(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceGetAgentCodeURLParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceGetAgentCodeURLResponse, error)
+
+	// AgentBuilderServiceListAgentVersionsWithResponse ListAgentVersions
+	//
+	// Lists the versions of an Agent Builder agent, newest first, each with its
+	//  configuration. To deploy an earlier version, pass its ID to
+	//  `DeployAgent`. To make its configuration current again, pass the
+	//  configuration to `UpdateAgent`. A `READ` member reads `********` in place
+	//  of each header value.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/versions (the `AgentBuilderServiceListAgentVersions` operationId).
+	AgentBuilderServiceListAgentVersionsWithResponse(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceListAgentVersionsParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceListAgentVersionsResponse, error)
+
+	// AgentBuilderServiceDeployAgentWithBodyWithResponse DeployAgent
+	//
+	// Starts a deployment of the current configuration of an Agent Builder
+	//  agent, or of an earlier version. The call returns when the build starts,
+	//  with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+	//  the call returns. Call `GetAgent` to follow the deployment until its
+	//  status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-	BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+	AgentBuilderServiceDeployAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeployAgentResponse, error)
 
-	// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+	// AgentBuilderServiceDeployAgentWithResponse DeployAgent
 	//
-	// Starts a deployment of the current configuration of a builder agent, or of
-	//  an earlier version. The call returns when the build starts, with the
-	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
-	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	// Starts a deployment of the current configuration of an Agent Builder
+	//  agent, or of an earlier version. The call returns when the build starts,
+	//  with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+	//  the call returns. Call `GetAgent` to follow the deployment until its
+	//  status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-	BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+	AgentBuilderServiceDeployAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeployAgentResponse, error)
+
+	// AnalyticsServiceGetAgentInsightsWithResponse Returns the agent insights of a project over a time range: the totals and
+	//  latencies of its agents, one item for each agent, and one item for each
+	//  model that the agents used. This is the data that the agent dashboards of
+	//  LiveKit Cloud show.
+	//
+	// The data comes from the turns, model requests, and tool calls that the
+	//  agents recorded. Simulated sessions are not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  The range does not include `range.endTime`. The range can be at most 30
+	//  days.
+	//
+	//  Errors: a range longer than 30 days, a range whose `startTime` is not
+	//  before its `endTime`, a range that starts after now, more than 25 agents
+	//  in `agentIds` and `agentNames` together, or an empty agent ID or name
+	//  returns `InvalidArgument`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agent-insights (the `AnalyticsServiceGetAgentInsights` operationId).
+	AnalyticsServiceGetAgentInsightsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetAgentInsightsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentInsightsResponse, error)
+
+	// CloudAgentServiceListCloudAgentPrivateLinksWithResponse ListCloudAgentPrivateLinks
+	//
+	// Lists the private links of the project. A private link connects the agents
+	//  of the project to a service in your network. The list is always one page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceListCloudAgentPrivateLinks` operationId).
+	CloudAgentServiceListCloudAgentPrivateLinksWithResponse(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentPrivateLinksParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentPrivateLinksResponse, error)
+
+	// CloudAgentServiceCreateCloudAgentPrivateLinkWithBodyWithResponse CreateCloudAgentPrivateLink
+	//
+	// Creates a private link from the agents of the project to a service in your
+	//  network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+	CloudAgentServiceCreateCloudAgentPrivateLinkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentPrivateLinkResponse, error)
+
+	// CloudAgentServiceCreateCloudAgentPrivateLinkWithResponse CreateCloudAgentPrivateLink
+	//
+	// Creates a private link from the agents of the project to a service in your
+	//  network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+	CloudAgentServiceCreateCloudAgentPrivateLinkWithResponse(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentPrivateLinkResponse, error)
+
+	// CloudAgentServiceDeleteCloudAgentPrivateLinkWithResponse DeleteCloudAgentPrivateLink
+	//
+	// Deletes a private link.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId} (the `CloudAgentServiceDeleteCloudAgentPrivateLink` operationId).
+	CloudAgentServiceDeleteCloudAgentPrivateLinkWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeleteCloudAgentPrivateLinkResponse, error)
+
+	// CloudAgentServiceGetCloudAgentPrivateLinkStatusWithResponse GetCloudAgentPrivateLinkStatus
+	//
+	// Returns the health of a private link.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId}/status (the `CloudAgentServiceGetCloudAgentPrivateLinkStatus` operationId).
+	CloudAgentServiceGetCloudAgentPrivateLinkStatusWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse, error)
+
+	// CloudAgentServiceGetCloudAgentSettingsWithResponse GetCloudAgentSettings
+	//
+	// Returns what a client needs to create or deploy a cloud agent: the regions
+	//  that the project can use, and the settings that `lk` checks.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agent-settings (the `CloudAgentServiceGetCloudAgentSettings` operationId).
+	CloudAgentServiceGetCloudAgentSettingsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentSettingsResponse, error)
+
+	// CloudAgentServiceListCloudAgentsWithResponse ListCloudAgents
+	//
+	// Lists the cloud agents of the project in ID order. Each
+	//  item has the deployments of the agent, one for each region and named
+	//  deployment. The list is always one page. An agent that Agent Builder made
+	//  is in the list, with the ID of its Agent Builder agent.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceListCloudAgents` operationId).
+	CloudAgentServiceListCloudAgentsWithResponse(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentsResponse, error)
+
+	// CloudAgentServiceCreateCloudAgentWithBodyWithResponse CreateCloudAgent
+	//
+	// Creates a cloud agent with no code deployed, and returns its ID. Call
+	//  `DeployCloudAgent` to run code on it. The plan of the project limits the
+	//  number of agents: a project at the limit returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+	CloudAgentServiceCreateCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentResponse, error)
+
+	// CloudAgentServiceCreateCloudAgentWithResponse CreateCloudAgent
+	//
+	// Creates a cloud agent with no code deployed, and returns its ID. Call
+	//  `DeployCloudAgent` to run code on it. The plan of the project limits the
+	//  number of agents: a project at the limit returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+	CloudAgentServiceCreateCloudAgentWithResponse(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentResponse, error)
+
+	// CloudAgentServiceDeleteCloudAgentWithResponse DeleteCloudAgent
+	//
+	// Deletes a cloud agent with everything that it runs, or only its named
+	//  deployment when you set `deployment`. The deployment cannot be
+	//  `production`: to remove it, delete the agent. A retry after a success
+	//  returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceDeleteCloudAgent` operationId).
+	CloudAgentServiceDeleteCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceDeleteCloudAgentParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeleteCloudAgentResponse, error)
+
+	// CloudAgentServiceGetCloudAgentWithResponse GetCloudAgent
+	//
+	// Returns a cloud agent with its deployments and their status. Returns
+	//  `NotFound` for an agent that the project does not have.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceGetCloudAgent` operationId).
+	CloudAgentServiceGetCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentResponse, error)
+
+	// CloudAgentServiceGetCloudAgentBuildLogsWithResponse GetCloudAgentBuildLogs
+	//
+	// Returns the build log of a version of a cloud agent. It returns the last
+	//  1 MiB of the log, from the start of a line, and sets `truncated` when the
+	//  log is longer: the end of a log tells why a build failed. Returns
+	//  `NotFound` when the version has no log.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/build-logs (the `CloudAgentServiceGetCloudAgentBuildLogs` operationId).
+	CloudAgentServiceGetCloudAgentBuildLogsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceGetCloudAgentBuildLogsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentBuildLogsResponse, error)
+
+	// CloudAgentServiceBuildCloudAgentWithBodyWithResponse BuildCloudAgent
+	//
+	// Builds the source archive that you uploaded for a deployment, and deploys
+	//  the version that it makes. The call returns when the build is queued. The
+	//  build runs on without the call. Read `GetCloudAgent` for its status. A
+	//  project can start a limited number of builds each hour: a call over the
+	//  limit returns `ResourceExhausted`. An agent that has as many versions as
+	//  its plan allows returns `FailedPrecondition`: delete a deployment that runs
+	//  another version, then deploy again.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+	CloudAgentServiceBuildCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceBuildCloudAgentResponse, error)
+
+	// CloudAgentServiceBuildCloudAgentWithResponse BuildCloudAgent
+	//
+	// Builds the source archive that you uploaded for a deployment, and deploys
+	//  the version that it makes. The call returns when the build is queued. The
+	//  build runs on without the call. Read `GetCloudAgent` for its status. A
+	//  project can start a limited number of builds each hour: a call over the
+	//  limit returns `ResourceExhausted`. An agent that has as many versions as
+	//  its plan allows returns `FailedPrecondition`: delete a deployment that runs
+	//  another version, then deploy again.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+	CloudAgentServiceBuildCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceBuildCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceBuildCloudAgentResponse, error)
+
+	// CloudAgentServiceDeployCloudAgentWithBodyWithResponse DeployCloudAgent
+	//
+	// Starts a deployment of new code to a cloud agent. It returns where to
+	//  upload the source archive of the agent and the tag of the version that the
+	//  deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+	//  The call makes no version by itself, and a retry returns a new upload
+	//  target and tag.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+	CloudAgentServiceDeployCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeployCloudAgentResponse, error)
+
+	// CloudAgentServiceDeployCloudAgentWithResponse DeployCloudAgent
+	//
+	// Starts a deployment of new code to a cloud agent. It returns where to
+	//  upload the source archive of the agent and the tag of the version that the
+	//  deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+	//  The call makes no version by itself, and a retry returns a new upload
+	//  target and tag.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+	CloudAgentServiceDeployCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceDeployCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeployCloudAgentResponse, error)
+
+	// CloudAgentServicePromoteCloudAgentWithBodyWithResponse PromoteCloudAgent
+	//
+	// Makes the version that a named deployment runs the version that
+	//  production runs.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+	CloudAgentServicePromoteCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServicePromoteCloudAgentResponse, error)
+
+	// CloudAgentServicePromoteCloudAgentWithResponse PromoteCloudAgent
+	//
+	// Makes the version that a named deployment runs the version that
+	//  production runs.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+	CloudAgentServicePromoteCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServicePromoteCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServicePromoteCloudAgentResponse, error)
+
+	// CloudAgentServiceRestartCloudAgentWithResponse RestartCloudAgent
+	//
+	// Restarts the workers of a cloud agent. Sessions in progress end.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/restart (the `CloudAgentServiceRestartCloudAgent` operationId).
+	CloudAgentServiceRestartCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceRestartCloudAgentResponse, error)
+
+	// CloudAgentServiceRollbackCloudAgentWithBodyWithResponse RollbackCloudAgent
+	//
+	// Makes a version of a cloud agent the version that production runs. Read
+	//  the versions with `ListCloudAgentVersions`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+	CloudAgentServiceRollbackCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceRollbackCloudAgentResponse, error)
+
+	// CloudAgentServiceRollbackCloudAgentWithResponse RollbackCloudAgent
+	//
+	// Makes a version of a cloud agent the version that production runs. Read
+	//  the versions with `ListCloudAgentVersions`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+	CloudAgentServiceRollbackCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceRollbackCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceRollbackCloudAgentResponse, error)
+
+	// CloudAgentServiceListCloudAgentSecretsWithResponse ListCloudAgentSecrets
+	//
+	// Lists the secrets of a cloud agent, without their values, in name order.
+	//  The list is always one page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceListCloudAgentSecrets` operationId).
+	CloudAgentServiceListCloudAgentSecretsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentSecretsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentSecretsResponse, error)
+
+	// CloudAgentServiceUpdateCloudAgentSecretsWithBodyWithResponse UpdateCloudAgentSecrets
+	//
+	// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+	//  the secret of the same name. A secret that you do not name stays. A change
+	//  takes effect at the next restart or deployment. The call requires the
+	//  `ADMIN` role.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+	CloudAgentServiceUpdateCloudAgentSecretsWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceUpdateCloudAgentSecretsResponse, error)
+
+	// CloudAgentServiceUpdateCloudAgentSecretsWithResponse UpdateCloudAgentSecrets
+	//
+	// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+	//  the secret of the same name. A secret that you do not name stays. A change
+	//  takes effect at the next restart or deployment. The call requires the
+	//  `ADMIN` role.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+	CloudAgentServiceUpdateCloudAgentSecretsWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceUpdateCloudAgentSecretsResponse, error)
+
+	// CloudAgentServiceListCloudAgentVersionsWithResponse ListCloudAgentVersions
+	//
+	// Lists the versions of a cloud agent, newest first. The list is always one
+	//  page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/versions (the `CloudAgentServiceListCloudAgentVersions` operationId).
+	CloudAgentServiceListCloudAgentVersionsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentVersionsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentVersionsResponse, error)
+
+	// EvalServiceGetEvalDefaultsWithResponse GetEvalDefaults
+	//
+	// Returns the judge defaults of the project, and the judge models that a
+	//  definition can name. Each eval uses the judge defaults for the judge
+	//  settings that its definition does not set.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-defaults (the `EvalServiceGetEvalDefaults` operationId).
+	EvalServiceGetEvalDefaultsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*EvalServiceGetEvalDefaultsResponse, error)
+
+	// EvalServiceUpdateEvalDefaultsWithBodyWithResponse Replaces the judge defaults of the project. A revision keeps the defaults
+	//  that it was published with, so the change reaches an eval at its next
+	//  publish.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+	EvalServiceUpdateEvalDefaultsWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalDefaultsResponse, error)
+
+	// EvalServiceUpdateEvalDefaultsWithResponse Replaces the judge defaults of the project. A revision keeps the defaults
+	//  that it was published with, so the change reaches an eval at its next
+	//  publish.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+	EvalServiceUpdateEvalDefaultsWithResponse(ctx context.Context, projectId string, body EvalServiceUpdateEvalDefaultsJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalDefaultsResponse, error)
+
+	// AnalyticsServiceGetEvalResultsWithResponse Returns the eval results of a project over a time range: the totals, one
+	//  item for each eval, eval version and agent, and the error codes. An eval
+	//  is a set of criteria that LiveKit checks on each finished live session of
+	//  the agents of a project. This is the data that the evals page of LiveKit
+	//  Cloud shows.
+	//
+	// Each count is a number of sessions. The range selects sessions by their
+	//  end time, and expands to whole 5-minute periods. Simulated sessions are
+	//  not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  A session that ends at `range.endTime` is included, unless `range.endTime`
+	//  is on a 5-minute boundary. The range can be at most 60 days.
+	//
+	//  Errors: a range longer than 60 days, a range whose `startTime` is not
+	//  before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+	//  `intentIds`, or `outcomeIds` returns `InvalidArgument`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-results (the `AnalyticsServiceGetEvalResults` operationId).
+	AnalyticsServiceGetEvalResultsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetEvalResultsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetEvalResultsResponse, error)
+
+	// ObservabilityServiceListEvalSessionsWithResponse Lists the agent sessions that LiveKit scored with evals or labeled, newest
+	//  session end first. An eval is a set of criteria that LiveKit checks on each
+	//  finished live session. Each item is one agent job in a session, with the
+	//  result of each eval. These are the sessions that the evals page of the
+	//  dashboard lists when you select a result.
+	//
+	// With no `evalId`, `verdict` or `criterionId`, each item has the verdict and
+	//  score of every eval that scored the session, and a session that LiveKit
+	//  only labeled has no evals. With `evalId` or `verdict`, each item has one
+	//  eval and the IDs of the criteria that it failed. With `criterionId`, each
+	//  item has the answer to that criterion and the answers of its judges. To get
+	//  the failure reasons, call `GetSessionEvals`.
+	//
+	//  The range selects sessions by their end time, and expands to whole
+	//  5-minute periods. A session that ends at `range.endTime` is included,
+	//  unless `range.endTime` is on a 5-minute boundary. When `range.startTime`
+	//  is unset, the range starts 7 days before its end. The range can be at
+	//  most 30 days. Simulated sessions are not included.
+	//
+	//  Errors: a range longer than 30 days, a range whose `startTime` is not
+	//  before its `endTime`, more than 25 entries in `agentNames`, `intentIds`, or
+	//  `outcomeIds`, a `criterionId` without an `evalId` or with a `verdict`, or a
+	//  cursor from another request returns `InvalidArgument`. A read with no
+	//  filter that returns no sessions while user data recording is off returns
+	//  the `ObservabilityDisabled` error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/eval-sessions (the `ObservabilityServiceListEvalSessions` operationId).
+	ObservabilityServiceListEvalSessionsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListEvalSessionsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListEvalSessionsResponse, error)
+
+	// EvalServiceListEvalsWithResponse ListEvals
+	//
+	// Lists the evals of a project, sorted by name, ignoring case. The list is always one page,
+	//  with every eval. A project has at most 500 active evals. Each item has the
+	//  live revision number and says whether the eval has a draft, but has no
+	//  definition. To read a definition, use `GetEval`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals (the `EvalServiceListEvals` operationId).
+	EvalServiceListEvalsWithResponse(ctx context.Context, projectId string, params *EvalServiceListEvalsParams, reqEditors ...RequestEditorFn) (*EvalServiceListEvalsResponse, error)
+
+	// EvalServiceCreateEvalWithBodyWithResponse Creates an eval, with its definition as the first draft. The eval scores
+	//  nothing until you publish the draft with `PublishEvalDraft`. Returns the
+	//  eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A name that another eval of the project
+	//  has returns `AlreadyExists`. A project with the maximum number of evals
+	//  returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+	EvalServiceCreateEvalWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceCreateEvalResponse, error)
+
+	// EvalServiceCreateEvalWithResponse Creates an eval, with its definition as the first draft. The eval scores
+	//  nothing until you publish the draft with `PublishEvalDraft`. Returns the
+	//  eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A name that another eval of the project
+	//  has returns `AlreadyExists`. A project with the maximum number of evals
+	//  returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+	EvalServiceCreateEvalWithResponse(ctx context.Context, projectId string, body EvalServiceCreateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceCreateEvalResponse, error)
+
+	// EvalServiceDeleteEvalWithResponse Deletes an eval. LiveKit stops scoring sessions with it, and its past
+	//  results stay. `UndeleteEval` brings it back.
+	//
+	// Errors: an unknown eval returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceDeleteEval` operationId).
+	EvalServiceDeleteEvalWithResponse(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*EvalServiceDeleteEvalResponse, error)
+
+	// EvalServiceGetEvalWithResponse Returns an eval and one version of its definition: the live revision, a
+	//  revision that you name, or the draft. Without `version`, returns the live
+	//  revision, or the draft when nothing is published. A deleted eval is still
+	//  readable.
+	//
+	// Errors: an unknown eval returns `NotFound`. A revision or a draft that the
+	//  eval does not have also returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceGetEval` operationId).
+	EvalServiceGetEvalWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceGetEvalParams, reqEditors ...RequestEditorFn) (*EvalServiceGetEvalResponse, error)
+
+	// EvalServiceUpdateEvalWithBodyWithResponse Changes the name or the description of an eval. A field that you leave
+	//  out does not change. A change takes effect at once, and does not need a
+	//  publish.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has returns `AlreadyExists`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+	EvalServiceUpdateEvalWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalResponse, error)
+
+	// EvalServiceUpdateEvalWithResponse Changes the name or the description of an eval. A field that you leave
+	//  out does not change. A change takes effect at once, and does not need a
+	//  publish.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has returns `AlreadyExists`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+	EvalServiceUpdateEvalWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceUpdateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalResponse, error)
+
+	// EvalServiceDiffEvalRevisionsWithResponse Returns the changes between two versions of the definition of an eval,
+	//  field by field. Each version is a revision or the draft. The changes are
+	//  to the definition as it was written, without the judge defaults of the
+	//  project.
+	//
+	// Errors: an unknown eval, revision or draft returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/diff (the `EvalServiceDiffEvalRevisions` operationId).
+	EvalServiceDiffEvalRevisionsWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceDiffEvalRevisionsParams, reqEditors ...RequestEditorFn) (*EvalServiceDiffEvalRevisionsResponse, error)
+
+	// EvalServiceDiscardEvalDraftWithResponse Discards the draft of an eval. The live revision does not change. Pass the
+	//  `draftEtag` that you last read, so that you do not discard a change that
+	//  someone else made.
+	//
+	// Errors: an unknown eval, or an eval with no draft, returns `NotFound`. A
+	//  `draftEtag` that is not the current one returns `Aborted`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceDiscardEvalDraft` operationId).
+	EvalServiceDiscardEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceDiscardEvalDraftParams, reqEditors ...RequestEditorFn) (*EvalServiceDiscardEvalDraftResponse, error)
+
+	// EvalServiceSaveEvalDraftWithBodyWithResponse Saves the draft of an eval, and replaces the draft that was there. The
+	//  draft scores nothing until you publish it. Pass the `draftEtag` that you
+	//  last read, so that you do not overwrite a change that someone else made.
+	//  Leave it empty when the eval has no draft.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`: read the eval again, and repeat the change on its
+	//  draft.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+	EvalServiceSaveEvalDraftWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceSaveEvalDraftResponse, error)
+
+	// EvalServiceSaveEvalDraftWithResponse Saves the draft of an eval, and replaces the draft that was there. The
+	//  draft scores nothing until you publish it. Pass the `draftEtag` that you
+	//  last read, so that you do not overwrite a change that someone else made.
+	//  Leave it empty when the eval has no draft.
+	//
+	// Errors: a definition with a wrong field returns `InvalidArgument`, with
+	//  each field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`: read the eval again, and repeat the change on its
+	//  draft.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+	EvalServiceSaveEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceSaveEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceSaveEvalDraftResponse, error)
+
+	// EvalServicePublishEvalDraftWithBodyWithResponse Publishes the draft of an eval as its next revision, and makes that
+	//  revision live. From now on, the eval scores every matching live session of
+	//  the project, and each judged criterion uses LLM judge inference that
+	//  LiveKit pays for. Pass the `draftEtag` that you last read.
+	//
+	// Errors: a draft that is not complete returns `InvalidArgument`, with each
+	//  field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`. When the live revision changed after the draft was
+	//  opened, returns `FailedPrecondition`: compare the two with
+	//  `DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+	EvalServicePublishEvalDraftWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServicePublishEvalDraftResponse, error)
+
+	// EvalServicePublishEvalDraftWithResponse Publishes the draft of an eval as its next revision, and makes that
+	//  revision live. From now on, the eval scores every matching live session of
+	//  the project, and each judged criterion uses LLM judge inference that
+	//  LiveKit pays for. Pass the `draftEtag` that you last read.
+	//
+	// Errors: a draft that is not complete returns `InvalidArgument`, with each
+	//  field in the error details. A `draftEtag` that is not the current one
+	//  returns `Aborted`. When the live revision changed after the draft was
+	//  opened, returns `FailedPrecondition`: compare the two with
+	//  `DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+	EvalServicePublishEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, body EvalServicePublishEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServicePublishEvalDraftResponse, error)
+
+	// EvalServiceListEvalHistoryWithResponse ListEvalHistory
+	//
+	// Lists the history of an eval, newest first: each publish, rollback,
+	//  delete and undelete, and each change of its name or description.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/history (the `EvalServiceListEvalHistory` operationId).
+	EvalServiceListEvalHistoryWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceListEvalHistoryParams, reqEditors ...RequestEditorFn) (*EvalServiceListEvalHistoryResponse, error)
+
+	// EvalServiceRollbackEvalWithBodyWithResponse Makes a copy of an older revision of an eval the next revision, and makes
+	//  it live. From now on, the eval scores every matching live session of the
+	//  project with that definition. The older revision and the history do not
+	//  change.
+	//
+	// Errors: an unknown eval or revision returns `NotFound`. The live revision
+	//  returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+	EvalServiceRollbackEvalWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceRollbackEvalResponse, error)
+
+	// EvalServiceRollbackEvalWithResponse Makes a copy of an older revision of an eval the next revision, and makes
+	//  it live. From now on, the eval scores every matching live session of the
+	//  project with that definition. The older revision and the history do not
+	//  change.
+	//
+	// Errors: an unknown eval or revision returns `NotFound`. The live revision
+	//  returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+	EvalServiceRollbackEvalWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceRollbackEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceRollbackEvalResponse, error)
+
+	// EvalServiceUndeleteEvalWithResponse Undeletes an eval. If it has a live revision, LiveKit scores sessions with
+	//  it again.
+	//
+	// Errors: an unknown eval returns `NotFound`. A name that another eval of
+	//  the project has taken returns `AlreadyExists`. A project with the maximum
+	//  number of evals returns `FailedPrecondition`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:undelete (the `EvalServiceUndeleteEval` operationId).
+	EvalServiceUndeleteEvalWithResponse(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*EvalServiceUndeleteEvalResponse, error)
+
+	// EvalServiceValidateEvalWithBodyWithResponse ValidateEval
+	//
+	// Checks an eval definition, and saves nothing. Returns the definition with
+	//  the judge defaults of the project applied, and each field that is wrong
+	//  or missing. A definition can be published only when it has no
+	//  violations. The call returns OK also when the definition has violations.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+	EvalServiceValidateEvalWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceValidateEvalResponse, error)
+
+	// EvalServiceValidateEvalWithResponse ValidateEval
+	//
+	// Checks an eval definition, and saves nothing. Returns the definition with
+	//  the judge defaults of the project applied, and each field that is wrong
+	//  or missing. A definition can be published only when it has no
+	//  violations. The call returns OK also when the definition has violations.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+	EvalServiceValidateEvalWithResponse(ctx context.Context, projectId string, body EvalServiceValidateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceValidateEvalResponse, error)
 
 	// ProjectServiceListInvitesWithResponse ListInvites
 	//
@@ -19304,6 +29404,58 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 	ProjectServiceDeleteKeyWithResponse(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteKeyResponse, error)
+
+	// ObservabilityServiceListLogPatternsWithResponse Lists the log patterns of a project in a time range, ranked, with their
+	//  counts over time. A log pattern is a group of log records that log the
+	//  same message from one place in the code, at one level. Its template is
+	//  the message with each variable part, such as a number or an ID, replaced
+	//  by a placeholder. These are the patterns that the logs page on the
+	//  dashboard groups the records into.
+	//
+	// When `range.startTime` is unset, the range starts 24 hours before its
+	//  end. The range does not include `range.endTime`.
+	//
+	//  The API keeps log records for 14 days. One read covers at most the 7
+	//  days before the end of its range. A range that starts earlier reads the
+	//  records of those 7 days. A range that ends more than 14 days ago returns
+	//  `InvalidArgument`. The read does not count the records of the current
+	//  minute, and its answer can be up to one minute old. For a range of one
+	//  day or more, these are five minutes. On a project with
+	//  many records, the counts can be estimates. Then `estimated` is true: the
+	//  API reads the records of a share of the sessions, and scales the counts.
+	//  The read does not count the records of agent simulation sessions, unless
+	//  you set `sessionId`. A read with a filter can return no patterns because
+	//  no record matches. Thus, only a read with no `query`, `minLevel`,
+	//  `sources`, `agentName`, `agentId`, or `sessionId` returns the
+	//  `ObservabilityDisabled` error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/log-patterns (the `ObservabilityServiceListLogPatterns` operationId).
+	ObservabilityServiceListLogPatternsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListLogPatternsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListLogPatternsResponse, error)
+
+	// ObservabilityServiceListProjectLogsWithResponse Lists the log records of a project in a time range, from its agents, its
+	//  client SDKs, and LiveKit, newest first by default. These are the records
+	//  that the logs page on the dashboard shows. The chat history is not
+	//  included, because `GetSessionTranscript` returns it.
+	//
+	// When `range.startTime` is unset, the range starts 24 hours before its
+	//  end. The range includes `range.endTime`, to the millisecond.
+	//
+	//  The API keeps log records for 14 days. One read returns at most the 7
+	//  days before the end of its range. A range that starts earlier returns
+	//  the records of those 7 days. A range that ends more than 14 days ago
+	//  returns `InvalidArgument`. A record that arrives after you read a page
+	//  can have a time that your pages already passed. This read does not return
+	//  that record. A new read returns it. Records from the last few minutes can
+	//  still arrive. A read with a filter can return no records because no
+	//  record matches. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/logs (the `ObservabilityServiceListProjectLogs` operationId).
+	ObservabilityServiceListProjectLogsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListProjectLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListProjectLogsResponse, error)
 
 	// ProjectServiceListMembersWithResponse ListMembers
 	//
@@ -19514,9 +29666,175 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithResponse(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error)
 
+	// AnalyticsServiceGetSessionLabelResultsWithResponse Returns the session labels of a project over a time range: the number of
+	//  sessions with each intent and each outcome, the number of sessions with
+	//  each pair of intent and outcome, and the eval results of the sessions
+	//  with each label. A session label is an intent (what the user wanted) or
+	//  an outcome (how the session ended) that LiveKit assigns to each finished
+	//  live session.
+	//
+	// The eval results name each eval by its ID only. To get the names, call
+	//  `GetEvalResults` and read `evals`, or call `ListEvals`.
+	//
+	//  The range selects sessions by their end time, and expands to whole
+	//  5-minute periods. Simulated sessions are not included.
+	//
+	//  When `range.startTime` is unset, the range starts 7 days before its end.
+	//  A session that ends at `range.endTime` is included, unless `range.endTime`
+	//  is on a 5-minute boundary. The range can be at most 60 days.
+	//
+	//  Errors: a range longer than 60 days, a range whose `startTime` is not
+	//  before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+	//  `intentIds`, or `outcomeIds` returns `InvalidArgument`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-label-results (the `AnalyticsServiceGetSessionLabelResults` operationId).
+	AnalyticsServiceGetSessionLabelResultsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetSessionLabelResultsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionLabelResultsResponse, error)
+
+	// EvalServiceGetSessionLabelSettingsWithResponse GetSessionLabelSettings
+	//
+	// Returns the settings that decide which sessions LiveKit labels. A project
+	//  that never changed them has the default values.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-label-settings (the `EvalServiceGetSessionLabelSettings` operationId).
+	EvalServiceGetSessionLabelSettingsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*EvalServiceGetSessionLabelSettingsResponse, error)
+
+	// EvalServiceUpdateSessionLabelSettingsWithBodyWithResponse Replaces the session label settings of a project. A field that you leave
+	//  out goes back to its default value, so send every field that you want to
+	//  keep.
+	//
+	// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+	//  range, returns `InvalidArgument`, with each field in the error details.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+	EvalServiceUpdateSessionLabelSettingsWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelSettingsResponse, error)
+
+	// EvalServiceUpdateSessionLabelSettingsWithResponse Replaces the session label settings of a project. A field that you leave
+	//  out goes back to its default value, so send every field that you want to
+	//  keep.
+	//
+	// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+	//  range, returns `InvalidArgument`, with each field in the error details.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+	EvalServiceUpdateSessionLabelSettingsWithResponse(ctx context.Context, projectId string, body EvalServiceUpdateSessionLabelSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelSettingsResponse, error)
+
+	// EvalServiceListSessionLabelsWithResponse ListSessionLabels
+	//
+	// Lists the session labels of a project, sorted by name, ignoring case. The
+	//  list is always one page, with every label of the kind. A project has at
+	//  most 500 active labels of each kind.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/session-labels (the `EvalServiceListSessionLabels` operationId).
+	EvalServiceListSessionLabelsWithResponse(ctx context.Context, projectId string, params *EvalServiceListSessionLabelsParams, reqEditors ...RequestEditorFn) (*EvalServiceListSessionLabelsResponse, error)
+
+	// EvalServiceCreateSessionLabelWithBodyWithResponse Creates a session label. LiveKit applies the label to the sessions that
+	//  end after the label exists, and the label does not reach sessions that
+	//  ended before. The LLM that assigns labels reads the `description` of each
+	//  label, so a description is required. The first label of a project turns
+	//  labeling on, and each labeled session uses LLM inference that LiveKit pays
+	//  for.
+	//
+	// Errors: a field that is wrong returns `InvalidArgument`, with each field
+	//  in the error details. A name that another active label of the same kind
+	//  has returns `AlreadyExists`. A project with the maximum number of active
+	//  labels of the kind, or an agent that would have too many labels of the
+	//  kind, returns `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+	EvalServiceCreateSessionLabelWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceCreateSessionLabelResponse, error)
+
+	// EvalServiceCreateSessionLabelWithResponse Creates a session label. LiveKit applies the label to the sessions that
+	//  end after the label exists, and the label does not reach sessions that
+	//  ended before. The LLM that assigns labels reads the `description` of each
+	//  label, so a description is required. The first label of a project turns
+	//  labeling on, and each labeled session uses LLM inference that LiveKit pays
+	//  for.
+	//
+	// Errors: a field that is wrong returns `InvalidArgument`, with each field
+	//  in the error details. A name that another active label of the same kind
+	//  has returns `AlreadyExists`. A project with the maximum number of active
+	//  labels of the kind, or an agent that would have too many labels of the
+	//  kind, returns `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+	EvalServiceCreateSessionLabelWithResponse(ctx context.Context, projectId string, body EvalServiceCreateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceCreateSessionLabelResponse, error)
+
+	// EvalServiceDeleteSessionLabelWithResponse Deletes a session label. LiveKit stops assigning it, and the labels that
+	//  it assigned to past sessions stay. The response lists the active evals
+	//  that still name the label in `run.when`. The delete happens either way, so
+	//  fix those evals. `UndeleteSessionLabel` brings the label back with the
+	//  same ID. Deleting a deleted label changes nothing.
+	//
+	// Errors: an unknown label returns `NotFound`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceDeleteSessionLabel` operationId).
+	EvalServiceDeleteSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*EvalServiceDeleteSessionLabelResponse, error)
+
+	// EvalServiceUpdateSessionLabelWithBodyWithResponse Changes a session label. A field that you leave out does not change. The
+	//  kind of a label does not change. A change applies to the sessions that end
+	//  after it. Evals refer to a label by its ID, so a new name does not change
+	//  them.
+	//
+	// Errors: an unknown label returns `NotFound`. A deleted label returns
+	//  `FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+	//  name that another active label of the same kind has returns
+	//  `AlreadyExists`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+	EvalServiceUpdateSessionLabelWithBodyWithResponse(ctx context.Context, projectId string, labelId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelResponse, error)
+
+	// EvalServiceUpdateSessionLabelWithResponse Changes a session label. A field that you leave out does not change. The
+	//  kind of a label does not change. A change applies to the sessions that end
+	//  after it. Evals refer to a label by its ID, so a new name does not change
+	//  them.
+	//
+	// Errors: an unknown label returns `NotFound`. A deleted label returns
+	//  `FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+	//  name that another active label of the same kind has returns
+	//  `AlreadyExists`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+	EvalServiceUpdateSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, body EvalServiceUpdateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelResponse, error)
+
+	// EvalServiceUndeleteSessionLabelWithResponse Undeletes a session label, with its old ID, so the evals that name the ID
+	//  match it again. The name and the limits of the project apply again.
+	//  Undeleting an active label changes nothing.
+	//
+	// Errors: an unknown label returns `NotFound`. A name that another active
+	//  label of the same kind has taken returns `AlreadyExists`. A project with
+	//  the maximum number of active labels of the kind, or an agent that would
+	//  have too many labels of the kind, returns `FailedPrecondition`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/session-labels/{labelId}:undelete (the `EvalServiceUndeleteSessionLabel` operationId).
+	EvalServiceUndeleteSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*EvalServiceUndeleteSessionLabelResponse, error)
+
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 	//
-	// Lists the room sessions of a project, newest first.
+	// Lists the room sessions of a project, newest first. When
+	//  `filter.range.startTime` is unset, the range starts 14 days before its
+	//  end. A session that started at `filter.range.endTime` is not included.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19532,6 +29850,30 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
+
+	// ObservabilityServiceGetSessionEvalsWithResponse Returns the eval results of a session: the newest result of each eval
+	//  that LiveKit scored on each agent job of the session, with the answer of
+	//  each criterion, the answers of its judges, and why a failed criterion
+	//  failed. It also returns the intent and the outcome that LiveKit assigned to
+	//  each agent job. These are the results that the evals tab of a session on
+	//  the dashboard shows.
+	//
+	// A judge is an LLM that answers a criterion. A failure reason explains a
+	//  failed criterion of a failed eval, and a failure excerpt quotes the
+	//  transcript lines that show the failure.
+	//
+	//  LiveKit scores a session after its agent uploads the session recording,
+	//  and the judges can take minutes after the session ends. Thus, a session
+	//  that LiveKit has not scored yet returns empty `evals` and `labels`, with no
+	//  error. When an eval that you expect is missing, read again a few minutes
+	//  later. An unknown session, or a session of another project,
+	//  returns `NotFound`. A session with no results while user data recording is
+	//  off returns the `ObservabilityDisabled` error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/evals (the `ObservabilityServiceGetSessionEvals` operationId).
+	ObservabilityServiceGetSessionEvalsWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionEvalsResponse, error)
 
 	// AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
 	//  has no total.
@@ -20102,7 +30444,10 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
 	//
-	// Creates a webhook destination for a project. A `url` that is not an absolute
+	// Creates a webhook destination for a project. It delivers LiveKit Cloud
+	//  events only, such as room, participant, track, egress, ingress and agent
+	//  job events; it doesn't receive or forward events from other services, such
+	//  as SMS. A `url` that is not an absolute
 	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 	//  in `filterParams` that `ListWebhookEvents` does not return, or a
 	//  `signingKey` that is not an API key of the project, also returns
@@ -20117,7 +30462,10 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateWebhookWithResponse CreateWebhook
 	//
-	// Creates a webhook destination for a project. A `url` that is not an absolute
+	// Creates a webhook destination for a project. It delivers LiveKit Cloud
+	//  events only, such as room, participant, track, egress, ingress and agent
+	//  job events; it doesn't receive or forward events from other services, such
+	//  as SMS. A `url` that is not an absolute
 	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 	//  in `filterParams` that `ListWebhookEvents` does not return, or a
 	//  `signingKey` that is not an API key of the project, also returns
@@ -20866,32 +31214,32 @@ func (r ProjectServiceUpdateProjectResponse) ContentType() string {
 	return ""
 }
 
-type BuilderAgentServiceListBuilderAgentsResponse struct {
+type AgentBuilderServiceListAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsListResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsListResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsListResponse {
+func (r AgentBuilderServiceListAgentsResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsListResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceListAgentsResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceListBuilderAgentsResponse) GetBody() []byte {
+func (r AgentBuilderServiceListAgentsResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceListBuilderAgentsResponse) Status() string {
+func (r AgentBuilderServiceListAgentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20899,7 +31247,7 @@ func (r BuilderAgentServiceListBuilderAgentsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceListBuilderAgentsResponse) StatusCode() int {
+func (r AgentBuilderServiceListAgentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20907,39 +31255,39 @@ func (r BuilderAgentServiceListBuilderAgentsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceListBuilderAgentsResponse) ContentType() string {
+func (r AgentBuilderServiceListAgentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type BuilderAgentServiceCreateBuilderAgentResponse struct {
+type AgentBuilderServiceCreateAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsCreateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse {
+func (r AgentBuilderServiceCreateAgentResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsCreateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceCreateAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceCreateBuilderAgentResponse) GetBody() []byte {
+func (r AgentBuilderServiceCreateAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceCreateBuilderAgentResponse) Status() string {
+func (r AgentBuilderServiceCreateAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20947,7 +31295,7 @@ func (r BuilderAgentServiceCreateBuilderAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceCreateBuilderAgentResponse) StatusCode() int {
+func (r AgentBuilderServiceCreateAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -20955,39 +31303,39 @@ func (r BuilderAgentServiceCreateBuilderAgentResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceCreateBuilderAgentResponse) ContentType() string {
+func (r AgentBuilderServiceCreateAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type BuilderAgentServiceDeleteBuilderAgentResponse struct {
+type AgentBuilderServiceDeleteAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsDeleteResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse {
+func (r AgentBuilderServiceDeleteAgentResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsDeleteResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceDeleteAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetBody() []byte {
+func (r AgentBuilderServiceDeleteAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) Status() string {
+func (r AgentBuilderServiceDeleteAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -20995,7 +31343,7 @@ func (r BuilderAgentServiceDeleteBuilderAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) StatusCode() int {
+func (r AgentBuilderServiceDeleteAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21003,39 +31351,39 @@ func (r BuilderAgentServiceDeleteBuilderAgentResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceDeleteBuilderAgentResponse) ContentType() string {
+func (r AgentBuilderServiceDeleteAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type BuilderAgentServiceGetBuilderAgentResponse struct {
+type AgentBuilderServiceGetAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsGetResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsGetResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsGetResponse {
+func (r AgentBuilderServiceGetAgentResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsGetResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceGetAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceGetBuilderAgentResponse) GetBody() []byte {
+func (r AgentBuilderServiceGetAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceGetBuilderAgentResponse) Status() string {
+func (r AgentBuilderServiceGetAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -21043,7 +31391,7 @@ func (r BuilderAgentServiceGetBuilderAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceGetBuilderAgentResponse) StatusCode() int {
+func (r AgentBuilderServiceGetAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21051,39 +31399,39 @@ func (r BuilderAgentServiceGetBuilderAgentResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceGetBuilderAgentResponse) ContentType() string {
+func (r AgentBuilderServiceGetAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type BuilderAgentServiceUpdateBuilderAgentResponse struct {
+type AgentBuilderServiceUpdateAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsUpdateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse {
+func (r AgentBuilderServiceUpdateAgentResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsUpdateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceUpdateAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetBody() []byte {
+func (r AgentBuilderServiceUpdateAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) Status() string {
+func (r AgentBuilderServiceUpdateAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -21091,7 +31439,7 @@ func (r BuilderAgentServiceUpdateBuilderAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) StatusCode() int {
+func (r AgentBuilderServiceUpdateAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21099,39 +31447,39 @@ func (r BuilderAgentServiceUpdateBuilderAgentResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceUpdateBuilderAgentResponse) ContentType() string {
+func (r AgentBuilderServiceUpdateAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type BuilderAgentServiceDeployBuilderAgentResponse struct {
+type AgentBuilderServiceGetAgentCodeURLResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsGetCodeURLResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsGetCodeURLResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r BuilderAgentServiceDeployBuilderAgentResponse) GetBody() []byte {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r BuilderAgentServiceDeployBuilderAgentResponse) Status() string {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -21139,7 +31487,7 @@ func (r BuilderAgentServiceDeployBuilderAgentResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r BuilderAgentServiceDeployBuilderAgentResponse) StatusCode() int {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -21147,7 +31495,1831 @@ func (r BuilderAgentServiceDeployBuilderAgentResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r BuilderAgentServiceDeployBuilderAgentResponse) ContentType() string {
+func (r AgentBuilderServiceGetAgentCodeURLResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentBuilderServiceListAgentVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentVersionsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentBuilderServiceListAgentVersionsResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentVersionsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentBuilderServiceListAgentVersionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentBuilderServiceListAgentVersionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentBuilderServiceListAgentVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentBuilderServiceListAgentVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentBuilderServiceListAgentVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AgentBuilderServiceDeployAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentbuilderV1AgentsDeployResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AgentBuilderServiceDeployAgentResponse) GetJSON200() *LivekitPublicapiAgentbuilderV1AgentsDeployResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AgentBuilderServiceDeployAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AgentBuilderServiceDeployAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AgentBuilderServiceDeployAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AgentBuilderServiceDeployAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AgentBuilderServiceDeployAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AnalyticsServiceGetAgentInsightsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAnalyticsV1AgentInsightsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AnalyticsServiceGetAgentInsightsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentInsightsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetAgentInsightsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AnalyticsServiceGetAgentInsightsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AnalyticsServiceGetAgentInsightsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AnalyticsServiceGetAgentInsightsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AnalyticsServiceGetAgentInsightsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceListCloudAgentPrivateLinksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceListCloudAgentPrivateLinksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceCreateCloudAgentPrivateLinkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceCreateCloudAgentPrivateLinkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceDeleteCloudAgentPrivateLinkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceDeleteCloudAgentPrivateLinkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksGetStatusResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksGetStatusResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceGetCloudAgentSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentSettingsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentSettingsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceGetCloudAgentSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceListCloudAgentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceListCloudAgentsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceListCloudAgentsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceListCloudAgentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceListCloudAgentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceListCloudAgentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceListCloudAgentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceCreateCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceCreateCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceCreateCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceCreateCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceCreateCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceCreateCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceCreateCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceDeleteCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceDeleteCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceDeleteCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceDeleteCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceDeleteCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceDeleteCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceDeleteCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceGetCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceGetCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceGetCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceGetCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceGetCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceGetCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceGetCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceGetCloudAgentBuildLogsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentBuildLogsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentBuildLogsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceGetCloudAgentBuildLogsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceBuildCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsBuildResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceBuildCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsBuildResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceBuildCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceBuildCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceBuildCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceBuildCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceBuildCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceDeployCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsDeployResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceDeployCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsDeployResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceDeployCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceDeployCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceDeployCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceDeployCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceDeployCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServicePromoteCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsPromoteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServicePromoteCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsPromoteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServicePromoteCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServicePromoteCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServicePromoteCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServicePromoteCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServicePromoteCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceRestartCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsRestartResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceRestartCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsRestartResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceRestartCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceRestartCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceRestartCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceRestartCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceRestartCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceRollbackCloudAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentsRollbackResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceRollbackCloudAgentResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentsRollbackResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceRollbackCloudAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceRollbackCloudAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceRollbackCloudAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceRollbackCloudAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceRollbackCloudAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceListCloudAgentSecretsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentSecretsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceListCloudAgentSecretsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentSecretsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceListCloudAgentSecretsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceListCloudAgentSecretsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceListCloudAgentSecretsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceListCloudAgentSecretsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceListCloudAgentSecretsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceUpdateCloudAgentSecretsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentSecretsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentSecretsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceUpdateCloudAgentSecretsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CloudAgentServiceListCloudAgentVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiCloudagentsV1CloudAgentVersionsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CloudAgentServiceListCloudAgentVersionsResponse) GetJSON200() *LivekitPublicapiCloudagentsV1CloudAgentVersionsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CloudAgentServiceListCloudAgentVersionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CloudAgentServiceListCloudAgentVersionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CloudAgentServiceListCloudAgentVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CloudAgentServiceListCloudAgentVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CloudAgentServiceListCloudAgentVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceGetEvalDefaultsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalDefaultsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceGetEvalDefaultsResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalDefaultsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceGetEvalDefaultsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceGetEvalDefaultsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceGetEvalDefaultsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceGetEvalDefaultsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceGetEvalDefaultsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUpdateEvalDefaultsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalDefaultsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUpdateEvalDefaultsResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalDefaultsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUpdateEvalDefaultsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUpdateEvalDefaultsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUpdateEvalDefaultsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUpdateEvalDefaultsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUpdateEvalDefaultsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AnalyticsServiceGetEvalResultsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAnalyticsV1EvalResultsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AnalyticsServiceGetEvalResultsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1EvalResultsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetEvalResultsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AnalyticsServiceGetEvalResultsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AnalyticsServiceGetEvalResultsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AnalyticsServiceGetEvalResultsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AnalyticsServiceGetEvalResultsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ObservabilityServiceListEvalSessionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiObservabilityV1EvalSessionsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ObservabilityServiceListEvalSessionsResponse) GetJSON200() *LivekitPublicapiObservabilityV1EvalSessionsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceListEvalSessionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ObservabilityServiceListEvalSessionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ObservabilityServiceListEvalSessionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ObservabilityServiceListEvalSessionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ObservabilityServiceListEvalSessionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceListEvalsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceListEvalsResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceListEvalsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceListEvalsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceListEvalsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceListEvalsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceListEvalsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceCreateEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceCreateEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceCreateEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceCreateEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceCreateEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceCreateEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceCreateEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceDeleteEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceDeleteEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceDeleteEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceDeleteEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceDeleteEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceDeleteEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceDeleteEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceGetEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceGetEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceGetEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceGetEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceGetEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceGetEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceGetEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUpdateEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUpdateEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUpdateEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUpdateEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUpdateEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUpdateEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUpdateEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceDiffEvalRevisionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalRevisionsDiffResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceDiffEvalRevisionsResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalRevisionsDiffResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceDiffEvalRevisionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceDiffEvalRevisionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceDiffEvalRevisionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceDiffEvalRevisionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceDiffEvalRevisionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceDiscardEvalDraftResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalDraftsDiscardResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceDiscardEvalDraftResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalDraftsDiscardResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceDiscardEvalDraftResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceDiscardEvalDraftResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceDiscardEvalDraftResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceDiscardEvalDraftResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceDiscardEvalDraftResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceSaveEvalDraftResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalDraftsSaveResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceSaveEvalDraftResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalDraftsSaveResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceSaveEvalDraftResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceSaveEvalDraftResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceSaveEvalDraftResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceSaveEvalDraftResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceSaveEvalDraftResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServicePublishEvalDraftResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalDraftsPublishResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServicePublishEvalDraftResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalDraftsPublishResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServicePublishEvalDraftResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServicePublishEvalDraftResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServicePublishEvalDraftResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServicePublishEvalDraftResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServicePublishEvalDraftResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceListEvalHistoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalHistoryListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceListEvalHistoryResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalHistoryListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceListEvalHistoryResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceListEvalHistoryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceListEvalHistoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceListEvalHistoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceListEvalHistoryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceRollbackEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsRollbackResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceRollbackEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsRollbackResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceRollbackEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceRollbackEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceRollbackEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceRollbackEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceRollbackEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUndeleteEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsUndeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUndeleteEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsUndeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUndeleteEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUndeleteEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUndeleteEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUndeleteEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUndeleteEvalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceValidateEvalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1EvalsValidateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceValidateEvalResponse) GetJSON200() *LivekitPublicapiEvalsV1EvalsValidateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceValidateEvalResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceValidateEvalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceValidateEvalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceValidateEvalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceValidateEvalResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -21484,6 +33656,102 @@ func (r ProjectServiceDeleteKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ProjectServiceDeleteKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ObservabilityServiceListLogPatternsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiObservabilityV1LogPatternsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ObservabilityServiceListLogPatternsResponse) GetJSON200() *LivekitPublicapiObservabilityV1LogPatternsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceListLogPatternsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ObservabilityServiceListLogPatternsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ObservabilityServiceListLogPatternsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ObservabilityServiceListLogPatternsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ObservabilityServiceListLogPatternsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ObservabilityServiceListProjectLogsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiObservabilityV1ProjectLogsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ObservabilityServiceListProjectLogsResponse) GetJSON200() *LivekitPublicapiObservabilityV1ProjectLogsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceListProjectLogsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ObservabilityServiceListProjectLogsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ObservabilityServiceListProjectLogsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ObservabilityServiceListProjectLogsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ObservabilityServiceListProjectLogsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -22066,6 +34334,390 @@ func (r SimulationServiceGenerateScenarioFromSessionResponse) ContentType() stri
 	return ""
 }
 
+type AnalyticsServiceGetSessionLabelResultsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAnalyticsV1SessionLabelResultsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AnalyticsServiceGetSessionLabelResultsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionLabelResultsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetSessionLabelResultsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AnalyticsServiceGetSessionLabelResultsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AnalyticsServiceGetSessionLabelResultsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AnalyticsServiceGetSessionLabelResultsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AnalyticsServiceGetSessionLabelResultsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceGetSessionLabelSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelSettingsOpsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceGetSessionLabelSettingsResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelSettingsOpsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceGetSessionLabelSettingsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceGetSessionLabelSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceGetSessionLabelSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceGetSessionLabelSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceGetSessionLabelSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUpdateSessionLabelSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelSettingsOpsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUpdateSessionLabelSettingsResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelSettingsOpsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUpdateSessionLabelSettingsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUpdateSessionLabelSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUpdateSessionLabelSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUpdateSessionLabelSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUpdateSessionLabelSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceListSessionLabelsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceListSessionLabelsResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceListSessionLabelsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceListSessionLabelsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceListSessionLabelsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceListSessionLabelsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceListSessionLabelsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceCreateSessionLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceCreateSessionLabelResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceCreateSessionLabelResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceCreateSessionLabelResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceCreateSessionLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceCreateSessionLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceCreateSessionLabelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceDeleteSessionLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelsDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceDeleteSessionLabelResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelsDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceDeleteSessionLabelResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceDeleteSessionLabelResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceDeleteSessionLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceDeleteSessionLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceDeleteSessionLabelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUpdateSessionLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUpdateSessionLabelResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUpdateSessionLabelResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUpdateSessionLabelResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUpdateSessionLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUpdateSessionLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUpdateSessionLabelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EvalServiceUndeleteSessionLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiEvalsV1SessionLabelsUndeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EvalServiceUndeleteSessionLabelResponse) GetJSON200() *LivekitPublicapiEvalsV1SessionLabelsUndeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r EvalServiceUndeleteSessionLabelResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EvalServiceUndeleteSessionLabelResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EvalServiceUndeleteSessionLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EvalServiceUndeleteSessionLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EvalServiceUndeleteSessionLabelResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AnalyticsServiceListProjectSessionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -22156,6 +34808,54 @@ func (r AnalyticsServiceGetSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AnalyticsServiceGetSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ObservabilityServiceGetSessionEvalsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiObservabilityV1SessionEvalsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ObservabilityServiceGetSessionEvalsResponse) GetJSON200() *LivekitPublicapiObservabilityV1SessionEvalsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionEvalsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ObservabilityServiceGetSessionEvalsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ObservabilityServiceGetSessionEvalsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ObservabilityServiceGetSessionEvalsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ObservabilityServiceGetSessionEvalsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25260,178 +37960,1229 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 	return ParseProjectServiceUpdateProjectResponse(rsp)
 }
 
-// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
+// AgentBuilderServiceListAgentsWithResponse ListAgents
 //
-// Lists the builder agents of a project by name, with the deployment status
+// Lists the Agent Builder agents of a project by name, with the deployment
 //
-//	of each. The list does not include configurations. To get the
-//	configuration of an agent, call `GetBuilderAgent`.
+//	status of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetAgent`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
-	rsp, err := c.BuilderAgentServiceListBuilderAgents(ctx, projectId, params, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceListAgents` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceListAgentsWithResponse(ctx context.Context, projectId string, params *AgentBuilderServiceListAgentsParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceListAgentsResponse, error) {
+	rsp, err := c.AgentBuilderServiceListAgents(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceListBuilderAgentsResponse(rsp)
+	return ParseAgentBuilderServiceListAgentsResponse(rsp)
 }
 
-// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
+// AgentBuilderServiceCreateAgentWithBodyWithResponse CreateAgent
 //
-// Creates a builder agent from a name and a configuration. The agent is not
+// Creates an Agent Builder agent from a name and a configuration. The agent
 //
-//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	is not deployed: call `DeployAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored. A
 //	configuration that is not valid fails with `InvalidArgument` and a
 //	`google.rpc.BadRequest` detail. It has a field violation for each
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceCreateBuilderAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceCreateAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceCreateAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceCreateAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceCreateAgentResponse(rsp)
 }
 
-// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
+// AgentBuilderServiceCreateAgentWithResponse CreateAgent
 //
-// Creates a builder agent from a name and a configuration. The agent is not
+// Creates an Agent Builder agent from a name and a configuration. The agent
 //
-//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	is not deployed: call `DeployAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored. A
 //	configuration that is not valid fails with `InvalidArgument` and a
 //	`google.rpc.BadRequest` detail. It has a field violation for each
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceCreateBuilderAgent(ctx, projectId, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents (the `AgentBuilderServiceCreateAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceCreateAgentWithResponse(ctx context.Context, projectId string, body AgentBuilderServiceCreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceCreateAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceCreateAgent(ctx, projectId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceCreateAgentResponse(rsp)
 }
 
-// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
+// AgentBuilderServiceDeleteAgentWithResponse DeleteAgent
 //
-// Deletes a builder agent, its versions, and its deployment.
+// Deletes an Agent Builder agent, its versions, and its deployment.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceDeleteBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
+// Corresponds with DELETE /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceDeleteAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceDeleteAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeleteAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceDeleteAgent(ctx, projectId, agentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceDeleteAgentResponse(rsp)
 }
 
-// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+// AgentBuilderServiceGetAgentWithResponse GetAgent
 //
-// Returns a builder agent with its current configuration and its deployment
+// Returns an Agent Builder agent with its current configuration and its
 //
-//	status.
+//	deployment status. A `READ` member reads `********` in place of each
+//	header value.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceGetBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceGetAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceGetAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*AgentBuilderServiceGetAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceGetAgent(ctx, projectId, agentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceGetBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceGetAgentResponse(rsp)
 }
 
-// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
+// AgentBuilderServiceUpdateAgentWithBodyWithResponse UpdateAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of an Agent Builder agent, its name, or both. A
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	new configuration makes a new version. A new name does not. The running
+//	agent does not change until you deploy again. Until then, it keeps the
+//	old configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another Agent Builder agent of the project
+//	has fails with `AlreadyExists`. A configuration that is not valid fails
+//	as it does in `CreateAgent`, which includes `********` as a header value.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceUpdateBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
+// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceUpdateAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceUpdateAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceUpdateAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceUpdateAgentResponse(rsp)
 }
 
-// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+// AgentBuilderServiceUpdateAgentWithResponse UpdateAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of an Agent Builder agent, its name, or both. A
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	new configuration makes a new version. A new name does not. The running
+//	agent does not change until you deploy again. Until then, it keeps the
+//	old configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another Agent Builder agent of the project
+//	has fails with `AlreadyExists`. A configuration that is not valid fails
+//	as it does in `CreateAgent`, which includes `********` as a header value.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceUpdateBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+// Corresponds with PATCH /v0/projects/{projectId}/agent-builder/agents/{agentId} (the `AgentBuilderServiceUpdateAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceUpdateAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceUpdateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceUpdateAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceUpdateAgent(ctx, projectId, agentId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceUpdateAgentResponse(rsp)
 }
 
-// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+// AgentBuilderServiceGetAgentCodeURLWithResponse GetAgentCodeURL
 //
-// Starts a deployment of the current configuration of a builder agent, or of
+// Returns a short-lived URL that downloads the agent code of an Agent
 //
-//	an earlier version. The call returns when the build starts, with the
-//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-//	returns. Call `GetBuilderAgent` to follow the deployment until its status
-//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//	Builder agent version as a zip file. The zip holds `src/agent.py`,
+//	`pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+//	so that you can run and change the agent yourself. The URL needs no
+//	credentials and is valid until `expiresAt`. The agent code holds every
+//	header value, so the call requires the `WRITE` role. A version whose
+//	configuration can't make agent code returns `FailedPrecondition`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/code-url (the `AgentBuilderServiceGetAgentCodeURL` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceGetAgentCodeURLWithResponse(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceGetAgentCodeURLParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceGetAgentCodeURLResponse, error) {
+	rsp, err := c.AgentBuilderServiceGetAgentCodeURL(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentBuilderServiceGetAgentCodeURLResponse(rsp)
+}
+
+// AgentBuilderServiceListAgentVersionsWithResponse ListAgentVersions
+//
+// Lists the versions of an Agent Builder agent, newest first, each with its
+//
+//	configuration. To deploy an earlier version, pass its ID to
+//	`DeployAgent`. To make its configuration current again, pass the
+//	configuration to `UpdateAgent`. A `READ` member reads `********` in place
+//	of each header value.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-builder/agents/{agentId}/versions (the `AgentBuilderServiceListAgentVersions` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceListAgentVersionsWithResponse(ctx context.Context, projectId string, agentId string, params *AgentBuilderServiceListAgentVersionsParams, reqEditors ...RequestEditorFn) (*AgentBuilderServiceListAgentVersionsResponse, error) {
+	rsp, err := c.AgentBuilderServiceListAgentVersions(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAgentBuilderServiceListAgentVersionsResponse(rsp)
+}
+
+// AgentBuilderServiceDeployAgentWithBodyWithResponse DeployAgent
+//
+// Starts a deployment of the current configuration of an Agent Builder
+//
+//	agent, or of an earlier version. The call returns when the build starts,
+//	with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+//	the call returns. Call `GetAgent` to follow the deployment until its
+//	status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceDeployBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceDeployAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeployAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceDeployAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceDeployAgentResponse(rsp)
 }
 
-// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+// AgentBuilderServiceDeployAgentWithResponse DeployAgent
 //
-// Starts a deployment of the current configuration of a builder agent, or of
+// Starts a deployment of the current configuration of an Agent Builder
 //
-//	an earlier version. The call returns when the build starts, with the
-//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
-//	returns. Call `GetBuilderAgent` to follow the deployment until its status
-//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//	agent, or of an earlier version. The call returns when the build starts,
+//	with the status `DEPLOYMENT_STATUS_BUILDING`. The build continues after
+//	the call returns. Call `GetAgent` to follow the deployment until its
+//	status is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
-func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
-	rsp, err := c.BuilderAgentServiceDeployBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agent-builder/agents/{agentId}:deploy (the `AgentBuilderServiceDeployAgent` operationId).
+func (c *ClientWithResponses) AgentBuilderServiceDeployAgentWithResponse(ctx context.Context, projectId string, agentId string, body AgentBuilderServiceDeployAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*AgentBuilderServiceDeployAgentResponse, error) {
+	rsp, err := c.AgentBuilderServiceDeployAgent(ctx, projectId, agentId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
+	return ParseAgentBuilderServiceDeployAgentResponse(rsp)
+}
+
+// AnalyticsServiceGetAgentInsightsWithResponse Returns the agent insights of a project over a time range: the totals and
+//
+//	latencies of its agents, one item for each agent, and one item for each
+//	model that the agents used. This is the data that the agent dashboards of
+//	LiveKit Cloud show.
+//
+// The data comes from the turns, model requests, and tool calls that the
+//
+//	agents recorded. Simulated sessions are not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	The range does not include `range.endTime`. The range can be at most 30
+//	days.
+//
+//	Errors: a range longer than 30 days, a range whose `startTime` is not
+//	before its `endTime`, a range that starts after now, more than 25 agents
+//	in `agentIds` and `agentNames` together, or an empty agent ID or name
+//	returns `InvalidArgument`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agent-insights (the `AnalyticsServiceGetAgentInsights` operationId).
+func (c *ClientWithResponses) AnalyticsServiceGetAgentInsightsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetAgentInsightsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentInsightsResponse, error) {
+	rsp, err := c.AnalyticsServiceGetAgentInsights(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAnalyticsServiceGetAgentInsightsResponse(rsp)
+}
+
+// CloudAgentServiceListCloudAgentPrivateLinksWithResponse ListCloudAgentPrivateLinks
+//
+// Lists the private links of the project. A private link connects the agents
+//
+//	of the project to a service in your network. The list is always one page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceListCloudAgentPrivateLinks` operationId).
+func (c *ClientWithResponses) CloudAgentServiceListCloudAgentPrivateLinksWithResponse(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentPrivateLinksParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentPrivateLinksResponse, error) {
+	rsp, err := c.CloudAgentServiceListCloudAgentPrivateLinks(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceListCloudAgentPrivateLinksResponse(rsp)
+}
+
+// CloudAgentServiceCreateCloudAgentPrivateLinkWithBodyWithResponse CreateCloudAgentPrivateLink
+//
+// Creates a private link from the agents of the project to a service in your
+//
+//	network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+func (c *ClientWithResponses) CloudAgentServiceCreateCloudAgentPrivateLinkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentPrivateLinkResponse, error) {
+	rsp, err := c.CloudAgentServiceCreateCloudAgentPrivateLinkWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceCreateCloudAgentPrivateLinkResponse(rsp)
+}
+
+// CloudAgentServiceCreateCloudAgentPrivateLinkWithResponse CreateCloudAgentPrivateLink
+//
+// Creates a private link from the agents of the project to a service in your
+//
+//	network. Read `GetCloudAgentPrivateLinkStatus` to follow its setup.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agent-private-links (the `CloudAgentServiceCreateCloudAgentPrivateLink` operationId).
+func (c *ClientWithResponses) CloudAgentServiceCreateCloudAgentPrivateLinkWithResponse(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentPrivateLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentPrivateLinkResponse, error) {
+	rsp, err := c.CloudAgentServiceCreateCloudAgentPrivateLink(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceCreateCloudAgentPrivateLinkResponse(rsp)
+}
+
+// CloudAgentServiceDeleteCloudAgentPrivateLinkWithResponse DeleteCloudAgentPrivateLink
+//
+// Deletes a private link.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId} (the `CloudAgentServiceDeleteCloudAgentPrivateLink` operationId).
+func (c *ClientWithResponses) CloudAgentServiceDeleteCloudAgentPrivateLinkWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeleteCloudAgentPrivateLinkResponse, error) {
+	rsp, err := c.CloudAgentServiceDeleteCloudAgentPrivateLink(ctx, projectId, privateLinkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceDeleteCloudAgentPrivateLinkResponse(rsp)
+}
+
+// CloudAgentServiceGetCloudAgentPrivateLinkStatusWithResponse GetCloudAgentPrivateLinkStatus
+//
+// Returns the health of a private link.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-private-links/{privateLinkId}/status (the `CloudAgentServiceGetCloudAgentPrivateLinkStatus` operationId).
+func (c *ClientWithResponses) CloudAgentServiceGetCloudAgentPrivateLinkStatusWithResponse(ctx context.Context, projectId string, privateLinkId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse, error) {
+	rsp, err := c.CloudAgentServiceGetCloudAgentPrivateLinkStatus(ctx, projectId, privateLinkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceGetCloudAgentPrivateLinkStatusResponse(rsp)
+}
+
+// CloudAgentServiceGetCloudAgentSettingsWithResponse GetCloudAgentSettings
+//
+// Returns what a client needs to create or deploy a cloud agent: the regions
+//
+//	that the project can use, and the settings that `lk` checks.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agent-settings (the `CloudAgentServiceGetCloudAgentSettings` operationId).
+func (c *ClientWithResponses) CloudAgentServiceGetCloudAgentSettingsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentSettingsResponse, error) {
+	rsp, err := c.CloudAgentServiceGetCloudAgentSettings(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceGetCloudAgentSettingsResponse(rsp)
+}
+
+// CloudAgentServiceListCloudAgentsWithResponse ListCloudAgents
+//
+// Lists the cloud agents of the project in ID order. Each
+//
+//	item has the deployments of the agent, one for each region and named
+//	deployment. The list is always one page. An agent that Agent Builder made
+//	is in the list, with the ID of its Agent Builder agent.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceListCloudAgents` operationId).
+func (c *ClientWithResponses) CloudAgentServiceListCloudAgentsWithResponse(ctx context.Context, projectId string, params *CloudAgentServiceListCloudAgentsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentsResponse, error) {
+	rsp, err := c.CloudAgentServiceListCloudAgents(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceListCloudAgentsResponse(rsp)
+}
+
+// CloudAgentServiceCreateCloudAgentWithBodyWithResponse CreateCloudAgent
+//
+// Creates a cloud agent with no code deployed, and returns its ID. Call
+//
+//	`DeployCloudAgent` to run code on it. The plan of the project limits the
+//	number of agents: a project at the limit returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceCreateCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceCreateCloudAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceCreateCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceCreateCloudAgentWithResponse CreateCloudAgent
+//
+// Creates a cloud agent with no code deployed, and returns its ID. Call
+//
+//	`DeployCloudAgent` to run code on it. The plan of the project limits the
+//	number of agents: a project at the limit returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents (the `CloudAgentServiceCreateCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceCreateCloudAgentWithResponse(ctx context.Context, projectId string, body CloudAgentServiceCreateCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceCreateCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceCreateCloudAgent(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceCreateCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceDeleteCloudAgentWithResponse DeleteCloudAgent
+//
+// Deletes a cloud agent with everything that it runs, or only its named
+//
+//	deployment when you set `deployment`. The deployment cannot be
+//	`production`: to remove it, delete the agent. A retry after a success
+//	returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceDeleteCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceDeleteCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceDeleteCloudAgentParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeleteCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceDeleteCloudAgent(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceDeleteCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceGetCloudAgentWithResponse GetCloudAgent
+//
+// Returns a cloud agent with its deployments and their status. Returns
+//
+//	`NotFound` for an agent that the project does not have.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId} (the `CloudAgentServiceGetCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceGetCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceGetCloudAgent(ctx, projectId, agentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceGetCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceGetCloudAgentBuildLogsWithResponse GetCloudAgentBuildLogs
+//
+// Returns the build log of a version of a cloud agent. It returns the last
+//
+//	1 MiB of the log, from the start of a line, and sets `truncated` when the
+//	log is longer: the end of a log tells why a build failed. Returns
+//	`NotFound` when the version has no log.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/build-logs (the `CloudAgentServiceGetCloudAgentBuildLogs` operationId).
+func (c *ClientWithResponses) CloudAgentServiceGetCloudAgentBuildLogsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceGetCloudAgentBuildLogsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceGetCloudAgentBuildLogsResponse, error) {
+	rsp, err := c.CloudAgentServiceGetCloudAgentBuildLogs(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceGetCloudAgentBuildLogsResponse(rsp)
+}
+
+// CloudAgentServiceBuildCloudAgentWithBodyWithResponse BuildCloudAgent
+//
+// Builds the source archive that you uploaded for a deployment, and deploys
+//
+//	the version that it makes. The call returns when the build is queued. The
+//	build runs on without the call. Read `GetCloudAgent` for its status. A
+//	project can start a limited number of builds each hour: a call over the
+//	limit returns `ResourceExhausted`. An agent that has as many versions as
+//	its plan allows returns `FailedPrecondition`: delete a deployment that runs
+//	another version, then deploy again.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceBuildCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceBuildCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceBuildCloudAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceBuildCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceBuildCloudAgentWithResponse BuildCloudAgent
+//
+// Builds the source archive that you uploaded for a deployment, and deploys
+//
+//	the version that it makes. The call returns when the build is queued. The
+//	build runs on without the call. Read `GetCloudAgent` for its status. A
+//	project can start a limited number of builds each hour: a call over the
+//	limit returns `ResourceExhausted`. An agent that has as many versions as
+//	its plan allows returns `FailedPrecondition`: delete a deployment that runs
+//	another version, then deploy again.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/builds (the `CloudAgentServiceBuildCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceBuildCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceBuildCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceBuildCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceBuildCloudAgent(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceBuildCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceDeployCloudAgentWithBodyWithResponse DeployCloudAgent
+//
+// Starts a deployment of new code to a cloud agent. It returns where to
+//
+//	upload the source archive of the agent and the tag of the version that the
+//	deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+//	The call makes no version by itself, and a retry returns a new upload
+//	target and tag.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceDeployCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeployCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceDeployCloudAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceDeployCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceDeployCloudAgentWithResponse DeployCloudAgent
+//
+// Starts a deployment of new code to a cloud agent. It returns where to
+//
+//	upload the source archive of the agent and the tag of the version that the
+//	deployment makes. After the upload, call `BuildCloudAgent` with the tag.
+//	The call makes no version by itself, and a retry returns a new upload
+//	target and tag.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/deployments (the `CloudAgentServiceDeployCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceDeployCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceDeployCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceDeployCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceDeployCloudAgent(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceDeployCloudAgentResponse(rsp)
+}
+
+// CloudAgentServicePromoteCloudAgentWithBodyWithResponse PromoteCloudAgent
+//
+// Makes the version that a named deployment runs the version that
+//
+//	production runs.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServicePromoteCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServicePromoteCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServicePromoteCloudAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServicePromoteCloudAgentResponse(rsp)
+}
+
+// CloudAgentServicePromoteCloudAgentWithResponse PromoteCloudAgent
+//
+// Makes the version that a named deployment runs the version that
+//
+//	production runs.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/promote (the `CloudAgentServicePromoteCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServicePromoteCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServicePromoteCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServicePromoteCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServicePromoteCloudAgent(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServicePromoteCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceRestartCloudAgentWithResponse RestartCloudAgent
+//
+// Restarts the workers of a cloud agent. Sessions in progress end.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/restart (the `CloudAgentServiceRestartCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceRestartCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, reqEditors ...RequestEditorFn) (*CloudAgentServiceRestartCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceRestartCloudAgent(ctx, projectId, agentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceRestartCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceRollbackCloudAgentWithBodyWithResponse RollbackCloudAgent
+//
+// Makes a version of a cloud agent the version that production runs. Read
+//
+//	the versions with `ListCloudAgentVersions`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceRollbackCloudAgentWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceRollbackCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceRollbackCloudAgentWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceRollbackCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceRollbackCloudAgentWithResponse RollbackCloudAgent
+//
+// Makes a version of a cloud agent the version that production runs. Read
+//
+//	the versions with `ListCloudAgentVersions`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/cloud-agents/{agentId}/rollback (the `CloudAgentServiceRollbackCloudAgent` operationId).
+func (c *ClientWithResponses) CloudAgentServiceRollbackCloudAgentWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceRollbackCloudAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceRollbackCloudAgentResponse, error) {
+	rsp, err := c.CloudAgentServiceRollbackCloudAgent(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceRollbackCloudAgentResponse(rsp)
+}
+
+// CloudAgentServiceListCloudAgentSecretsWithResponse ListCloudAgentSecrets
+//
+// Lists the secrets of a cloud agent, without their values, in name order.
+//
+//	The list is always one page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceListCloudAgentSecrets` operationId).
+func (c *ClientWithResponses) CloudAgentServiceListCloudAgentSecretsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentSecretsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentSecretsResponse, error) {
+	rsp, err := c.CloudAgentServiceListCloudAgentSecrets(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceListCloudAgentSecretsResponse(rsp)
+}
+
+// CloudAgentServiceUpdateCloudAgentSecretsWithBodyWithResponse UpdateCloudAgentSecrets
+//
+// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+//
+//	the secret of the same name. A secret that you do not name stays. A change
+//	takes effect at the next restart or deployment. The call requires the
+//	`ADMIN` role.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+func (c *ClientWithResponses) CloudAgentServiceUpdateCloudAgentSecretsWithBodyWithResponse(ctx context.Context, projectId string, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloudAgentServiceUpdateCloudAgentSecretsResponse, error) {
+	rsp, err := c.CloudAgentServiceUpdateCloudAgentSecretsWithBody(ctx, projectId, agentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceUpdateCloudAgentSecretsResponse(rsp)
+}
+
+// CloudAgentServiceUpdateCloudAgentSecretsWithResponse UpdateCloudAgentSecrets
+//
+// Sets and deletes secrets of a cloud agent. A secret that you set replaces
+//
+//	the secret of the same name. A secret that you do not name stays. A change
+//	takes effect at the next restart or deployment. The call requires the
+//	`ADMIN` role.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/cloud-agents/{agentId}/secrets (the `CloudAgentServiceUpdateCloudAgentSecrets` operationId).
+func (c *ClientWithResponses) CloudAgentServiceUpdateCloudAgentSecretsWithResponse(ctx context.Context, projectId string, agentId string, body CloudAgentServiceUpdateCloudAgentSecretsJSONRequestBody, reqEditors ...RequestEditorFn) (*CloudAgentServiceUpdateCloudAgentSecretsResponse, error) {
+	rsp, err := c.CloudAgentServiceUpdateCloudAgentSecrets(ctx, projectId, agentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceUpdateCloudAgentSecretsResponse(rsp)
+}
+
+// CloudAgentServiceListCloudAgentVersionsWithResponse ListCloudAgentVersions
+//
+// Lists the versions of a cloud agent, newest first. The list is always one
+//
+//	page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/cloud-agents/{agentId}/versions (the `CloudAgentServiceListCloudAgentVersions` operationId).
+func (c *ClientWithResponses) CloudAgentServiceListCloudAgentVersionsWithResponse(ctx context.Context, projectId string, agentId string, params *CloudAgentServiceListCloudAgentVersionsParams, reqEditors ...RequestEditorFn) (*CloudAgentServiceListCloudAgentVersionsResponse, error) {
+	rsp, err := c.CloudAgentServiceListCloudAgentVersions(ctx, projectId, agentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCloudAgentServiceListCloudAgentVersionsResponse(rsp)
+}
+
+// EvalServiceGetEvalDefaultsWithResponse GetEvalDefaults
+//
+// Returns the judge defaults of the project, and the judge models that a
+//
+//	definition can name. Each eval uses the judge defaults for the judge
+//	settings that its definition does not set.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-defaults (the `EvalServiceGetEvalDefaults` operationId).
+func (c *ClientWithResponses) EvalServiceGetEvalDefaultsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*EvalServiceGetEvalDefaultsResponse, error) {
+	rsp, err := c.EvalServiceGetEvalDefaults(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceGetEvalDefaultsResponse(rsp)
+}
+
+// EvalServiceUpdateEvalDefaultsWithBodyWithResponse Replaces the judge defaults of the project. A revision keeps the defaults
+//
+//	that it was published with, so the change reaches an eval at its next
+//	publish.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateEvalDefaultsWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalDefaultsResponse, error) {
+	rsp, err := c.EvalServiceUpdateEvalDefaultsWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateEvalDefaultsResponse(rsp)
+}
+
+// EvalServiceUpdateEvalDefaultsWithResponse Replaces the judge defaults of the project. A revision keeps the defaults
+//
+//	that it was published with, so the change reaches an eval at its next
+//	publish.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/eval-defaults (the `EvalServiceUpdateEvalDefaults` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateEvalDefaultsWithResponse(ctx context.Context, projectId string, body EvalServiceUpdateEvalDefaultsJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalDefaultsResponse, error) {
+	rsp, err := c.EvalServiceUpdateEvalDefaults(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateEvalDefaultsResponse(rsp)
+}
+
+// AnalyticsServiceGetEvalResultsWithResponse Returns the eval results of a project over a time range: the totals, one
+//
+//	item for each eval, eval version and agent, and the error codes. An eval
+//	is a set of criteria that LiveKit checks on each finished live session of
+//	the agents of a project. This is the data that the evals page of LiveKit
+//	Cloud shows.
+//
+// Each count is a number of sessions. The range selects sessions by their
+//
+//	end time, and expands to whole 5-minute periods. Simulated sessions are
+//	not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	A session that ends at `range.endTime` is included, unless `range.endTime`
+//	is on a 5-minute boundary. The range can be at most 60 days.
+//
+//	Errors: a range longer than 60 days, a range whose `startTime` is not
+//	before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+//	`intentIds`, or `outcomeIds` returns `InvalidArgument`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-results (the `AnalyticsServiceGetEvalResults` operationId).
+func (c *ClientWithResponses) AnalyticsServiceGetEvalResultsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetEvalResultsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetEvalResultsResponse, error) {
+	rsp, err := c.AnalyticsServiceGetEvalResults(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAnalyticsServiceGetEvalResultsResponse(rsp)
+}
+
+// ObservabilityServiceListEvalSessionsWithResponse Lists the agent sessions that LiveKit scored with evals or labeled, newest
+//
+//	session end first. An eval is a set of criteria that LiveKit checks on each
+//	finished live session. Each item is one agent job in a session, with the
+//	result of each eval. These are the sessions that the evals page of the
+//	dashboard lists when you select a result.
+//
+// With no `evalId`, `verdict` or `criterionId`, each item has the verdict and
+//
+//	score of every eval that scored the session, and a session that LiveKit
+//	only labeled has no evals. With `evalId` or `verdict`, each item has one
+//	eval and the IDs of the criteria that it failed. With `criterionId`, each
+//	item has the answer to that criterion and the answers of its judges. To get
+//	the failure reasons, call `GetSessionEvals`.
+//
+//	The range selects sessions by their end time, and expands to whole
+//	5-minute periods. A session that ends at `range.endTime` is included,
+//	unless `range.endTime` is on a 5-minute boundary. When `range.startTime`
+//	is unset, the range starts 7 days before its end. The range can be at
+//	most 30 days. Simulated sessions are not included.
+//
+//	Errors: a range longer than 30 days, a range whose `startTime` is not
+//	before its `endTime`, more than 25 entries in `agentNames`, `intentIds`, or
+//	`outcomeIds`, a `criterionId` without an `evalId` or with a `verdict`, or a
+//	cursor from another request returns `InvalidArgument`. A read with no
+//	filter that returns no sessions while user data recording is off returns
+//	the `ObservabilityDisabled` error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/eval-sessions (the `ObservabilityServiceListEvalSessions` operationId).
+func (c *ClientWithResponses) ObservabilityServiceListEvalSessionsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListEvalSessionsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListEvalSessionsResponse, error) {
+	rsp, err := c.ObservabilityServiceListEvalSessions(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseObservabilityServiceListEvalSessionsResponse(rsp)
+}
+
+// EvalServiceListEvalsWithResponse ListEvals
+//
+// Lists the evals of a project, sorted by name, ignoring case. The list is always one page,
+//
+//	with every eval. A project has at most 500 active evals. Each item has the
+//	live revision number and says whether the eval has a draft, but has no
+//	definition. To read a definition, use `GetEval`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/evals (the `EvalServiceListEvals` operationId).
+func (c *ClientWithResponses) EvalServiceListEvalsWithResponse(ctx context.Context, projectId string, params *EvalServiceListEvalsParams, reqEditors ...RequestEditorFn) (*EvalServiceListEvalsResponse, error) {
+	rsp, err := c.EvalServiceListEvals(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceListEvalsResponse(rsp)
+}
+
+// EvalServiceCreateEvalWithBodyWithResponse Creates an eval, with its definition as the first draft. The eval scores
+//
+//	nothing until you publish the draft with `PublishEvalDraft`. Returns the
+//	eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A name that another eval of the project
+//	has returns `AlreadyExists`. A project with the maximum number of evals
+//	returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+func (c *ClientWithResponses) EvalServiceCreateEvalWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceCreateEvalResponse, error) {
+	rsp, err := c.EvalServiceCreateEvalWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceCreateEvalResponse(rsp)
+}
+
+// EvalServiceCreateEvalWithResponse Creates an eval, with its definition as the first draft. The eval scores
+//
+//	nothing until you publish the draft with `PublishEvalDraft`. Returns the
+//	eval and the draft, whose `draftEtag` you pass to `SaveEvalDraft`.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A name that another eval of the project
+//	has returns `AlreadyExists`. A project with the maximum number of evals
+//	returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals (the `EvalServiceCreateEval` operationId).
+func (c *ClientWithResponses) EvalServiceCreateEvalWithResponse(ctx context.Context, projectId string, body EvalServiceCreateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceCreateEvalResponse, error) {
+	rsp, err := c.EvalServiceCreateEval(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceCreateEvalResponse(rsp)
+}
+
+// EvalServiceDeleteEvalWithResponse Deletes an eval. LiveKit stops scoring sessions with it, and its past
+//
+//	results stay. `UndeleteEval` brings it back.
+//
+// Errors: an unknown eval returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceDeleteEval` operationId).
+func (c *ClientWithResponses) EvalServiceDeleteEvalWithResponse(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*EvalServiceDeleteEvalResponse, error) {
+	rsp, err := c.EvalServiceDeleteEval(ctx, projectId, evalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceDeleteEvalResponse(rsp)
+}
+
+// EvalServiceGetEvalWithResponse Returns an eval and one version of its definition: the live revision, a
+//
+//	revision that you name, or the draft. Without `version`, returns the live
+//	revision, or the draft when nothing is published. A deleted eval is still
+//	readable.
+//
+// Errors: an unknown eval returns `NotFound`. A revision or a draft that the
+//
+//	eval does not have also returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceGetEval` operationId).
+func (c *ClientWithResponses) EvalServiceGetEvalWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceGetEvalParams, reqEditors ...RequestEditorFn) (*EvalServiceGetEvalResponse, error) {
+	rsp, err := c.EvalServiceGetEval(ctx, projectId, evalId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceGetEvalResponse(rsp)
+}
+
+// EvalServiceUpdateEvalWithBodyWithResponse Changes the name or the description of an eval. A field that you leave
+//
+//	out does not change. A change takes effect at once, and does not need a
+//	publish.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has returns `AlreadyExists`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateEvalWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalResponse, error) {
+	rsp, err := c.EvalServiceUpdateEvalWithBody(ctx, projectId, evalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateEvalResponse(rsp)
+}
+
+// EvalServiceUpdateEvalWithResponse Changes the name or the description of an eval. A field that you leave
+//
+//	out does not change. A change takes effect at once, and does not need a
+//	publish.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has returns `AlreadyExists`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/evals/{evalId} (the `EvalServiceUpdateEval` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateEvalWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceUpdateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateEvalResponse, error) {
+	rsp, err := c.EvalServiceUpdateEval(ctx, projectId, evalId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateEvalResponse(rsp)
+}
+
+// EvalServiceDiffEvalRevisionsWithResponse Returns the changes between two versions of the definition of an eval,
+//
+//	field by field. Each version is a revision or the draft. The changes are
+//	to the definition as it was written, without the judge defaults of the
+//	project.
+//
+// Errors: an unknown eval, revision or draft returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/diff (the `EvalServiceDiffEvalRevisions` operationId).
+func (c *ClientWithResponses) EvalServiceDiffEvalRevisionsWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceDiffEvalRevisionsParams, reqEditors ...RequestEditorFn) (*EvalServiceDiffEvalRevisionsResponse, error) {
+	rsp, err := c.EvalServiceDiffEvalRevisions(ctx, projectId, evalId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceDiffEvalRevisionsResponse(rsp)
+}
+
+// EvalServiceDiscardEvalDraftWithResponse Discards the draft of an eval. The live revision does not change. Pass the
+//
+//	`draftEtag` that you last read, so that you do not discard a change that
+//	someone else made.
+//
+// Errors: an unknown eval, or an eval with no draft, returns `NotFound`. A
+//
+//	`draftEtag` that is not the current one returns `Aborted`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceDiscardEvalDraft` operationId).
+func (c *ClientWithResponses) EvalServiceDiscardEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceDiscardEvalDraftParams, reqEditors ...RequestEditorFn) (*EvalServiceDiscardEvalDraftResponse, error) {
+	rsp, err := c.EvalServiceDiscardEvalDraft(ctx, projectId, evalId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceDiscardEvalDraftResponse(rsp)
+}
+
+// EvalServiceSaveEvalDraftWithBodyWithResponse Saves the draft of an eval, and replaces the draft that was there. The
+//
+//	draft scores nothing until you publish it. Pass the `draftEtag` that you
+//	last read, so that you do not overwrite a change that someone else made.
+//	Leave it empty when the eval has no draft.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`: read the eval again, and repeat the change on its
+//	draft.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+func (c *ClientWithResponses) EvalServiceSaveEvalDraftWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceSaveEvalDraftResponse, error) {
+	rsp, err := c.EvalServiceSaveEvalDraftWithBody(ctx, projectId, evalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceSaveEvalDraftResponse(rsp)
+}
+
+// EvalServiceSaveEvalDraftWithResponse Saves the draft of an eval, and replaces the draft that was there. The
+//
+//	draft scores nothing until you publish it. Pass the `draftEtag` that you
+//	last read, so that you do not overwrite a change that someone else made.
+//	Leave it empty when the eval has no draft.
+//
+// Errors: a definition with a wrong field returns `InvalidArgument`, with
+//
+//	each field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`: read the eval again, and repeat the change on its
+//	draft.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/evals/{evalId}/draft (the `EvalServiceSaveEvalDraft` operationId).
+func (c *ClientWithResponses) EvalServiceSaveEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceSaveEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceSaveEvalDraftResponse, error) {
+	rsp, err := c.EvalServiceSaveEvalDraft(ctx, projectId, evalId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceSaveEvalDraftResponse(rsp)
+}
+
+// EvalServicePublishEvalDraftWithBodyWithResponse Publishes the draft of an eval as its next revision, and makes that
+//
+//	revision live. From now on, the eval scores every matching live session of
+//	the project, and each judged criterion uses LLM judge inference that
+//	LiveKit pays for. Pass the `draftEtag` that you last read.
+//
+// Errors: a draft that is not complete returns `InvalidArgument`, with each
+//
+//	field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`. When the live revision changed after the draft was
+//	opened, returns `FailedPrecondition`: compare the two with
+//	`DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+func (c *ClientWithResponses) EvalServicePublishEvalDraftWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServicePublishEvalDraftResponse, error) {
+	rsp, err := c.EvalServicePublishEvalDraftWithBody(ctx, projectId, evalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServicePublishEvalDraftResponse(rsp)
+}
+
+// EvalServicePublishEvalDraftWithResponse Publishes the draft of an eval as its next revision, and makes that
+//
+//	revision live. From now on, the eval scores every matching live session of
+//	the project, and each judged criterion uses LLM judge inference that
+//	LiveKit pays for. Pass the `draftEtag` that you last read.
+//
+// Errors: a draft that is not complete returns `InvalidArgument`, with each
+//
+//	field in the error details. A `draftEtag` that is not the current one
+//	returns `Aborted`. When the live revision changed after the draft was
+//	opened, returns `FailedPrecondition`: compare the two with
+//	`DiffEvalRevisions`, and set `allowStaleBase` to publish anyway.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}/draft:publish (the `EvalServicePublishEvalDraft` operationId).
+func (c *ClientWithResponses) EvalServicePublishEvalDraftWithResponse(ctx context.Context, projectId string, evalId string, body EvalServicePublishEvalDraftJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServicePublishEvalDraftResponse, error) {
+	rsp, err := c.EvalServicePublishEvalDraft(ctx, projectId, evalId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServicePublishEvalDraftResponse(rsp)
+}
+
+// EvalServiceListEvalHistoryWithResponse ListEvalHistory
+//
+// Lists the history of an eval, newest first: each publish, rollback,
+//
+//	delete and undelete, and each change of its name or description.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/evals/{evalId}/history (the `EvalServiceListEvalHistory` operationId).
+func (c *ClientWithResponses) EvalServiceListEvalHistoryWithResponse(ctx context.Context, projectId string, evalId string, params *EvalServiceListEvalHistoryParams, reqEditors ...RequestEditorFn) (*EvalServiceListEvalHistoryResponse, error) {
+	rsp, err := c.EvalServiceListEvalHistory(ctx, projectId, evalId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceListEvalHistoryResponse(rsp)
+}
+
+// EvalServiceRollbackEvalWithBodyWithResponse Makes a copy of an older revision of an eval the next revision, and makes
+//
+//	it live. From now on, the eval scores every matching live session of the
+//	project with that definition. The older revision and the history do not
+//	change.
+//
+// Errors: an unknown eval or revision returns `NotFound`. The live revision
+//
+//	returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+func (c *ClientWithResponses) EvalServiceRollbackEvalWithBodyWithResponse(ctx context.Context, projectId string, evalId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceRollbackEvalResponse, error) {
+	rsp, err := c.EvalServiceRollbackEvalWithBody(ctx, projectId, evalId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceRollbackEvalResponse(rsp)
+}
+
+// EvalServiceRollbackEvalWithResponse Makes a copy of an older revision of an eval the next revision, and makes
+//
+//	it live. From now on, the eval scores every matching live session of the
+//	project with that definition. The older revision and the history do not
+//	change.
+//
+// Errors: an unknown eval or revision returns `NotFound`. The live revision
+//
+//	returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:rollback (the `EvalServiceRollbackEval` operationId).
+func (c *ClientWithResponses) EvalServiceRollbackEvalWithResponse(ctx context.Context, projectId string, evalId string, body EvalServiceRollbackEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceRollbackEvalResponse, error) {
+	rsp, err := c.EvalServiceRollbackEval(ctx, projectId, evalId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceRollbackEvalResponse(rsp)
+}
+
+// EvalServiceUndeleteEvalWithResponse Undeletes an eval. If it has a live revision, LiveKit scores sessions with
+//
+//	it again.
+//
+// Errors: an unknown eval returns `NotFound`. A name that another eval of
+//
+//	the project has taken returns `AlreadyExists`. A project with the maximum
+//	number of evals returns `FailedPrecondition`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals/{evalId}:undelete (the `EvalServiceUndeleteEval` operationId).
+func (c *ClientWithResponses) EvalServiceUndeleteEvalWithResponse(ctx context.Context, projectId string, evalId string, reqEditors ...RequestEditorFn) (*EvalServiceUndeleteEvalResponse, error) {
+	rsp, err := c.EvalServiceUndeleteEval(ctx, projectId, evalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUndeleteEvalResponse(rsp)
+}
+
+// EvalServiceValidateEvalWithBodyWithResponse ValidateEval
+//
+// Checks an eval definition, and saves nothing. Returns the definition with
+//
+//	the judge defaults of the project applied, and each field that is wrong
+//	or missing. A definition can be published only when it has no
+//	violations. The call returns OK also when the definition has violations.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+func (c *ClientWithResponses) EvalServiceValidateEvalWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceValidateEvalResponse, error) {
+	rsp, err := c.EvalServiceValidateEvalWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceValidateEvalResponse(rsp)
+}
+
+// EvalServiceValidateEvalWithResponse ValidateEval
+//
+// Checks an eval definition, and saves nothing. Returns the definition with
+//
+//	the judge defaults of the project applied, and each field that is wrong
+//	or missing. A definition can be published only when it has no
+//	violations. The call returns OK also when the definition has violations.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/evals:validate (the `EvalServiceValidateEval` operationId).
+func (c *ClientWithResponses) EvalServiceValidateEvalWithResponse(ctx context.Context, projectId string, body EvalServiceValidateEvalJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceValidateEvalResponse, error) {
+	rsp, err := c.EvalServiceValidateEval(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceValidateEvalResponse(rsp)
 }
 
 // ProjectServiceListInvitesWithResponse ListInvites
@@ -25617,6 +39368,74 @@ func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseProjectServiceDeleteKeyResponse(rsp)
+}
+
+// ObservabilityServiceListLogPatternsWithResponse Lists the log patterns of a project in a time range, ranked, with their
+//
+//	counts over time. A log pattern is a group of log records that log the
+//	same message from one place in the code, at one level. Its template is
+//	the message with each variable part, such as a number or an ID, replaced
+//	by a placeholder. These are the patterns that the logs page on the
+//	dashboard groups the records into.
+//
+// When `range.startTime` is unset, the range starts 24 hours before its
+//
+//	end. The range does not include `range.endTime`.
+//
+//	The API keeps log records for 14 days. One read covers at most the 7
+//	days before the end of its range. A range that starts earlier reads the
+//	records of those 7 days. A range that ends more than 14 days ago returns
+//	`InvalidArgument`. The read does not count the records of the current
+//	minute, and its answer can be up to one minute old. For a range of one
+//	day or more, these are five minutes. On a project with
+//	many records, the counts can be estimates. Then `estimated` is true: the
+//	API reads the records of a share of the sessions, and scales the counts.
+//	The read does not count the records of agent simulation sessions, unless
+//	you set `sessionId`. A read with a filter can return no patterns because
+//	no record matches. Thus, only a read with no `query`, `minLevel`,
+//	`sources`, `agentName`, `agentId`, or `sessionId` returns the
+//	`ObservabilityDisabled` error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/log-patterns (the `ObservabilityServiceListLogPatterns` operationId).
+func (c *ClientWithResponses) ObservabilityServiceListLogPatternsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListLogPatternsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListLogPatternsResponse, error) {
+	rsp, err := c.ObservabilityServiceListLogPatterns(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseObservabilityServiceListLogPatternsResponse(rsp)
+}
+
+// ObservabilityServiceListProjectLogsWithResponse Lists the log records of a project in a time range, from its agents, its
+//
+//	client SDKs, and LiveKit, newest first by default. These are the records
+//	that the logs page on the dashboard shows. The chat history is not
+//	included, because `GetSessionTranscript` returns it.
+//
+// When `range.startTime` is unset, the range starts 24 hours before its
+//
+//	end. The range includes `range.endTime`, to the millisecond.
+//
+//	The API keeps log records for 14 days. One read returns at most the 7
+//	days before the end of its range. A range that starts earlier returns
+//	the records of those 7 days. A range that ends more than 14 days ago
+//	returns `InvalidArgument`. A record that arrives after you read a page
+//	can have a time that your pages already passed. This read does not return
+//	that record. A new read returns it. Records from the last few minutes can
+//	still arrive. A read with a filter can return no records because no
+//	record matches. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/logs (the `ObservabilityServiceListProjectLogs` operationId).
+func (c *ClientWithResponses) ObservabilityServiceListProjectLogsWithResponse(ctx context.Context, projectId string, params *ObservabilityServiceListProjectLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceListProjectLogsResponse, error) {
+	rsp, err := c.ObservabilityServiceListProjectLogs(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseObservabilityServiceListProjectLogsResponse(rsp)
 }
 
 // ProjectServiceListMembersWithResponse ListMembers
@@ -25944,9 +39763,261 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithRe
 	return ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp)
 }
 
+// AnalyticsServiceGetSessionLabelResultsWithResponse Returns the session labels of a project over a time range: the number of
+//
+//	sessions with each intent and each outcome, the number of sessions with
+//	each pair of intent and outcome, and the eval results of the sessions
+//	with each label. A session label is an intent (what the user wanted) or
+//	an outcome (how the session ended) that LiveKit assigns to each finished
+//	live session.
+//
+// The eval results name each eval by its ID only. To get the names, call
+//
+//	`GetEvalResults` and read `evals`, or call `ListEvals`.
+//
+//	The range selects sessions by their end time, and expands to whole
+//	5-minute periods. Simulated sessions are not included.
+//
+//	When `range.startTime` is unset, the range starts 7 days before its end.
+//	A session that ends at `range.endTime` is included, unless `range.endTime`
+//	is on a 5-minute boundary. The range can be at most 60 days.
+//
+//	Errors: a range longer than 60 days, a range whose `startTime` is not
+//	before its `endTime`, or more than 25 entries in `agentNames`, `evalIds`,
+//	`intentIds`, or `outcomeIds` returns `InvalidArgument`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/session-label-results (the `AnalyticsServiceGetSessionLabelResults` operationId).
+func (c *ClientWithResponses) AnalyticsServiceGetSessionLabelResultsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetSessionLabelResultsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionLabelResultsResponse, error) {
+	rsp, err := c.AnalyticsServiceGetSessionLabelResults(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAnalyticsServiceGetSessionLabelResultsResponse(rsp)
+}
+
+// EvalServiceGetSessionLabelSettingsWithResponse GetSessionLabelSettings
+//
+// Returns the settings that decide which sessions LiveKit labels. A project
+//
+//	that never changed them has the default values.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/session-label-settings (the `EvalServiceGetSessionLabelSettings` operationId).
+func (c *ClientWithResponses) EvalServiceGetSessionLabelSettingsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*EvalServiceGetSessionLabelSettingsResponse, error) {
+	rsp, err := c.EvalServiceGetSessionLabelSettings(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceGetSessionLabelSettingsResponse(rsp)
+}
+
+// EvalServiceUpdateSessionLabelSettingsWithBodyWithResponse Replaces the session label settings of a project. A field that you leave
+//
+//	out goes back to its default value, so send every field that you want to
+//	keep.
+//
+// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+//
+//	range, returns `InvalidArgument`, with each field in the error details.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateSessionLabelSettingsWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelSettingsResponse, error) {
+	rsp, err := c.EvalServiceUpdateSessionLabelSettingsWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateSessionLabelSettingsResponse(rsp)
+}
+
+// EvalServiceUpdateSessionLabelSettingsWithResponse Replaces the session label settings of a project. A field that you leave
+//
+//	out goes back to its default value, so send every field that you want to
+//	keep.
+//
+// Errors: a value that is wrong, such as a `confidenceThreshold` outside the
+//
+//	range, returns `InvalidArgument`, with each field in the error details.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v0/projects/{projectId}/session-label-settings (the `EvalServiceUpdateSessionLabelSettings` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateSessionLabelSettingsWithResponse(ctx context.Context, projectId string, body EvalServiceUpdateSessionLabelSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelSettingsResponse, error) {
+	rsp, err := c.EvalServiceUpdateSessionLabelSettings(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateSessionLabelSettingsResponse(rsp)
+}
+
+// EvalServiceListSessionLabelsWithResponse ListSessionLabels
+//
+// Lists the session labels of a project, sorted by name, ignoring case. The
+//
+//	list is always one page, with every label of the kind. A project has at
+//	most 500 active labels of each kind.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/session-labels (the `EvalServiceListSessionLabels` operationId).
+func (c *ClientWithResponses) EvalServiceListSessionLabelsWithResponse(ctx context.Context, projectId string, params *EvalServiceListSessionLabelsParams, reqEditors ...RequestEditorFn) (*EvalServiceListSessionLabelsResponse, error) {
+	rsp, err := c.EvalServiceListSessionLabels(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceListSessionLabelsResponse(rsp)
+}
+
+// EvalServiceCreateSessionLabelWithBodyWithResponse Creates a session label. LiveKit applies the label to the sessions that
+//
+//	end after the label exists, and the label does not reach sessions that
+//	ended before. The LLM that assigns labels reads the `description` of each
+//	label, so a description is required. The first label of a project turns
+//	labeling on, and each labeled session uses LLM inference that LiveKit pays
+//	for.
+//
+// Errors: a field that is wrong returns `InvalidArgument`, with each field
+//
+//	in the error details. A name that another active label of the same kind
+//	has returns `AlreadyExists`. A project with the maximum number of active
+//	labels of the kind, or an agent that would have too many labels of the
+//	kind, returns `FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceCreateSessionLabelWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceCreateSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceCreateSessionLabelWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceCreateSessionLabelResponse(rsp)
+}
+
+// EvalServiceCreateSessionLabelWithResponse Creates a session label. LiveKit applies the label to the sessions that
+//
+//	end after the label exists, and the label does not reach sessions that
+//	ended before. The LLM that assigns labels reads the `description` of each
+//	label, so a description is required. The first label of a project turns
+//	labeling on, and each labeled session uses LLM inference that LiveKit pays
+//	for.
+//
+// Errors: a field that is wrong returns `InvalidArgument`, with each field
+//
+//	in the error details. A name that another active label of the same kind
+//	has returns `AlreadyExists`. A project with the maximum number of active
+//	labels of the kind, or an agent that would have too many labels of the
+//	kind, returns `FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels (the `EvalServiceCreateSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceCreateSessionLabelWithResponse(ctx context.Context, projectId string, body EvalServiceCreateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceCreateSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceCreateSessionLabel(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceCreateSessionLabelResponse(rsp)
+}
+
+// EvalServiceDeleteSessionLabelWithResponse Deletes a session label. LiveKit stops assigning it, and the labels that
+//
+//	it assigned to past sessions stay. The response lists the active evals
+//	that still name the label in `run.when`. The delete happens either way, so
+//	fix those evals. `UndeleteSessionLabel` brings the label back with the
+//	same ID. Deleting a deleted label changes nothing.
+//
+// Errors: an unknown label returns `NotFound`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceDeleteSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceDeleteSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*EvalServiceDeleteSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceDeleteSessionLabel(ctx, projectId, labelId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceDeleteSessionLabelResponse(rsp)
+}
+
+// EvalServiceUpdateSessionLabelWithBodyWithResponse Changes a session label. A field that you leave out does not change. The
+//
+//	kind of a label does not change. A change applies to the sessions that end
+//	after it. Evals refer to a label by its ID, so a new name does not change
+//	them.
+//
+// Errors: an unknown label returns `NotFound`. A deleted label returns
+//
+//	`FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+//	name that another active label of the same kind has returns
+//	`AlreadyExists`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateSessionLabelWithBodyWithResponse(ctx context.Context, projectId string, labelId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceUpdateSessionLabelWithBody(ctx, projectId, labelId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateSessionLabelResponse(rsp)
+}
+
+// EvalServiceUpdateSessionLabelWithResponse Changes a session label. A field that you leave out does not change. The
+//
+//	kind of a label does not change. A change applies to the sessions that end
+//	after it. Evals refer to a label by its ID, so a new name does not change
+//	them.
+//
+// Errors: an unknown label returns `NotFound`. A deleted label returns
+//
+//	`FailedPrecondition`. A field that is wrong returns `InvalidArgument`. A
+//	name that another active label of the same kind has returns
+//	`AlreadyExists`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/session-labels/{labelId} (the `EvalServiceUpdateSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceUpdateSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, body EvalServiceUpdateSessionLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*EvalServiceUpdateSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceUpdateSessionLabel(ctx, projectId, labelId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUpdateSessionLabelResponse(rsp)
+}
+
+// EvalServiceUndeleteSessionLabelWithResponse Undeletes a session label, with its old ID, so the evals that name the ID
+//
+//	match it again. The name and the limits of the project apply again.
+//	Undeleting an active label changes nothing.
+//
+// Errors: an unknown label returns `NotFound`. A name that another active
+//
+//	label of the same kind has taken returns `AlreadyExists`. A project with
+//	the maximum number of active labels of the kind, or an agent that would
+//	have too many labels of the kind, returns `FailedPrecondition`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/session-labels/{labelId}:undelete (the `EvalServiceUndeleteSessionLabel` operationId).
+func (c *ClientWithResponses) EvalServiceUndeleteSessionLabelWithResponse(ctx context.Context, projectId string, labelId string, reqEditors ...RequestEditorFn) (*EvalServiceUndeleteSessionLabelResponse, error) {
+	rsp, err := c.EvalServiceUndeleteSessionLabel(ctx, projectId, labelId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEvalServiceUndeleteSessionLabelResponse(rsp)
+}
+
 // AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 //
-// Lists the room sessions of a project, newest first.
+// Lists the room sessions of a project, newest first. When
+//
+//	`filter.range.startTime` is unset, the range starts 14 days before its
+//	end. A session that started at `filter.range.endTime` is not included.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -25974,6 +40045,38 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 		return nil, err
 	}
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
+}
+
+// ObservabilityServiceGetSessionEvalsWithResponse Returns the eval results of a session: the newest result of each eval
+//
+//	that LiveKit scored on each agent job of the session, with the answer of
+//	each criterion, the answers of its judges, and why a failed criterion
+//	failed. It also returns the intent and the outcome that LiveKit assigned to
+//	each agent job. These are the results that the evals tab of a session on
+//	the dashboard shows.
+//
+// A judge is an LLM that answers a criterion. A failure reason explains a
+//
+//	failed criterion of a failed eval, and a failure excerpt quotes the
+//	transcript lines that show the failure.
+//
+//	LiveKit scores a session after its agent uploads the session recording,
+//	and the judges can take minutes after the session ends. Thus, a session
+//	that LiveKit has not scored yet returns empty `evals` and `labels`, with no
+//	error. When an eval that you expect is missing, read again a few minutes
+//	later. An unknown session, or a session of another project,
+//	returns `NotFound`. A session with no results while user data recording is
+//	off returns the `ObservabilityDisabled` error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/evals (the `ObservabilityServiceGetSessionEvals` operationId).
+func (c *ClientWithResponses) ObservabilityServiceGetSessionEvalsWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionEvalsResponse, error) {
+	rsp, err := c.ObservabilityServiceGetSessionEvals(ctx, projectId, sessionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseObservabilityServiceGetSessionEvalsResponse(rsp)
 }
 
 // AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
@@ -26853,8 +40956,11 @@ func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context
 
 // ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
 //
-// Creates a webhook destination for a project. A `url` that is not an absolute
+// Creates a webhook destination for a project. It delivers LiveKit Cloud
 //
+//	events only, such as room, participant, track, egress, ingress and agent
+//	job events; it doesn't receive or forward events from other services, such
+//	as SMS. A `url` that is not an absolute
 //	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 //	in `filterParams` that `ListWebhookEvents` does not return, or a
 //	`signingKey` that is not an API key of the project, also returns
@@ -26875,8 +40981,11 @@ func (c *ClientWithResponses) ProjectServiceCreateWebhookWithBodyWithResponse(ct
 
 // ProjectServiceCreateWebhookWithResponse CreateWebhook
 //
-// Creates a webhook destination for a project. A `url` that is not an absolute
+// Creates a webhook destination for a project. It delivers LiveKit Cloud
 //
+//	events only, such as room, participant, track, egress, ingress and agent
+//	job events; it doesn't receive or forward events from other services, such
+//	as SMS. A `url` that is not an absolute
 //	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
 //	in `filterParams` that `ListWebhookEvents` does not return, or a
 //	`signingKey` that is not an API key of the project, also returns
@@ -27753,22 +41862,22 @@ func ParseProjectServiceUpdateProjectResponse(rsp *http.Response) (*ProjectServi
 	return response, nil
 }
 
-// ParseBuilderAgentServiceListBuilderAgentsResponse parses an HTTP response from a BuilderAgentServiceListBuilderAgentsWithResponse call
-func ParseBuilderAgentServiceListBuilderAgentsResponse(rsp *http.Response) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
+// ParseAgentBuilderServiceListAgentsResponse parses an HTTP response from a AgentBuilderServiceListAgentsWithResponse call
+func ParseAgentBuilderServiceListAgentsResponse(rsp *http.Response) (*AgentBuilderServiceListAgentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceListBuilderAgentsResponse{
+	response := &AgentBuilderServiceListAgentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsListResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -27786,22 +41895,22 @@ func ParseBuilderAgentServiceListBuilderAgentsResponse(rsp *http.Response) (*Bui
 	return response, nil
 }
 
-// ParseBuilderAgentServiceCreateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceCreateBuilderAgentWithResponse call
-func ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+// ParseAgentBuilderServiceCreateAgentResponse parses an HTTP response from a AgentBuilderServiceCreateAgentWithResponse call
+func ParseAgentBuilderServiceCreateAgentResponse(rsp *http.Response) (*AgentBuilderServiceCreateAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceCreateBuilderAgentResponse{
+	response := &AgentBuilderServiceCreateAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsCreateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -27819,22 +41928,22 @@ func ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp *http.Response) (*Bu
 	return response, nil
 }
 
-// ParseBuilderAgentServiceDeleteBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeleteBuilderAgentWithResponse call
-func ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
+// ParseAgentBuilderServiceDeleteAgentResponse parses an HTTP response from a AgentBuilderServiceDeleteAgentWithResponse call
+func ParseAgentBuilderServiceDeleteAgentResponse(rsp *http.Response) (*AgentBuilderServiceDeleteAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceDeleteBuilderAgentResponse{
+	response := &AgentBuilderServiceDeleteAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsDeleteResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -27852,22 +41961,22 @@ func ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp *http.Response) (*Bu
 	return response, nil
 }
 
-// ParseBuilderAgentServiceGetBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceGetBuilderAgentWithResponse call
-func ParseBuilderAgentServiceGetBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
+// ParseAgentBuilderServiceGetAgentResponse parses an HTTP response from a AgentBuilderServiceGetAgentWithResponse call
+func ParseAgentBuilderServiceGetAgentResponse(rsp *http.Response) (*AgentBuilderServiceGetAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceGetBuilderAgentResponse{
+	response := &AgentBuilderServiceGetAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsGetResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsGetResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -27885,22 +41994,22 @@ func ParseBuilderAgentServiceGetBuilderAgentResponse(rsp *http.Response) (*Build
 	return response, nil
 }
 
-// ParseBuilderAgentServiceUpdateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceUpdateBuilderAgentWithResponse call
-func ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+// ParseAgentBuilderServiceUpdateAgentResponse parses an HTTP response from a AgentBuilderServiceUpdateAgentWithResponse call
+func ParseAgentBuilderServiceUpdateAgentResponse(rsp *http.Response) (*AgentBuilderServiceUpdateAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceUpdateBuilderAgentResponse{
+	response := &AgentBuilderServiceUpdateAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsUpdateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -27918,22 +42027,1276 @@ func ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp *http.Response) (*Bu
 	return response, nil
 }
 
-// ParseBuilderAgentServiceDeployBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeployBuilderAgentWithResponse call
-func ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+// ParseAgentBuilderServiceGetAgentCodeURLResponse parses an HTTP response from a AgentBuilderServiceGetAgentCodeURLWithResponse call
+func ParseAgentBuilderServiceGetAgentCodeURLResponse(rsp *http.Response) (*AgentBuilderServiceGetAgentCodeURLResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &BuilderAgentServiceDeployBuilderAgentResponse{
+	response := &AgentBuilderServiceGetAgentCodeURLResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
+		var dest LivekitPublicapiAgentbuilderV1AgentsGetCodeURLResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentBuilderServiceListAgentVersionsResponse parses an HTTP response from a AgentBuilderServiceListAgentVersionsWithResponse call
+func ParseAgentBuilderServiceListAgentVersionsResponse(rsp *http.Response) (*AgentBuilderServiceListAgentVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentBuilderServiceListAgentVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentbuilderV1AgentVersionsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAgentBuilderServiceDeployAgentResponse parses an HTTP response from a AgentBuilderServiceDeployAgentWithResponse call
+func ParseAgentBuilderServiceDeployAgentResponse(rsp *http.Response) (*AgentBuilderServiceDeployAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AgentBuilderServiceDeployAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentbuilderV1AgentsDeployResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAnalyticsServiceGetAgentInsightsResponse parses an HTTP response from a AnalyticsServiceGetAgentInsightsWithResponse call
+func ParseAnalyticsServiceGetAgentInsightsResponse(rsp *http.Response) (*AnalyticsServiceGetAgentInsightsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AnalyticsServiceGetAgentInsightsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAnalyticsV1AgentInsightsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceListCloudAgentPrivateLinksResponse parses an HTTP response from a CloudAgentServiceListCloudAgentPrivateLinksWithResponse call
+func ParseCloudAgentServiceListCloudAgentPrivateLinksResponse(rsp *http.Response) (*CloudAgentServiceListCloudAgentPrivateLinksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceListCloudAgentPrivateLinksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceCreateCloudAgentPrivateLinkResponse parses an HTTP response from a CloudAgentServiceCreateCloudAgentPrivateLinkWithResponse call
+func ParseCloudAgentServiceCreateCloudAgentPrivateLinkResponse(rsp *http.Response) (*CloudAgentServiceCreateCloudAgentPrivateLinkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceCreateCloudAgentPrivateLinkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceDeleteCloudAgentPrivateLinkResponse parses an HTTP response from a CloudAgentServiceDeleteCloudAgentPrivateLinkWithResponse call
+func ParseCloudAgentServiceDeleteCloudAgentPrivateLinkResponse(rsp *http.Response) (*CloudAgentServiceDeleteCloudAgentPrivateLinkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceDeleteCloudAgentPrivateLinkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceGetCloudAgentPrivateLinkStatusResponse parses an HTTP response from a CloudAgentServiceGetCloudAgentPrivateLinkStatusWithResponse call
+func ParseCloudAgentServiceGetCloudAgentPrivateLinkStatusResponse(rsp *http.Response) (*CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceGetCloudAgentPrivateLinkStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentPrivateLinksGetStatusResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceGetCloudAgentSettingsResponse parses an HTTP response from a CloudAgentServiceGetCloudAgentSettingsWithResponse call
+func ParseCloudAgentServiceGetCloudAgentSettingsResponse(rsp *http.Response) (*CloudAgentServiceGetCloudAgentSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceGetCloudAgentSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentSettingsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceListCloudAgentsResponse parses an HTTP response from a CloudAgentServiceListCloudAgentsWithResponse call
+func ParseCloudAgentServiceListCloudAgentsResponse(rsp *http.Response) (*CloudAgentServiceListCloudAgentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceListCloudAgentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceCreateCloudAgentResponse parses an HTTP response from a CloudAgentServiceCreateCloudAgentWithResponse call
+func ParseCloudAgentServiceCreateCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceCreateCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceCreateCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceDeleteCloudAgentResponse parses an HTTP response from a CloudAgentServiceDeleteCloudAgentWithResponse call
+func ParseCloudAgentServiceDeleteCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceDeleteCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceDeleteCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceGetCloudAgentResponse parses an HTTP response from a CloudAgentServiceGetCloudAgentWithResponse call
+func ParseCloudAgentServiceGetCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceGetCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceGetCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceGetCloudAgentBuildLogsResponse parses an HTTP response from a CloudAgentServiceGetCloudAgentBuildLogsWithResponse call
+func ParseCloudAgentServiceGetCloudAgentBuildLogsResponse(rsp *http.Response) (*CloudAgentServiceGetCloudAgentBuildLogsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceGetCloudAgentBuildLogsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentBuildLogsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceBuildCloudAgentResponse parses an HTTP response from a CloudAgentServiceBuildCloudAgentWithResponse call
+func ParseCloudAgentServiceBuildCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceBuildCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceBuildCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsBuildResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceDeployCloudAgentResponse parses an HTTP response from a CloudAgentServiceDeployCloudAgentWithResponse call
+func ParseCloudAgentServiceDeployCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceDeployCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceDeployCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsDeployResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServicePromoteCloudAgentResponse parses an HTTP response from a CloudAgentServicePromoteCloudAgentWithResponse call
+func ParseCloudAgentServicePromoteCloudAgentResponse(rsp *http.Response) (*CloudAgentServicePromoteCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServicePromoteCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsPromoteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceRestartCloudAgentResponse parses an HTTP response from a CloudAgentServiceRestartCloudAgentWithResponse call
+func ParseCloudAgentServiceRestartCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceRestartCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceRestartCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsRestartResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceRollbackCloudAgentResponse parses an HTTP response from a CloudAgentServiceRollbackCloudAgentWithResponse call
+func ParseCloudAgentServiceRollbackCloudAgentResponse(rsp *http.Response) (*CloudAgentServiceRollbackCloudAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceRollbackCloudAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentsRollbackResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceListCloudAgentSecretsResponse parses an HTTP response from a CloudAgentServiceListCloudAgentSecretsWithResponse call
+func ParseCloudAgentServiceListCloudAgentSecretsResponse(rsp *http.Response) (*CloudAgentServiceListCloudAgentSecretsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceListCloudAgentSecretsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentSecretsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceUpdateCloudAgentSecretsResponse parses an HTTP response from a CloudAgentServiceUpdateCloudAgentSecretsWithResponse call
+func ParseCloudAgentServiceUpdateCloudAgentSecretsResponse(rsp *http.Response) (*CloudAgentServiceUpdateCloudAgentSecretsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceUpdateCloudAgentSecretsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentSecretsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCloudAgentServiceListCloudAgentVersionsResponse parses an HTTP response from a CloudAgentServiceListCloudAgentVersionsWithResponse call
+func ParseCloudAgentServiceListCloudAgentVersionsResponse(rsp *http.Response) (*CloudAgentServiceListCloudAgentVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CloudAgentServiceListCloudAgentVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiCloudagentsV1CloudAgentVersionsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceGetEvalDefaultsResponse parses an HTTP response from a EvalServiceGetEvalDefaultsWithResponse call
+func ParseEvalServiceGetEvalDefaultsResponse(rsp *http.Response) (*EvalServiceGetEvalDefaultsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceGetEvalDefaultsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalDefaultsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUpdateEvalDefaultsResponse parses an HTTP response from a EvalServiceUpdateEvalDefaultsWithResponse call
+func ParseEvalServiceUpdateEvalDefaultsResponse(rsp *http.Response) (*EvalServiceUpdateEvalDefaultsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUpdateEvalDefaultsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalDefaultsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAnalyticsServiceGetEvalResultsResponse parses an HTTP response from a AnalyticsServiceGetEvalResultsWithResponse call
+func ParseAnalyticsServiceGetEvalResultsResponse(rsp *http.Response) (*AnalyticsServiceGetEvalResultsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AnalyticsServiceGetEvalResultsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAnalyticsV1EvalResultsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseObservabilityServiceListEvalSessionsResponse parses an HTTP response from a ObservabilityServiceListEvalSessionsWithResponse call
+func ParseObservabilityServiceListEvalSessionsResponse(rsp *http.Response) (*ObservabilityServiceListEvalSessionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ObservabilityServiceListEvalSessionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiObservabilityV1EvalSessionsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceListEvalsResponse parses an HTTP response from a EvalServiceListEvalsWithResponse call
+func ParseEvalServiceListEvalsResponse(rsp *http.Response) (*EvalServiceListEvalsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceListEvalsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceCreateEvalResponse parses an HTTP response from a EvalServiceCreateEvalWithResponse call
+func ParseEvalServiceCreateEvalResponse(rsp *http.Response) (*EvalServiceCreateEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceCreateEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceDeleteEvalResponse parses an HTTP response from a EvalServiceDeleteEvalWithResponse call
+func ParseEvalServiceDeleteEvalResponse(rsp *http.Response) (*EvalServiceDeleteEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceDeleteEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceGetEvalResponse parses an HTTP response from a EvalServiceGetEvalWithResponse call
+func ParseEvalServiceGetEvalResponse(rsp *http.Response) (*EvalServiceGetEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceGetEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUpdateEvalResponse parses an HTTP response from a EvalServiceUpdateEvalWithResponse call
+func ParseEvalServiceUpdateEvalResponse(rsp *http.Response) (*EvalServiceUpdateEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUpdateEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceDiffEvalRevisionsResponse parses an HTTP response from a EvalServiceDiffEvalRevisionsWithResponse call
+func ParseEvalServiceDiffEvalRevisionsResponse(rsp *http.Response) (*EvalServiceDiffEvalRevisionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceDiffEvalRevisionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalRevisionsDiffResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceDiscardEvalDraftResponse parses an HTTP response from a EvalServiceDiscardEvalDraftWithResponse call
+func ParseEvalServiceDiscardEvalDraftResponse(rsp *http.Response) (*EvalServiceDiscardEvalDraftResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceDiscardEvalDraftResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalDraftsDiscardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceSaveEvalDraftResponse parses an HTTP response from a EvalServiceSaveEvalDraftWithResponse call
+func ParseEvalServiceSaveEvalDraftResponse(rsp *http.Response) (*EvalServiceSaveEvalDraftResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceSaveEvalDraftResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalDraftsSaveResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServicePublishEvalDraftResponse parses an HTTP response from a EvalServicePublishEvalDraftWithResponse call
+func ParseEvalServicePublishEvalDraftResponse(rsp *http.Response) (*EvalServicePublishEvalDraftResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServicePublishEvalDraftResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalDraftsPublishResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceListEvalHistoryResponse parses an HTTP response from a EvalServiceListEvalHistoryWithResponse call
+func ParseEvalServiceListEvalHistoryResponse(rsp *http.Response) (*EvalServiceListEvalHistoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceListEvalHistoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalHistoryListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceRollbackEvalResponse parses an HTTP response from a EvalServiceRollbackEvalWithResponse call
+func ParseEvalServiceRollbackEvalResponse(rsp *http.Response) (*EvalServiceRollbackEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceRollbackEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsRollbackResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUndeleteEvalResponse parses an HTTP response from a EvalServiceUndeleteEvalWithResponse call
+func ParseEvalServiceUndeleteEvalResponse(rsp *http.Response) (*EvalServiceUndeleteEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUndeleteEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsUndeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceValidateEvalResponse parses an HTTP response from a EvalServiceValidateEvalWithResponse call
+func ParseEvalServiceValidateEvalResponse(rsp *http.Response) (*EvalServiceValidateEvalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceValidateEvalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1EvalsValidateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -28165,6 +43528,72 @@ func ParseProjectServiceDeleteKeyResponse(rsp *http.Response) (*ProjectServiceDe
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiProjectsV1DeleteKeyResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseObservabilityServiceListLogPatternsResponse parses an HTTP response from a ObservabilityServiceListLogPatternsWithResponse call
+func ParseObservabilityServiceListLogPatternsResponse(rsp *http.Response) (*ObservabilityServiceListLogPatternsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ObservabilityServiceListLogPatternsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiObservabilityV1LogPatternsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseObservabilityServiceListProjectLogsResponse parses an HTTP response from a ObservabilityServiceListProjectLogsWithResponse call
+func ParseObservabilityServiceListProjectLogsResponse(rsp *http.Response) (*ObservabilityServiceListProjectLogsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ObservabilityServiceListProjectLogsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiObservabilityV1ProjectLogsListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -28578,6 +44007,270 @@ func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Respons
 	return response, nil
 }
 
+// ParseAnalyticsServiceGetSessionLabelResultsResponse parses an HTTP response from a AnalyticsServiceGetSessionLabelResultsWithResponse call
+func ParseAnalyticsServiceGetSessionLabelResultsResponse(rsp *http.Response) (*AnalyticsServiceGetSessionLabelResultsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AnalyticsServiceGetSessionLabelResultsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAnalyticsV1SessionLabelResultsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceGetSessionLabelSettingsResponse parses an HTTP response from a EvalServiceGetSessionLabelSettingsWithResponse call
+func ParseEvalServiceGetSessionLabelSettingsResponse(rsp *http.Response) (*EvalServiceGetSessionLabelSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceGetSessionLabelSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelSettingsOpsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUpdateSessionLabelSettingsResponse parses an HTTP response from a EvalServiceUpdateSessionLabelSettingsWithResponse call
+func ParseEvalServiceUpdateSessionLabelSettingsResponse(rsp *http.Response) (*EvalServiceUpdateSessionLabelSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUpdateSessionLabelSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelSettingsOpsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceListSessionLabelsResponse parses an HTTP response from a EvalServiceListSessionLabelsWithResponse call
+func ParseEvalServiceListSessionLabelsResponse(rsp *http.Response) (*EvalServiceListSessionLabelsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceListSessionLabelsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceCreateSessionLabelResponse parses an HTTP response from a EvalServiceCreateSessionLabelWithResponse call
+func ParseEvalServiceCreateSessionLabelResponse(rsp *http.Response) (*EvalServiceCreateSessionLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceCreateSessionLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceDeleteSessionLabelResponse parses an HTTP response from a EvalServiceDeleteSessionLabelWithResponse call
+func ParseEvalServiceDeleteSessionLabelResponse(rsp *http.Response) (*EvalServiceDeleteSessionLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceDeleteSessionLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelsDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUpdateSessionLabelResponse parses an HTTP response from a EvalServiceUpdateSessionLabelWithResponse call
+func ParseEvalServiceUpdateSessionLabelResponse(rsp *http.Response) (*EvalServiceUpdateSessionLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUpdateSessionLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEvalServiceUndeleteSessionLabelResponse parses an HTTP response from a EvalServiceUndeleteSessionLabelWithResponse call
+func ParseEvalServiceUndeleteSessionLabelResponse(rsp *http.Response) (*EvalServiceUndeleteSessionLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EvalServiceUndeleteSessionLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiEvalsV1SessionLabelsUndeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAnalyticsServiceListProjectSessionsResponse parses an HTTP response from a AnalyticsServiceListProjectSessionsWithResponse call
 func ParseAnalyticsServiceListProjectSessionsResponse(rsp *http.Response) (*AnalyticsServiceListProjectSessionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28627,6 +44320,39 @@ func ParseAnalyticsServiceGetSessionResponse(rsp *http.Response) (*AnalyticsServ
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiAnalyticsV1SessionsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseObservabilityServiceGetSessionEvalsResponse parses an HTTP response from a ObservabilityServiceGetSessionEvalsWithResponse call
+func ParseObservabilityServiceGetSessionEvalsResponse(rsp *http.Response) (*ObservabilityServiceGetSessionEvalsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ObservabilityServiceGetSessionEvalsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiObservabilityV1SessionEvalsGetResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

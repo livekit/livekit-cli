@@ -528,7 +528,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *cloudagents.Client
+	agentsClient     agentAPI
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -575,7 +575,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = newAgentsClient(project)
+	agentsClient, err = newAgentAPI(cmd, project)
 	if err != nil {
 		return ctx, err
 	}
@@ -688,7 +688,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			(&resolvedProject{project: project, source: sourceSelected}).announce()
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = newAgentsClient(project)
+			agentsClient, err = newAgentAPI(cmd, project)
 			if err != nil {
 				return err
 			}
@@ -785,10 +785,22 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, attrs, excludeFiles, os.Stderr)
 	if err != nil {
+		var created *agentCreatedError
+		if errors.As(err, &created) {
+			// The agent is registered but its deploy failed. Save its ID, so that a
+			// retry with `lk agent deploy` reuses it and does not make another agent,
+			// which counts against the plan.
+			lkConfig.Agent.ID = created.agentID
+			if saveErr := lkConfig.SaveTOMLFile(workingDir, tomlFilename); saveErr != nil {
+				out.Warnf("Created agent [%s], but could not save its ID to %s: %v", created.agentID, tomlFilename, saveErr)
+			} else {
+				out.Statusf("Created agent with ID [%s]; run `lk agent deploy` to deploy again", util.Accented(created.agentID))
+			}
+			err = created.err
+		}
 		if errors.Is(err, context.Canceled) {
 			// The client disconnected (Ctrl-C). The agent is registered and its build runs
-			// to completion on the server, so this is not a failure. The agent ID was not
-			// saved locally (resp is nil here), so point at `list` rather than `status`.
+			// to completion on the server, so this is not a failure.
 			out.Status("Disconnected. The build continues on the server; run `lk agent list` to find it.")
 			return nil
 		}
@@ -823,8 +835,19 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		} else if viewLogs {
+			if len(resp.ServerRegions) == 0 {
+				out.Warnf("No server region is known for the agent yet. Run `lk agent logs` to tail its runtime logs.")
+				return nil
+			}
 			out.Status("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
+			if err := agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0]); err != nil {
+				if strings.Contains(err.Error(), "this needs ") {
+					// The agent is created. Only the live tail needs a project admin.
+					out.Warnf("Can't tail the runtime logs: %v", err)
+					return nil
+				}
+				return err
+			}
 		}
 	}
 	return nil
@@ -1329,8 +1352,16 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if len(response.Agents) == 0 {
 		return fmt.Errorf("no agent deployments found")
 	}
+	// A build log does not need the server that runs the agent, and an agent
+	// whose first build failed has no deployment yet.
+	serverRegion := ""
+	if deployments := response.Agents[0].AgentDeployments; len(deployments) > 0 {
+		serverRegion = deployments[0].ServerRegion
+	} else if cmd.String("log-type") != "build" {
+		return fmt.Errorf("no agent deployments found")
+	}
 
-	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, cmd.String("deployment"), os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, cmd.String("deployment"), os.Stdout, serverRegion)
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
