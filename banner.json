@@ -1,20 +1,20 @@
 [
   {
-    "message": "New in LiveKit Cloud: Agent Observability. Full agent logs (crashes and stdout included), evals and insights for every session. Your coding agent can use them too, through lk and the LiveKit MCP. Docs: https://docs.livekit.io/testing/observability/",
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Your coding agent can set them up, through lk and the LiveKit MCP. Docs: https://docs.livekit.io/testing/evals/",
     "versions": ">= 2.19.5",
     "audiences": [
       "user-auth"
     ]
   },
   {
-    "message": "New in LiveKit Cloud: Agent Observability. Full agent logs (crashes and stdout included), evals and insights for every session. Sign in with lk cloud auth --user-auth so your coding agent can use them too. Docs: https://docs.livekit.io/testing/observability/",
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Your coding agent can set them up, through lk and the LiveKit MCP. Docs: https://docs.livekit.io/testing/evals/",
     "versions": ">= 2.19.5",
     "audiences": [
       "signed-out"
     ]
   },
   {
-    "message": "New in LiveKit Cloud: Agent Observability. Full agent logs, evals and insights for every session. Update lk so your coding agent can use them too. Docs: https://docs.livekit.io/testing/observability/",
+    "message": "New in LiveKit Cloud: Agent Evaluations. Measure agent quality on every session. Your coding agent can set them up, through lk and the LiveKit MCP. Docs: https://docs.livekit.io/testing/evals/",
     "versions": "< 2.19.5"
   }
 ]
