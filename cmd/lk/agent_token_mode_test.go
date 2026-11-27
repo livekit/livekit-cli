@@ -86,9 +86,7 @@ func TestWorkerTokenKeepFresh(t *testing.T) {
 	<-done
 	assert.Equal(t, 3, src.calls)
 	assert.Equal(t, &auth.ClaimGrants{
-		Video:         &auth.VideoGrant{Agent: true},
-		Inference:     &auth.InferenceGrant{Perform: true},
-		Observability: &auth.ObservabilityGrant{Write: true},
+		Video: &auth.VideoGrant{Agent: true},
 	}, src.grants, "only what the worker uses itself; jobs get theirs from the server")
 
 	creds := wt.credentials().GetCredentials()

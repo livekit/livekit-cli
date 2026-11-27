@@ -57,14 +57,12 @@ const (
 	tokenModeMinNode   = "X.Y.Z"
 )
 
-// workerTokenGrants are the grants of a worker token: what the worker uses
-// itself (registration, LiveKit Inference, telemetry). Jobs get their own
-// grants from the server (CreateJobTokenRequest).
+// workerTokenGrants are the grants of a worker token: the worker uses it only
+// to register. Jobs get their own tokens from the server
+// (CreateJobTokenRequest), the ones for LiveKit Inference and telemetry too.
 func workerTokenGrants() *auth.ClaimGrants {
 	return &auth.ClaimGrants{
-		Video:         &auth.VideoGrant{Agent: true},
-		Inference:     &auth.InferenceGrant{Perform: true},
-		Observability: &auth.ObservabilityGrant{Write: true},
+		Video: &auth.VideoGrant{Agent: true},
 	}
 }
 
