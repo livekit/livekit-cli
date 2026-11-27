@@ -230,6 +230,9 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 		}
 		return mergeCredentials(explicit, credentialsOf(pc)), nil
 	}
+	if tokenMode && cmd.Bool("token-mode") {
+		return forcedTokenMode(ctx, cmd, explicit.url)
+	}
 	if explicit.complete() {
 		return explicit, nil
 	}
@@ -605,6 +608,31 @@ func projectKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig,
 		return creds, nil
 	}
 	return promptForKey(ctx, cmd, pc, req, reason)
+}
+
+// forcedTokenMode returns token-mode credentials for `lk agent dev
+// --token-mode`. It skips every step of the chain: a key in the flags, the
+// environment, the agent's env file or the CLI config is not used, and lk
+// creates none. The agent connects to url (--url), or to the project's own URL
+// when url is empty.
+func forcedTokenMode(ctx context.Context, cmd *cli.Command, url string) (agentCredentials, error) {
+	if !userAuthEnabled(cmd) {
+		return agentCredentials{}, errors.New("--token-mode is only supported with --user-auth")
+	}
+	pc, err := loadSessionProject(ctx, cmd)
+	if err != nil {
+		return agentCredentials{}, err
+	}
+	creds, err := workerTokenCredentials(ctx, cmd, pc)
+	if err != nil {
+		return agentCredentials{}, err
+	}
+	if url != "" {
+		creds.url = url
+		creds.workerToken.url = url
+	}
+	creds.noKey = errors.New("run without --token-mode to use an API key")
+	return creds, nil
 }
 
 // mintProjectKey creates a service-account key on session project pc, which

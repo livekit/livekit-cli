@@ -32,6 +32,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
+	"github.com/livekit/protocol/logger"
 )
 
 // cloudConsoleURL returns the LiveKit Cloud agents-console URL for a worker that
@@ -166,6 +167,13 @@ var devCommand = &cli.Command{
 			Name:    "deployment",
 			Sources: cli.EnvVars(agentDeploymentEnv),
 			Usage:   "Deployment `NAME` to register the agent under. Defaults to a random dev- ID so dev traffic is isolated from production; pass production to explicitly serve production traffic. Overrides any value in the agent's .env file.",
+		},
+		&cli.BoolFlag{
+			// For tests of token mode by a user who has an API key, or can
+			// create one. Needs --user-auth.
+			Name:   "token-mode",
+			Usage:  "Run the agent on a worker token, and ignore every API key.",
+			Hidden: true,
 		},
 	),
 	Action: runAgentDev,
@@ -440,26 +448,27 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	var tokenMode *devTokenMode
 	if creds.workerToken != nil {
 		tokenMode = &devTokenMode{token: creds.workerToken, noKey: creds.noKey, projectType: projectType}
+		logger.Debugw("token mode: the agent starts with LIVEKIT_TOKEN, and an empty LIVEKIT_API_KEY and LIVEKIT_API_SECRET")
 		refreshCtx, stopRefresh := context.WithCancel(ctx)
 		defer stopRefresh()
 		go creds.workerToken.keepFresh(refreshCtx, tokenMode.push)
 	}
 
 	if cmd.Bool("no-reload") {
-		// No reload — just run like start, plus the dev channel in token mode,
-		// for the refreshed worker token.
-		if tokenMode != nil {
-			devSrv, err := newDevServer()
-			if err != nil {
-				return err
-			}
-			defer devSrv.close()
-			devSrv.tokenMode = tokenMode
-			if addrFlag := devChannelAddrFlag(cfg); addrFlag != "" {
-				cfg.CLIArgs = append(cfg.CLIArgs, addrFlag, devSrv.addr())
-			}
-			go devSrv.serve()
+		// No reload: run like start, plus the dev channel. The channel carries
+		// the agent's ServerInfo (for the console link) and, in token mode, the
+		// refreshed worker token.
+		devSrv, err := newDevServer()
+		if err != nil {
+			return err
 		}
+		defer devSrv.close()
+		devSrv.onServerInfo = cfg.OnServerInfo
+		devSrv.tokenMode = tokenMode
+		if addrFlag := devChannelAddrFlag(cfg); addrFlag != "" {
+			cfg.CLIArgs = append(cfg.CLIArgs, addrFlag, devSrv.addr())
+		}
+		go devSrv.serve()
 		agent, err := startAgent(cfg)
 		if err != nil {
 			return err

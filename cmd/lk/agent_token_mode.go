@@ -28,6 +28,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	agent "github.com/livekit/protocol/livekit/agent"
+	"github.com/livekit/protocol/logger"
 )
 
 // Token mode for `lk agent dev`.
@@ -93,6 +94,9 @@ func (w *workerToken) fetch(ctx context.Context) error {
 	w.mu.Lock()
 	w.token, w.expiresAt = token, expiresAt
 	w.mu.Unlock()
+	// Shown with --verbose. The token itself is never logged.
+	logger.Debugw("token mode: got a worker token from the Public API",
+		"url", w.url, "expiresAt", expiresAt.Format(time.RFC3339), "validFor", expiresAt.Sub(w.now()).Round(time.Second))
 	return nil
 }
 
@@ -126,6 +130,7 @@ func (w *workerToken) refreshDelay() time.Duration {
 // token.
 func (w *workerToken) keepFresh(ctx context.Context, push func()) {
 	wait := w.refreshDelay()
+	logger.Debugw("token mode: next worker token refresh", "in", wait.Round(time.Second))
 	for {
 		select {
 		case <-ctx.Done():
@@ -146,6 +151,7 @@ func (w *workerToken) keepFresh(ctx context.Context, push func()) {
 		}
 		push()
 		wait = w.refreshDelay()
+		logger.Debugw("token mode: next worker token refresh", "in", wait.Round(time.Second))
 	}
 }
 
@@ -192,13 +198,16 @@ func (t *devTokenMode) onServerInfo(s *devSession, supportsTokenMode bool) {
 		t.session = s
 	}
 	t.mu.Unlock()
+	logger.Debugw("token mode: the agent reported its SDK support", "supportsTokenMode", supportsTokenMode)
 	if !supportsTokenMode {
 		out.Warnf("%s", upperFirst(t.unsupportedMessage(true)))
 		return
 	}
 	if err := s.write(t.token.credentials()); err != nil {
 		out.Warnf("Couldn't send the worker token to the agent: %v", err)
+		return
 	}
+	logger.Debugw("token mode: sent the worker token to the agent")
 }
 
 // push sends the current token to the agent that supports token mode.
@@ -207,11 +216,14 @@ func (t *devTokenMode) push() {
 	s := t.session
 	t.mu.Unlock()
 	if s == nil {
+		logger.Debugw("token mode: no agent to send the refreshed worker token to")
 		return
 	}
 	if err := s.write(t.token.credentials()); err != nil {
 		out.Warnf("Couldn't send the refreshed worker token to the agent: %v", err)
+		return
 	}
+	logger.Debugw("token mode: sent the refreshed worker token to the agent")
 }
 
 // exitError returns an error when the agent exited without ever reporting
